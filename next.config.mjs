@@ -1,9 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
-  eslint: { ignoreDuringBuilds: true },   // ← add this line
+  eslint: { ignoreDuringBuilds: true },
   images: {
-    // ... your existing image settings stay exactly as they are
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "plus.unsplash.com" },
+      { protocol: "https", hostname: "picsum.photos" },
+      { protocol: "https", hostname: "loremflickr.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "i.pravatar.cc" },
+    ],
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],

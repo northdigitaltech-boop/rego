@@ -605,7 +605,6 @@ export function AdminDashboard() {
       notifyPing(`New listing pending approval — ${n} awaiting review`);
     }
     prevApprovals.current = n;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingProperties.length]);
 
   // Admin ↔ owner message threads.

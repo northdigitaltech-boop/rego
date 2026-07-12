@@ -31,7 +31,6 @@ import {
   getStoryById,
   getRelatedStories,
   travelTypeLabel,
-  type StoryRow,
 } from "@/lib/safarnama";
 import { photo } from "@/lib/utils";
 

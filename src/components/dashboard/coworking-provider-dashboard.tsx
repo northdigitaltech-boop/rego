@@ -10,7 +10,6 @@ import {
   Loader2,
   CheckCircle2,
   Phone,
-  MapPin,
   Eye,
   Users,
   BarChart3,

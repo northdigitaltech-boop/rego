@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { ProfileGallery } from "@/components/listings/profile-gallery";
 import { getCompanyById } from "@/lib/expeditions";
 import { buildMetadata } from "@/lib/seo";
-import { photo, formatPrice } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
 

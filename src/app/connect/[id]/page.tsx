@@ -40,7 +40,6 @@ import {
   getSoloById,
   computeTrustScore,
   daysUntilDeparture,
-  type SoloTravelerRow,
   type SoloPreviousTrip,
 } from "@/lib/solo";
 import { photo } from "@/lib/utils";
