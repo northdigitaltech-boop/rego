@@ -114,7 +114,7 @@ export function AdminRoadUpdates() {
 /* ---------------- Updates ---------------- */
 
 function UpdatesView({ updates, onChange }: { updates: RoadUpdateRow[]; onChange: () => void }) {
-  const [roadKey, setRoadKey] = React.useState(ROADS[0].key);
+  const [roadKey, setRoadKey] = React.useState<string>(ROADS[0].key);
   const [status, setStatus] = React.useState("open");
   const [location, setLocation] = React.useState("");
   const [reason, setReason] = React.useState("");

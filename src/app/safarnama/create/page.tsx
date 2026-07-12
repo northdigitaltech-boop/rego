@@ -33,7 +33,7 @@ export default function CreateStoryPage() {
   const [city, setCity] = React.useState<string>("");
   const [tripDate, setTripDate] = React.useState("");
   const [duration, setDuration] = React.useState("");
-  const [travelType, setTravelType] = React.useState(TRAVEL_TYPES[0].slug);
+  const [travelType, setTravelType] = React.useState<string>(TRAVEL_TYPES[0].slug);
   const [budget, setBudget] = React.useState("");
   const [transportation, setTransportation] = React.useState("");
   const [hotels, setHotels] = React.useState("");

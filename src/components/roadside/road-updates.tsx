@@ -328,7 +328,7 @@ function Row({
 
 function ReportModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
-  const [roadKey, setRoadKey] = React.useState(ROADS[0].key);
+  const [roadKey, setRoadKey] = React.useState<string>(ROADS[0].key);
   const [location, setLocation] = React.useState("");
   const [reason, setReason] = React.useState<string>(ROAD_REASONS[0]);
   const [description, setDescription] = React.useState("");
