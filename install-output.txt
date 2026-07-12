@@ -1,0 +1,2 @@
+npm error A complete log of this run can be found in: C:\Users\ARIFA OVERSEAS 4\AppData\Local\npm-cache\_logs\2026-06-13T15_46_10_401Z-debug-0.log
+FINISHED_EXITCODE_0 

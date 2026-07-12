@@ -1,0 +1,388 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  Heart,
+  Bell,
+  UserRound,
+  MessageSquare,
+  TicketCheck,
+} from "lucide-react";
+
+import { useAuth } from "@/components/auth/auth-context";
+import { BrandLogo } from "@/components/layout/logo";
+import { BookingStatusModal } from "@/components/booking/booking-status-modal";
+import { getBookingIdsForUser } from "@/lib/bookings";
+import { getHomestayBookingIdsForUser } from "@/lib/homestay-bookings";
+import { getTourBookingIdsForUser } from "@/lib/tour-bookings";
+import { getTransportBookingIdsForUser } from "@/lib/transport-bookings";
+import { getGuideBookingIdsForUser } from "@/lib/guide-bookings";
+import { getMediaBookingIdsForUser } from "@/lib/media-bookings";
+import { getRestaurantBookingIdsForUser } from "@/lib/restaurant-bookings";
+import { adminThreadId, getAdminThreads } from "@/lib/messages";
+import { getMessagesForBookings, type MsgMeta } from "@/lib/messages";
+import { useUnread } from "@/lib/use-unread";
+import { useWishlist } from "@/lib/wishlist";
+import { cn } from "@/lib/utils";
+
+type NavNotif = { id: string; who: string; text: string; time: string };
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+type NavChild = { label: string; href: string };
+type NavLink = {
+  label: string;
+  href: string;
+  align?: "left" | "right";
+  children?: NavChild[];
+};
+
+const navLinks: NavLink[] = [
+  { label: "Home", href: "/" },
+  {
+    label: "Services",
+    href: "/listings",
+    children: [
+      { label: "Flights", href: "/flights" },
+      { label: "Hotels & Resorts", href: "/categories/hotels" },
+      { label: "Homestays", href: "/categories/homestays" },
+      { label: "Travel Companies", href: "/categories/travel-companies" },
+      { label: "Tour Packages", href: "/categories/tours" },
+      { label: "Transport & Rentals", href: "/categories/transport" },
+      { label: "Tour Guides", href: "/categories/guides" },
+      { label: "Photographers & Videographers", href: "/categories/photographers" },
+      { label: "Drone Camera Pilot", href: "/categories/drone-pilots" },
+      { label: "Restaurants", href: "/categories/restaurants" },
+    ],
+  },
+  {
+    label: "Activities",
+    href: "/categories/camping",
+    children: [
+      { label: "Camping", href: "/categories/camping" },
+      { label: "Trekking", href: "/categories/trekking" },
+      { label: "Hiking", href: "/categories/hiking" },
+      { label: "Jeep Safari", href: "/categories/jeep-safari" },
+      { label: "Horse Riding", href: "/categories/horse-riding" },
+      { label: "Fishing", href: "/categories/fishing" },
+      { label: "Boating", href: "/categories/boating" },
+      { label: "Cultural Tours", href: "/categories/cultural-tours" },
+    ],
+  },
+  {
+    label: "Roadside Assistance",
+    href: "/categories/vehicle-recovery",
+    children: [
+      { label: "Bike Puncture Service", href: "/categories/bike-puncture" },
+      { label: "Car Puncture Service", href: "/categories/car-puncture" },
+      { label: "Battery Service", href: "/categories/battery-service" },
+      { label: "Fuel Delivery", href: "/categories/fuel-delivery" },
+      { label: "Vehicle Recovery", href: "/categories/vehicle-recovery" },
+    ],
+  },
+  {
+    label: "Events & Expo",
+    href: "/categories/festivals",
+    children: [
+      { label: "Festivals", href: "/categories/festivals" },
+      { label: "Tourism Events", href: "/categories/tourism-events" },
+      { label: "Local Expos", href: "/categories/local-expos" },
+      { label: "Adventure Events", href: "/categories/adventure-events" },
+      { label: "Cultural Events", href: "/categories/cultural-events" },
+    ],
+  },
+  { label: "About Us", href: "/about" },
+  {
+    label: "Contact Us",
+    href: "/contact",
+    align: "right",
+    children: [
+      { label: "Contact Us", href: "/contact" },
+      { label: "How It Works", href: "/how-it-works" },
+    ],
+  },
+];
+
+function isExternal(href: string) {
+  return href.startsWith("http") || href.startsWith("mailto:");
+}
+
+/** Renders an internal <Link> or an external <a> depending on the href. */
+function SmartLink({
+  href,
+  className,
+  onClick,
+  children,
+}: {
+  href: string;
+  className?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  if (isExternal(href)) {
+    return (
+      <a
+        href={href}
+        target={href.startsWith("http") ? "_blank" : undefined}
+        rel="noopener noreferrer"
+        className={className}
+        onClick={onClick}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
+
+function Logo() {
+  return (
+    <Link href="/" aria-label="SAFARIGB home" className="flex items-center">
+      <BrandLogo className="h-14 w-auto mix-blend-screen" />
+    </Link>
+  );
+}
+
+export function Navbar() {
+  const [open, setOpen] = React.useState(false);
+  const [openSections, setOpenSections] = React.useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const pathname = usePathname();
+
+  const accountHref = user
+    ? user.role === "admin"
+      ? "/admin"
+      : "/dashboard"
+    : "/signin";
+  const initial = user?.name.trim().charAt(0).toUpperCase();
+
+  const [bookingIds, setBookingIds] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    if (!user) {
+      setBookingIds([]);
+      return;
+    }
+    let active = true;
+    const loadIds = async () => {
+      const [hotelIds, homestayIds, tourIds, transportIds, guideIds, mediaIds, restaurantIds] =
+        await Promise.all([
+          getBookingIdsForUser(user.email),
+          getHomestayBookingIdsForUser(user.email),
+          getTourBookingIdsForUser(user.email),
+          getTransportBookingIdsForUser(user.email),
+          getGuideBookingIdsForUser(user.email),
+          getMediaBookingIdsForUser(user.email),
+          getRestaurantBookingIdsForUser(user.email),
+        ]);
+      // Admins watch every admin↔owner thread; everyone else watches their own.
+      const adminIds =
+        user.role === "admin"
+          ? (await getAdminThreads()).map((t) => t.threadId)
+          : [adminThreadId(user.email)];
+      if (!active) return;
+      const next = [
+        ...hotelIds,
+        ...homestayIds,
+        ...tourIds,
+        ...transportIds,
+        ...guideIds,
+        ...mediaIds,
+        ...restaurantIds,
+        ...adminIds,
+      ];
+      // Only update when the set actually changes (avoids needless re-renders).
+      setBookingIds((prev) =>
+        prev.length === next.length && prev.every((id, i) => id === next[i])
+          ? prev
+          : next
+      );
+    };
+    loadIds();
+    // Re-poll so brand-new bookings reach the owner's alert list quickly.
+    const t = setInterval(() => { if (document.visibilityState === "visible") loadIds(); }, 60000);
+    return () => {
+      active = false;
+      clearInterval(t);
+    };
+  }, [user]);
+  const { unread } = useUnread(bookingIds, user?.email ?? "");
+  const { count: wishCount } = useWishlist();
+
+  // Notifications dropdown — latest message from the other party per booking.
+  const router = useRouter();
+  const [notifOpen, setNotifOpen] = React.useState(false);
+  const [notifs, setNotifs] = React.useState<NavNotif[]>([]);
+  const [statusOpen, setStatusOpen] = React.useState(false);
+  const idsKey = bookingIds.join(",");
+  React.useEffect(() => {
+    if (!user || bookingIds.length === 0) {
+      setNotifs([]);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      const meta = await getMessagesForBookings(idsKey.split(","));
+      const byBooking = new Map<string, MsgMeta>();
+      for (const m of meta) {
+        if (m.sender_email === user.email) continue; // only others' messages
+        const cur = byBooking.get(m.booking_id);
+        if (!cur || new Date(m.created_at) > new Date(cur.created_at)) {
+          byBooking.set(m.booking_id, m);
+        }
+      }
+      const list = [...byBooking.values()]
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 8)
+        .map((m) => ({
+          id: m.booking_id,
+          who: m.sender_name ?? m.sender_email,
+          text: m.text ?? "",
+          time: m.created_at,
+        }));
+      if (active) setNotifs(list);
+    };
+    load();
+    const t = setInterval(load, 8000);
+    return () => {
+      active = false;
+      clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, idsKey]);
+
+  const openNotif = (bookingId: string) => {
+    try {
+      // Read on arrival when navigating in from another page.
+      localStorage.setItem("safarigb_open_chat", bookingId);
+      // Open instantly when the dashboard is already mounted (no reload).
+      window.dispatchEvent(
+        new CustomEvent("safarigb:open-chat", { detail: bookingId })
+      );
+    } catch {
+      /* ignore */
+    }
+    setNotifOpen(false);
+    router.push(accountHref);
+  };
+
+  // Close the mobile menu whenever the route changes.
+  React.useEffect(() => {
+    setOpen(false);
+    setOpenSections(new Set());
+  }, [pathname]);
+
+  const toggleSection = (label: string) =>
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+
+  const isActive = (link: NavLink) =>
+    link.href === "/"
+      ? pathname === "/"
+      : pathname === link.href ||
+        (link.children?.some((c) => pathname === c.href.split("#")[0]) ?? false);
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-forest-deep shadow-premium">
+      <nav className="container-px flex h-16 items-center justify-between gap-2">
+        <Logo />
+
+        {/* Desktop links */}
+        <div className="hidden items-center gap-0.5 xl:flex">
+          {navLinks.map((link) =>
+            link.children ? (
+              <div key={link.label} className="group relative">
+                <Link
+                  href={link.href}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-medium uppercase tracking-wide text-white/90 transition-colors hover:text-gold",
+                    isActive(link) && "text-gold"
+                  )}
+                >
+                  {link.label}
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
+                </Link>
+                <div
+                  className={cn(
+                    "invisible absolute top-full z-50 min-w-[240px] translate-y-2 rounded-2xl border border-border/70 bg-white/95 p-2 opacity-0 shadow-premium-lg backdrop-blur-xl transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100",
+                    link.align === "right" ? "right-0" : "left-0"
+                  )}
+                >
+                  {link.children.map((c) => (
+                    <SmartLink
+                      key={c.label}
+                      href={c.href}
+                      className="block rounded-lg px-3 py-2 text-sm font-medium text-forest transition-colors hover:bg-forest-50 hover:text-forest-600"
+                    >
+                      {c.label}
+                    </SmartLink>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-medium uppercase tracking-wide text-white/90 transition-colors hover:text-gold",
+                  isActive(link) && "text-gold"
+                )}
+              >
+                {link.label}
+              </Link>
+            )
+          )}
+        </div>
+
+        {/* Right cluster */}
+        <div className="hidden items-center gap-4 xl:flex">
+          <button className="flex items-center gap-1 text-sm font-medium text-white/90 transition-colors hover:text-gold">
+            PKR <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+          <Link
+            href="/wishlist"
+            aria-label="Wishlist"
+            className="relative text-white/90 transition-colors hover:text-gold"
+          >
+            <Heart className="h-5 w-5" />
+            {wishCount > 0 && (
+              <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-forest-900">
+                {wishCount}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={() => setStatusOpen(true)}
+            aria-label="Booking status"
+            title="Check booking status"
+            className="flex items-center text-white/90 transition-colors hover:text-gold"
+          >
+            <TicketCheck className="h-5 w-5" />
+          </button>
+          <div className="relative flex items-center">
+            {user ? (
+              <button
+                onClick={() => setNotifOpen((v) => !v)}
+                aria-label="Notifications"
+                className="relative flex items-c

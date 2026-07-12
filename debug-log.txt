@@ -1,0 +1,57 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.12.1
+2 info using node@v24.15.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:E:\safarigb\safarigb\Safarigb\.npmrc
+5 silly config load:file:C:\Users\ARIFA OVERSEAS 4\.npmrc
+6 silly config load:file:C:\Users\ARIFA OVERSEAS 4\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install
+8 verbose argv "install" "--legacy-peer-deps"
+9 verbose logfile logs-max:10 dir:C:\Users\ARIFA OVERSEAS 4\AppData\Local\npm-cache\_logs\2026-06-13T15_46_10_401Z-
+10 verbose logfile C:\Users\ARIFA OVERSEAS 4\AppData\Local\npm-cache\_logs\2026-06-13T15_46_10_401Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 silly logfile done cleaning log files
+14 silly idealTree buildDeps
+15 silly fetch manifest next@15.1.6
+16 silly packumentCache full:https://registry.npmjs.org/next cache-miss
+17 silly fetch manifest react@19.0.0
+18 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+19 http fetch GET 200 https://registry.npmjs.org/react 1154ms (cache updated)
+20 silly packumentCache full:https://registry.npmjs.org/react set size:undefined disposed:false
+21 silly fetch manifest react-dom@19.0.0
+22 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+23 silly fetch manifest framer-motion@^11.18.0
+24 silly packumentCache full:https://registry.npmjs.org/framer-motion cache-miss
+25 silly fetch manifest @radix-ui/react-slot@^1.1.1
+26 silly packumentCache full:https://registry.npmjs.org/@radix-ui%2freact-slot cache-miss
+27 http fetch GET 200 https://registry.npmjs.org/@radix-ui%2freact-slot 260ms (cache miss)
+28 silly packumentCache full:https://registry.npmjs.org/@radix-ui%2freact-slot set size:undefined disposed:false
+29 silly fetch manifest lucide-react@^0.468.0
+30 silly packumentCache full:https://registry.npmjs.org/lucide-react cache-miss
+31 http fetch GET 200 https://registry.npmjs.org/lucide-react 233ms (cache miss)
+32 silly packumentCache full:https://registry.npmjs.org/lucide-react set size:undefined disposed:false
+33 silly fetch manifest class-variance-authority@^0.7.1
+34 silly packumentCache full:https://registry.npmjs.org/class-variance-authority cache-miss
+35 http fetch GET 200 https://registry.npmjs.org/class-variance-authority 95ms (cache miss)
+36 silly packumentCache full:https://registry.npmjs.org/class-variance-authority set size:undefined disposed:false
+37 silly fetch manifest clsx@^2.1.1
+38 silly packumentCache full:https://registry.npmjs.org/clsx cache-miss
+39 http fetch GET 200 https://registry.npmjs.org/clsx 76ms (cache miss)
+40 silly packumentCache full:https://registry.npmjs.org/clsx set size:undefined disposed:false
+41 silly fetch manifest tailwind-merge@^2.6.0
+42 silly packumentCache full:https://registry.npmjs.org/tailwind-merge cache-miss
+43 silly fetch manifest tailwindcss-animate@^1.0.7
+44 silly packumentCache full:https://registry.npmjs.org/tailwindcss-animate cache-miss
+45 http fetch GET 200 https://registry.npmjs.org/tailwindcss-animate 114ms (cache miss)
+46 silly packumentCache full:https://registry.npmjs.org/tailwindcss-animate set size:undefined disposed:false
+47 silly fetch manifest typescript@^5.7.3
+48 silly packumentCache full:https://registry.npmjs.org/typescript cache-miss
+49 silly fetch manifest @types/node@^20.17.0
+50 silly packumentCache full:https://registry.npmjs.org/@types%2fnode cache-miss
+51 silly fetch manifest @types/react@^19.0.0
+52 silly packumentCache full:https://registry.npmjs.org/@types%2freact cache-miss
+53 http fetch GET 200 https://registry.npmjs.org/@types%2freact 1576ms (cache revalidated)
+54 silly packumentCache full:https://registry.npmjs.org/@types%2freact set size:2632776 disposed:false
+55 silly fetch manifest @types/react-dom@^19.0.0
+56 silly packumentCache full:https://registry.npmjs.org/@types%2freact-dom cache-miss
