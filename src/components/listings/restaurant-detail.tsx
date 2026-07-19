@@ -20,7 +20,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ListingDetailHeader } from "@/components/listings/listing-detail-header";
-import { ProfileGallery } from "@/components/listings/profile-gallery";
+import { ProfileGallery, GalleryGrid } from "@/components/listings/profile-gallery";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
 import { PaymentPanel } from "@/components/payments/payment-panel";
 import { paymentConfigFrom } from "@/lib/payments";
@@ -284,12 +284,7 @@ export function RestaurantDetail({
           {gallery.length > 0 && (
             <section>
               <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {gallery.map((src, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={src} alt="" className="h-32 w-full rounded-2xl object-cover" />
-                ))}
-              </div>
+              <GalleryGrid images={gallery} title={r.name} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3" itemClassName="h-32" />
             </section>
           )}
 

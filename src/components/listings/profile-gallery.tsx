@@ -98,6 +98,63 @@ export function ProfileGallery({ images, title }: { images: string[]; title: str
   );
 }
 
+/**
+ * Simple clickable photo grid + the same slide lightbox. Drop-in replacement
+ * for the plain "Gallery" image grids on service profiles: every photo opens
+ * full-screen with previous/next arrows, thumbnails and keyboard navigation.
+ */
+export function GalleryGrid({
+  images,
+  title,
+  className = "mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4",
+  itemClassName = "h-36",
+}: {
+  images: string[];
+  title: string;
+  className?: string;
+  itemClassName?: string;
+}) {
+  const imgs = React.useMemo(
+    () => Array.from(new Set((images || []).filter(Boolean))).map((u) => photo(u, 700)),
+    [images]
+  );
+  const [open, setOpen] = React.useState(false);
+  const [idx, setIdx] = React.useState(0);
+
+  if (imgs.length === 0) return null;
+
+  return (
+    <>
+      <div className={className}>
+        {imgs.map((src, i) => (
+          <button
+            key={src + i}
+            type="button"
+            onClick={() => {
+              setIdx(i);
+              setOpen(true);
+            }}
+            aria-label={`View photo ${i + 1} of ${title}`}
+            className={`group relative overflow-hidden rounded-2xl shadow-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2 ${itemClassName}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={`${title} photo ${i + 1}`}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </button>
+        ))}
+      </div>
+      <AnimatePresence>
+        {open && <Lightbox images={imgs} index={idx} setIndex={setIdx} onClose={() => setOpen(false)} title={title} />}
+      </AnimatePresence>
+    </>
+  );
+}
+
 function Lightbox({
   images,
   index,

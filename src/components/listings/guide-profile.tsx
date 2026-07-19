@@ -39,6 +39,7 @@ import {
   hasAcceptedTourBooking,
 } from "@/lib/tour-bookings";
 import { ReviewsSection } from "@/components/listings/reviews-section";
+import { GalleryGrid } from "@/components/listings/profile-gallery";
 import { sendBookingNotification } from "@/lib/messages";
 import {
   sendEmail,
@@ -315,12 +316,7 @@ export function GuideProfile({
           {gallery.length > 0 && (
             <section>
               <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {gallery.map((src, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={src} alt="" className="h-32 w-full rounded-2xl object-cover" />
-                ))}
-              </div>
+              <GalleryGrid images={gallery} title={guide.name} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3" itemClassName="h-32" />
             </section>
           )}
 

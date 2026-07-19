@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { ListingCard } from "@/components/home/listing-card";
+import { GalleryGrid } from "@/components/listings/profile-gallery";
 import {
   packageToListing,
   transportToListing,
@@ -134,14 +135,7 @@ export function TourCompanyProfile({
         {company.gallery && company.gallery.length > 0 && (
           <section>
             <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {company.gallery.map((src, i) => (
-                <div key={i} className="h-36 overflow-hidden rounded-2xl shadow-premium">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo(src)} alt="" className="h-full w-full object-cover transition-transform hover:scale-105" />
-                </div>
-              ))}
-            </div>
+            <GalleryGrid images={company.gallery} title={company.name} />
           </section>
         )}
 

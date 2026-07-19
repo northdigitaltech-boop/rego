@@ -21,7 +21,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ListingDetailHeader } from "@/components/listings/listing-detail-header";
-import { ProfileGallery } from "@/components/listings/profile-gallery";
+import { ProfileGallery, GalleryGrid } from "@/components/listings/profile-gallery";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
 import { PaymentPanel } from "@/components/payments/payment-panel";
 import { paymentConfigFrom } from "@/lib/payments";
@@ -541,21 +541,7 @@ export function HostelProfile({
           {/* Gallery */}
           <section className="mt-12">
             <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {gallery.map((src, i) => (
-                <div
-                  key={i}
-                  className="relative h-36 overflow-hidden rounded-2xl shadow-premium sm:h-44"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                </div>
-              ))}
-            </div>
+            <GalleryGrid images={gallery} title={hostel.title} className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" itemClassName="h-36 sm:h-44" />
           </section>
 
           {/* Reviews */}

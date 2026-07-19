@@ -34,6 +34,7 @@ import {
 import { notifyProviderOfReview } from "@/lib/reviews";
 import { trackEvent, trackViewOnce } from "@/lib/track";
 import { useAuth } from "@/components/auth/auth-context";
+import { GalleryGrid } from "@/components/listings/profile-gallery";
 import { AvailabilityDot, waLink } from "@/components/roadside/provider-list";
 import { RoadsideRequestModal } from "@/components/roadside/request-modal";
 
@@ -202,17 +203,12 @@ export function RoadsideProviderProfile({
           {(provider.gallery_images?.length ?? 0) > 0 && (
             <section>
               <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {provider.gallery_images!.map((g, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={i}
-                    src={photo(g)}
-                    alt=""
-                    className="h-32 w-full rounded-xl object-cover"
-                  />
-                ))}
-              </div>
+              <GalleryGrid
+                images={provider.gallery_images!}
+                title={provider.business_name}
+                className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3"
+                itemClassName="h-32"
+              />
             </section>
           )}
 
