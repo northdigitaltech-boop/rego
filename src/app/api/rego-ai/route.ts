@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { answerQuery, buildSystemPrompt } from "@/lib/rego-ai";
-import { classifyQuery, answerFromDatabase } from "@/lib/ai-router";
+import { classifyQuery, answerFromDatabase, answerWeather } from "@/lib/ai-router";
 
 /* ============================================================
  * Rego AI endpoint.
@@ -81,6 +81,27 @@ export async function POST(req: Request) {
     /^(hi|hey|hello|hy|salam|asalam|assalam|aoa|assalamualaikum|good (morning|evening|afternoon))\b/i.test(
       message.trim()
     ) && message.trim().length < 30;
+
+  // Live weather — answered from Open-Meteo (real-time, accurate, 0 tokens).
+  if (decision.kind === "weather") {
+    const wx = await answerWeather(decision.filters.location);
+    if (wx) {
+      return NextResponse.json({
+        ok: true,
+        reply: wx.reply,
+        bullets: [],
+        results: [],
+        viewAllHref: wx.viewAllHref,
+        feature: {
+          label: "Road Updates & Alerts",
+          href: "/roadside/updates",
+          description: "Live verified road conditions across GB before you travel.",
+        },
+        llm: false,
+      });
+    }
+    // Weather API unavailable → let the LLM (if configured) answer generally.
+  }
 
   if (isGreeting || answer.feature || (decision.kind === "search" && decision.confidence >= 0.75)) {
     if (isGreeting) {

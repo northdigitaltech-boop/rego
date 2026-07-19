@@ -40,7 +40,7 @@ export type SearchIntent =
   | "search_restaurants";
 
 export interface RouteDecision {
-  kind: "search" | "reasoning" | "other";
+  kind: "search" | "weather" | "reasoning" | "other";
   intent?: SearchIntent;
   confidence: number;
   filters: {
@@ -118,6 +118,13 @@ const INTERROGATIVES = [
 
 /** Command verbs that clearly ask for a listing search. */
 const SEARCH_VERBS = ["show", "find", "list", "search", "dikhao", "chahiye", "browse"];
+
+/** Weather words — answered from LIVE Open-Meteo data, never the LLM
+ * (a language model cannot know current conditions anyway). */
+const WEATHER_WORDS = [
+  "weather", "wether", "eather", "temperature", "mausam", "mosam", "موسم",
+  "barish", "snowfall", "snowing", "raining", "kitni thand", "how cold", "how hot",
+];
 
 /* ---------------- detection helpers ---------------- */
 
@@ -197,6 +204,12 @@ export function classifyQuery(raw: string): RouteDecision {
     verifiedOnly,
   };
 
+  // Live-data intents beat everything: current weather comes from Open-Meteo,
+  // not a language model (which cannot know real-time conditions).
+  if (includesAny(q, WEATHER_WORDS)) {
+    return { kind: "weather", intent, confidence: 0.92, filters };
+  }
+
   // Reasoning signals always win — even "recommend hotels in Hunza" needs the model.
   if (reasoning) return { kind: "reasoning", intent, confidence: 0.9, filters };
 
@@ -218,6 +231,78 @@ export function classifyQuery(raw: string): RouteDecision {
   }
 
   return { kind: "other", confidence: 0.3, filters };
+}
+
+/* ---------------- live weather (Open-Meteo, no AI) ---------------- */
+
+const WEATHER_COORDS: Record<string, { lat: number; lon: number }> = {
+  Skardu: { lat: 35.3, lon: 75.63 },
+  Gilgit: { lat: 35.92, lon: 74.31 },
+  Hunza: { lat: 36.32, lon: 74.65 },
+  Nagar: { lat: 36.26, lon: 74.72 },
+  Astore: { lat: 35.37, lon: 74.86 },
+  Ghizer: { lat: 36.17, lon: 73.77 },
+  Diamer: { lat: 35.2, lon: 73.6 },
+  Khaplu: { lat: 35.16, lon: 76.33 },
+  Shigar: { lat: 35.42, lon: 75.73 },
+  Deosai: { lat: 34.97, lon: 75.4 },
+  "Fairy Meadows": { lat: 35.38, lon: 74.58 },
+  Naltar: { lat: 36.17, lon: 74.18 },
+  Attabad: { lat: 36.35, lon: 74.87 },
+  Passu: { lat: 36.48, lon: 74.88 },
+  Karimabad: { lat: 36.33, lon: 74.66 },
+  Naran: { lat: 34.9, lon: 73.65 },
+  Chilas: { lat: 35.42, lon: 74.1 },
+};
+
+function weatherText(code: number): string {
+  if (code === 0) return "clear skies";
+  if (code <= 2) return "partly cloudy";
+  if (code === 3) return "overcast";
+  if (code === 45 || code === 48) return "foggy";
+  if (code <= 57) return "light drizzle";
+  if (code <= 67) return "rain";
+  if (code <= 77) return "snow";
+  if (code <= 82) return "rain showers";
+  if (code <= 86) return "snow showers";
+  return "thunderstorms";
+}
+
+/** Answer "what's the weather in X" from live Open-Meteo data — zero AI tokens. */
+export async function answerWeather(location: string | null): Promise<DbAnswer | null> {
+  const loc = location && WEATHER_COORDS[location] ? location : "Skardu";
+  const { lat, lon } = WEATHER_COORDS[loc];
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto`,
+      { next: { revalidate: 900 } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const cur = data?.current;
+    if (!cur) return null;
+    const temp = Math.round(Number(cur.temperature_2m));
+    const desc = weatherText(Number(cur.weather_code));
+    const wind = Math.round(Number(cur.wind_speed_10m));
+    const hi = Math.round(Number(data?.daily?.temperature_2m_max?.[0]));
+    const lo = Math.round(Number(data?.daily?.temperature_2m_min?.[0]));
+
+    const rough = Number(cur.weather_code) >= 61 || temp <= 0;
+    const verdict = rough
+      ? "Conditions look rough — travel with care, and check Road Updates & Alerts before heading out."
+      : "Looks fine for getting out and about — still worth a glance at Road Updates & Alerts before long drives.";
+
+    return {
+      reply:
+        `Right now in ${loc}: ${temp}°C with ${desc}, wind ${wind} km/h` +
+        (Number.isFinite(hi) && Number.isFinite(lo) ? ` (today ${lo}°–${hi}°C).` : ".") +
+        ` ${verdict}`,
+      results: [],
+      viewAllHref: "/roadside/updates",
+    };
+  } catch {
+    return null;
+  }
 }
 
 /* ---------------- live database search (no AI) ---------------- */
