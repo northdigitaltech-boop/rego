@@ -18,6 +18,7 @@ const CITIES = [
   { name: "Hunza", lat: 36.32, lon: 74.65 },
   { name: "Gilgit", lat: 35.92, lon: 74.31 },
   { name: "Ghizer", lat: 36.17, lon: 73.77 },
+  { name: "Astore", lat: 35.37, lon: 74.86 },
   { name: "Diamer", lat: 35.2, lon: 73.6 },
   { name: "Chilas", lat: 35.42, lon: 74.1 },
 ];
