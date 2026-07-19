@@ -80,6 +80,11 @@ export function TourCompanyProfile({
                   <ShieldCheck className="h-3.5 w-3.5" /> Verified
                 </span>
               )}
+              {company.ranking_badge && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-gold px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-forest-900 shadow-gold-glow">
+                  <Star className="h-3.5 w-3.5" /> {company.ranking_badge}
+                </span>
+              )}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <span className="flex items-center gap-1 font-semibold text-forest">
@@ -107,14 +112,6 @@ export function TourCompanyProfile({
       </div>
 
       <div className="container-px mt-8 space-y-10 pb-16">
-        {/* About */}
-        {company.description && (
-          <section>
-            <h2 className="font-display text-xl font-bold text-forest">About {company.name}</h2>
-            <p className="mt-2 leading-relaxed text-muted-foreground">{company.description}</p>
-          </section>
-        )}
-
         {/* Info chips */}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {company.office_address && <InfoChip icon={MapPin} label="Office" value={company.office_address} />}
@@ -124,6 +121,14 @@ export function TourCompanyProfile({
           )}
           {company.website && <InfoChip icon={Globe} label="Website" value={company.website} href={company.website} />}
         </section>
+
+        {/* About */}
+        {company.description && (
+          <section>
+            <h2 className="font-display text-xl font-bold text-forest">About {company.name}</h2>
+            <p className="mt-2 leading-relaxed text-muted-foreground">{company.description}</p>
+          </section>
+        )}
 
         {/* Gallery */}
         {company.gallery && company.gallery.length > 0 && (
