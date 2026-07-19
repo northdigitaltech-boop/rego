@@ -155,11 +155,24 @@ export async function POST(req: Request) {
 async function generate(userMsg: string, system: string): Promise<string | null> {
   const provider = (process.env.REGO_AI_PROVIDER || "").toLowerCase();
   if (provider === "groq") {
-    return chatCompletions(userMsg, system, {
-      url: "https://api.groq.com/openai/v1/chat/completions",
-      key: process.env.GROQ_API_KEY,
-      model: process.env.REGO_AI_MODEL || "llama-3.3-70b-versatile",
-    });
+    // Try the configured model first, then fall back through commonly available
+    // Groq models (Groq periodically decommissions older ones).
+    const models = Array.from(
+      new Set([
+        process.env.REGO_AI_MODEL || "llama-3.3-70b-versatile",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+      ])
+    );
+    for (const model of models) {
+      const out = await chatCompletions(userMsg, system, {
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        key: process.env.GROQ_API_KEY,
+        model,
+      });
+      if (out) return out;
+    }
+    return null;
   }
   if (provider === "openrouter") {
     return chatCompletions(userMsg, system, {
