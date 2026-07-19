@@ -131,6 +131,12 @@ const LOCATION_ALIASES: Record<string, string> = {
   "naran": "Naran",
 };
 
+/** Word-boundary aware match so "eat" never matches inside "weather". */
+function hasWord(q: string, term: string): boolean {
+  const esc = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z])${esc}([^a-z]|$)`, "i").test(q);
+}
+
 function detectCategory(q: string): { category: CategorySlug; label: string } | null {
   // Pick the category whose *longest* keyword matches, so specific terms win
   // (e.g. "tour guide" → guides, not "tour" → tours).
@@ -138,7 +144,7 @@ function detectCategory(q: string): { category: CategorySlug; label: string } | 
   let bestLen = 0;
   for (const c of CATEGORY_KEYWORDS) {
     for (const w of c.words) {
-      if (q.includes(w) && w.length > bestLen) {
+      if (hasWord(q, w) && w.length > bestLen) {
         best = { category: c.category, label: c.label };
         bestLen = w.length;
       }

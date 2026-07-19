@@ -101,13 +101,23 @@ const VERIFIED_WORDS = ["verified", "trusted", "authentic", "تصدیق"];
 
 /** Words that mean the user needs reasoning/planning — AI territory. */
 const REASONING_SIGNALS = [
-  "plan", "itinerary", "compare", "recommend", "suggest", "which is better",
+  "plan", "itinerary", "compare", "recommend", "recomend", "suggest", "which is better",
   "better for", "honeymoon", "route from", "best route", "how do i", "how to",
   "should i", "what should", "explain", "why", "history", "culture", "cultural",
-  "weather", "best time", "advice", "elderly", "children", "family trip",
+  "weather", "wether", "eather", "climate", "temperature", "mausam", "barish", "snowfall",
+  "best time", "advice", "elderly", "children", "family trip",
   "day trip", "days trip", "budget of", "according to", "customise", "customize",
-  "mashwara", "batao", "کیسے", "کون سا بہتر",
+  "mashwara", "batao", "کیسے", "کون سا بہتر", "موسم",
 ];
+
+/** Question words — questions need understanding, not a listing dump. */
+const INTERROGATIVES = [
+  "how", "why", "should", "would", "which", "what", "when", "is it", "are you",
+  "can i", "can we", "do you", "kya", "kaisa", "kesa", "kab",
+];
+
+/** Command verbs that clearly ask for a listing search. */
+const SEARCH_VERBS = ["show", "find", "list", "search", "dikhao", "chahiye", "browse"];
 
 /* ---------------- detection helpers ---------------- */
 
@@ -139,9 +149,20 @@ function detectMaxPrice(q: string): number | null {
   return null;
 }
 
+/**
+ * Word-boundary aware term match, so "eat" never matches inside "weather" and
+ * "tour" never matches "tourism" incorrectly hurting longer keys. Urdu-script
+ * terms use plain substring matching (no \b semantics in Arabic script).
+ */
+function hasTerm(q: string, term: string): boolean {
+  if (/[؀-ۿ]/.test(term)) return q.includes(term);
+  const esc = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z])${esc}([^a-z]|$)`, "i").test(q);
+}
+
 function includesAny(q: string, words: string[]): string | null {
   let best: string | null = null;
-  for (const w of words) if (q.includes(w) && (!best || w.length > best.length)) best = w;
+  for (const w of words) if (hasTerm(q, w) && (!best || w.length > best.length)) best = w;
   return best;
 }
 
@@ -162,7 +183,7 @@ export function classifyQuery(raw: string): RouteDecision {
   let bestLen = 0;
   for (const [name, words] of Object.entries(INTENT_KEYWORDS) as [SearchIntent, string[]][]) {
     for (const w of words) {
-      if (q.includes(w) && w.length > bestLen) {
+      if (hasTerm(q, w) && w.length > bestLen) {
         intent = name;
         bestLen = w.length;
       }
@@ -178,6 +199,14 @@ export function classifyQuery(raw: string): RouteDecision {
 
   // Reasoning signals always win — even "recommend hotels in Hunza" needs the model.
   if (reasoning) return { kind: "reasoning", intent, confidence: 0.9, filters };
+
+  // Questions ("how is…", "is it…", "are you…", "kya…") need understanding,
+  // not a listing dump — unless the user clearly issued a search command.
+  const asksQuestion = includesAny(q, INTERROGATIVES) || q.endsWith("?");
+  const givesCommand = includesAny(q, SEARCH_VERBS);
+  if (asksQuestion && !givesCommand) {
+    return { kind: "reasoning", intent, confidence: 0.85, filters };
+  }
 
   if (intent) {
     // Confidence: keyword hit is a strong base; location/price add certainty.
