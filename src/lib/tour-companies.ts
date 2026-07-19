@@ -10,6 +10,8 @@ import { updateOrQueue } from "@/lib/pending-edits";
 export interface TourCompanyRow {
   id: string;
   name: string;
+  ranking_badge?: string | null;
+  map_link?: string | null;
   owner_name: string | null;
   email: string | null;
   phone: string | null;
@@ -156,7 +158,7 @@ export interface TourGuideRow {
 
 /* Public column allowlists — exclude verification docs / owner ID. */
 const COMPANY_PUBLIC =
-  "id,name,owner_name,logo,cover_image,gallery,office_address,service_areas,destinations,description,experience_years,languages,phone,whatsapp,emergency_contact,opening_hours,social_links,website,terms,cancellation_policy,rating,reviews,location,status,verified,featured,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,name,owner_name,logo,cover_image,gallery,office_address,service_areas,destinations,description,experience_years,languages,phone,whatsapp,emergency_contact,opening_hours,social_links,website,terms,cancellation_policy,rating,reviews,location,status,verified,featured,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 /* ============================================================
  * Listing mappers (for customer category cards)

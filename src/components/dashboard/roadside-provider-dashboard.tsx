@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import {
   LayoutDashboard,
   UserRound,
@@ -77,6 +78,7 @@ export function RoadsideProviderDashboard({
   onSignOut: () => void;
 }) {
   const [tab, setTab] = React.useState<Tab>("profile");
+  const drill = useDashboardDrill();
   const [provider, setProvider] = React.useState<RoadsideProviderRow | null>(null);
   const [services, setServices] = React.useState<RoadsideServiceRow[]>([]);
   const [requests, setRequests] = React.useState<RoadsideRequestRow[]>([]);
@@ -147,7 +149,8 @@ export function RoadsideProviderDashboard({
         </div>
       )}
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         {/* Sidebar */}
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">

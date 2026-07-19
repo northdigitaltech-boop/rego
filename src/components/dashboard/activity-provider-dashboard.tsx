@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import { Mountain, BarChart3, UserRound, LogOut } from "lucide-react";
 
 import { AccountSecurity } from "@/components/account/account-security";
@@ -26,6 +27,7 @@ export function ActivityProviderDashboard({
   onSignOut: () => void;
 }) {
   const [tab, setTab] = React.useState<Tab>("activities");
+  const drill = useDashboardDrill();
 
   return (
     <div className="container-px py-10">
@@ -36,7 +38,8 @@ export function ActivityProviderDashboard({
         </p>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
             <div className="flex items-center gap-3 border-b border-border p-3">

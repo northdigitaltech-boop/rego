@@ -100,7 +100,7 @@ export async function getHostels(): Promise<Listing[]> {
     console.error("getHostels error:", error.message);
     return [];
   }
-  return (data as HostelRow[]).map(hostelToListing);
+  return (data as unknown as HostelRow[]).map(hostelToListing);
 }
 
 export async function getHostelById(id: string): Promise<Listing | null> {
@@ -111,7 +111,7 @@ export async function getHostelById(id: string): Promise<Listing | null> {
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return null;
-  return hostelToListing(data as HostelRow);
+  return hostelToListing(data as unknown as HostelRow);
 }
 
 /** Full public row (no verification docs) for the customer detail page. */
@@ -125,7 +125,7 @@ export async function getHostelRowById(
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return null;
-  return data as HostelRow;
+  return data as unknown as HostelRow;
 }
 
 /* ---------------- Owner / admin reads ---------------- */

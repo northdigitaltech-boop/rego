@@ -89,7 +89,7 @@ function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
   const reduce = useReducedMotion();
   const { provider: p, portfolio } = creator;
   const preview = portfolio.slice(0, 3);
-  const avatar = photo(p.logo || p.cover_image || "");
+  const avatar = photo(p.logo || p.cover_image || "", 200);
 
   return (
     <MotionLink
@@ -107,7 +107,7 @@ function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={item.id}
-              src={photo(item.url || (item.gallery && item.gallery[0]) || "")}
+              src={photo(item.url || (item.gallery && item.gallery[0]) || "", 500)}
               alt=""
               loading="lazy"
               decoding="async"
@@ -120,7 +120,7 @@ function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
           ))
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo(p.cover_image || "")} alt="" loading="lazy" decoding="async" className="col-span-3 h-full w-full object-cover" />
+          <img src={photo(p.cover_image || "", 700)} alt="" loading="lazy" decoding="async" className="col-span-3 h-full w-full object-cover" />
         )}
         {p.featured && (
           <span className="absolute right-2 top-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase text-forest-900 shadow">

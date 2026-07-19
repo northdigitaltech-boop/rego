@@ -6,6 +6,7 @@ import { Star, Heart } from "lucide-react";
 
 import { type Listing } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { cn, formatPrice, photo } from "@/lib/utils";
 
 export function ListingCard({
@@ -41,7 +42,7 @@ export function ListingCard({
       <div className="relative h-44 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photo(listing.image)}
+          src={photo(listing.image, 500)}
           alt={`${listing.title}${listing.location ? ` in ${listing.location}` : ""}`}
           loading="lazy"
           decoding="async"
@@ -71,7 +72,8 @@ export function ListingCard({
 
       <div className="flex flex-1 flex-col p-4">
         <h3 className="font-display text-base font-semibold leading-snug text-forest">
-          {listing.title}
+          {listing.title}{" "}
+          <VerifiedBadge className="h-4 w-4" />
         </h3>
 
         {listing.provider && (

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import {
   LayoutDashboard,
   UserRound,
@@ -127,6 +128,7 @@ export function GuideDashboard({
   onSignOut: () => void;
 }) {
   const [tab, setTab] = React.useState<Tab>("profile");
+  const drill = useDashboardDrill();
   const [guide, setGuide] = React.useState<TourGuideRow | null>(null);
   const [services, setServices] = React.useState<GuideServiceRow[]>([]);
   const [bookings, setBookings] = React.useState<GuideBookingRow[]>([]);
@@ -283,7 +285,8 @@ export function GuideDashboard({
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
             <div className="flex items-center gap-3 border-b border-border p-3">

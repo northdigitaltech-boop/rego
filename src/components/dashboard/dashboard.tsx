@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,7 +17,6 @@ import {
   LifeBuoy,
 } from "lucide-react";
 
-import { getCategory } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/auth-context";
 import { PartnerDashboard } from "@/components/dashboard/partner-dashboard";
@@ -66,6 +66,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 
 export function Dashboard() {
   const [tab, setTab] = React.useState<Tab>("overview");
+  const drill = useDashboardDrill();
   const [myBookings, setMyBookings] = React.useState<DbBooking[]>([]);
   const [chatBooking, setChatBooking] = React.useState<DbBooking | null>(null);
   const { user, ready, logout } = useAuth();
@@ -286,7 +287,8 @@ export function Dashboard() {
         Manage your bookings, wishlist and profile.
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         {/* Sidebar */}
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
@@ -309,9 +311,7 @@ export function Dashboard() {
                   {user.email}
                 </p>
                 <span className="mt-1 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold text-gold-700">
-                  {user.role === "partner"
-                    ? getCategory(user.businessCategory ?? "")?.name ?? "Partner"
-                    : "Traveler"}
+                  {user.role === "admin" ? "Admin" : "Traveler"}
                 </span>
               </div>
             </div>

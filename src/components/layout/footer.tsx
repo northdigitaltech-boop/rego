@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { BrandLogo } from "@/components/layout/logo";
+import { legalPolicies } from "@/lib/legal";
 
 const quickLinks = [
   { label: "Services", href: "/listings" },
@@ -153,7 +154,26 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-6 text-center text-xs text-white/50">
+        {/* Legal */}
+        <div className="mt-12 border-t border-white/10 pt-6">
+          <h4 className="mb-3 font-display text-sm font-semibold text-white">
+            Legal
+          </h4>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            {legalPolicies.map((p) => (
+              <li key={p.slug}>
+                <Link
+                  href={`/legal/${p.slug}`}
+                  className="text-white/65 transition-colors hover:text-gold"
+                >
+                  {p.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/50">
           © {new Date().getFullYear()} Rego. All rights reserved.
         </div>
       </div>

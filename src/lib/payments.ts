@@ -63,6 +63,7 @@ export function paymentStatusMeta(id?: string | null) {
 export type PayTable =
   | "bookings"
   | "homestay_bookings"
+  | "hostel_bookings"
   | "tour_bookings"
   | "transport_bookings"
   | "guide_bookings"
@@ -306,7 +307,7 @@ export async function loadPaymentConfig(
     .eq("owner_email", ownerEmail)
     .limit(1)
     .maybeSingle();
-  return data ? paymentConfigFrom(data as Record<string, unknown>) : null;
+  return data ? paymentConfigFrom(data as unknown as Record<string, unknown>) : null;
 }
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -186,6 +187,7 @@ export function HomestayProviderDashboard({
   onSignOut: () => void;
 }) {
   const [tab, setTab] = React.useState<Tab>("overview");
+  const drill = useDashboardDrill();
   const [homestays, setHomestays] = React.useState<HomestayRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -509,7 +511,8 @@ export function HomestayProviderDashboard({
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         {/* Sidebar */}
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">

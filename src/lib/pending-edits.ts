@@ -53,7 +53,7 @@ export async function updateOrQueue(
   id: string,
   payload: Record<string, unknown>
 ) {
-  if (!isSupabaseConfigured) return { error: null, queued: false };
+  if (!isSupabaseConfigured) return { data: null, error: null, queued: false };
   const { data: row } = await supabase
     .from(table)
     .select("status")

@@ -121,7 +121,7 @@ export interface RentalVehicleRow {
 
 /* Public column allowlists — exclude verification docs / owner ID. */
 const PROVIDER_PUBLIC =
-  "id,name,owner_name,phone,whatsapp,business_type,logo,cover_image,address,service_areas,description,opening_hours,emergency_contact,location,rating,reviews,status,verified,featured,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,name,owner_name,phone,whatsapp,business_type,logo,cover_image,address,service_areas,description,opening_hours,emergency_contact,location,rating,reviews,status,verified,featured,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 /* ============================================================
  * Listing mappers (for customer cards). listingType tags the

@@ -4,6 +4,7 @@ import * as React from "react";
 import { Star, MapPin, ShieldCheck, Award, Share2, Heart, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 
 /**
  * Premium detail-page header: large name, address, rating/reviews, verified +
@@ -63,7 +64,8 @@ export function ListingDetailHeader({
         </div>
 
         <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-forest sm:text-4xl">
-          {title}
+          {title}{" "}
+          <VerifiedBadge className="mb-1 inline h-6 w-6 align-middle sm:h-7 sm:w-7" />
         </h1>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">

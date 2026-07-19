@@ -49,7 +49,7 @@ export function EventsGrid({ items }: { items: EventRow[] }) {
               <div className="relative h-40 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={photo(e.image || "https://picsum.photos/seed/event/900/600")}
+                  src={photo(e.image || "https://picsum.photos/seed/event/900/600", 500)}
                   alt={e.title}
                   loading="lazy"
                   decoding="async"

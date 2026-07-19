@@ -49,7 +49,7 @@ export async function getHotels(): Promise<Listing[]> {
     console.error("getHotels error:", error.message);
     return [];
   }
-  return (data as HotelRow[]).map(rowToListing);
+  return (data as unknown as HotelRow[]).map(rowToListing);
 }
 
 /** Hotels awaiting admin review. */
@@ -69,7 +69,7 @@ export async function getPendingHotels(): Promise<HotelRow[]> {
 
 export async function setHotelStatus(
   id: string,
-  status: "approved" | "rejected" | "pending"
+  status: string
 ) {
   return supabase.from("hotels").update({ status }).eq("id", id);
 }
@@ -107,7 +107,7 @@ export async function getHotelById(id: string): Promise<Listing | null> {
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return null;
-  return rowToListing(data as HotelRow);
+  return rowToListing(data as unknown as HotelRow);
 }
 
 /* ---------------- Provider write operations (Phase 2) ---------------- */
@@ -145,7 +145,7 @@ export async function getHotelRowById(id: string): Promise<HotelRow | null> {
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return null;
-  return data as HotelRow;
+  return data as unknown as HotelRow;
 }
 
 /* ---------------- Rooms ---------------- */

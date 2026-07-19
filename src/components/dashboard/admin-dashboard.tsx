@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -83,6 +84,8 @@ import { AdminRoadUpdates } from "@/components/dashboard/admin-road-updates";
 import { AdminSafarnama } from "@/components/dashboard/admin-safarnama";
 import { AdminRegoMap } from "@/components/dashboard/admin-rego-map";
 import { AdminAbout } from "@/components/dashboard/admin-about";
+import { AdminListingsManager } from "@/components/dashboard/admin-listings-manager";
+import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminSubscription } from "@/components/dashboard/admin-subscription";
 import { AdminExpeditions } from "@/components/dashboard/admin-expeditions";
 import { AdminActivities } from "@/components/dashboard/admin-activities";
@@ -418,6 +421,7 @@ type Tab =
   | "approvals"
   | "edits"
   | "verification"
+  | "manage"
   | "roadside"
   | "road-updates"
   | "events"
@@ -429,6 +433,7 @@ type Tab =
   | "messages"
   | "destinations"
   | "about"
+  | "legal"
   | "subscription"
   | "expeditions"
   | "users";
@@ -442,6 +447,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "approvals", label: "Approvals", icon: ShieldCheck },
   { id: "edits", label: "Edit Requests", icon: Pencil },
   { id: "verification", label: "Verification", icon: BadgeCheck },
+  { id: "manage", label: "Manage & Delete", icon: Trash2 },
   { id: "roadside", label: "Roadside Assistance", icon: LifeBuoy },
   { id: "road-updates", label: "Road Updates & Alerts", icon: TriangleAlert },
   { id: "events", label: "Events & Expo", icon: CalendarDays },
@@ -453,6 +459,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "destinations", label: "Destinations", icon: MapPin },
   { id: "about", label: "About Page", icon: Info },
+  { id: "legal", label: "Legal & Policies", icon: FileText },
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
   { id: "users", label: "Users", icon: Users },
@@ -468,6 +475,7 @@ const sampleUsers = [
 
 export function AdminDashboard() {
   const [tab, setTab] = React.useState<Tab>("overview");
+  const drill = useDashboardDrill();
   const [pendingHotels, setPendingHotels] = React.useState<HotelRow[]>([]);
   const [added, setAdded] = React.useState<PartnerListing[]>([]);
   const [destRows, setDestRows] = React.useState<DestinationRow[]>([]);
@@ -738,7 +746,9 @@ export function AdminDashboard() {
       ? "hotels"
       : isHomestayId(id)
         ? "homestays"
-        : isProviderId(id)
+        : isHostelId(id)
+          ? "hostels"
+          : isProviderId(id)
           ? "transport_providers"
           : isGuideId(id)
             ? "tour_guides"
@@ -779,7 +789,8 @@ export function AdminDashboard() {
         <span className="text-xs italic">(Demo view)</span>
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         {/* Sidebar */}
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
@@ -919,7 +930,9 @@ export function AdminDashboard() {
           {tab === "destinations" && (
             <DestinationsAdmin rows={destRows} onChange={refresh} />
           )}
+          {tab === "manage" && <AdminListingsManager />}
           {tab === "about" && <AdminAbout />}
+          {tab === "legal" && <AdminLegal />}
           {tab === "subscription" && <AdminSubscription />}
           {tab === "expeditions" && <AdminExpeditions />}
           {tab === "users" && <UsersTable />}

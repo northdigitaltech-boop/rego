@@ -263,3 +263,22 @@ summary:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Mobile dashboard drill-down (sidebar menu <-> section content) ---- */
+/* The "Menu" back button is hidden everywhere except mobile content view. */
+.rego-dash-back {
+  display: none;
+}
+@media (max-width: 1023px) {
+  /* Content view: hide the sidebar menu, show the back button. */
+  .rego-dash[data-view="content"] > aside {
+    display: none;
+  }
+  .rego-dash[data-view="content"] > .rego-dash-back {
+    display: inline-flex;
+  }
+  /* Menu view: hide everything after the sidebar (the section content). */
+  .rego-dash[data-view="menu"] > aside ~ * {
+    display: none;
+  }
+}

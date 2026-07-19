@@ -14,6 +14,7 @@ import { getApprovedMediaProviders } from "@/lib/media";
 import { getApprovedCoworking } from "@/lib/coworking";
 import { getApprovedRoadsideProviders } from "@/lib/roadside";
 import { getApprovedStories } from "@/lib/safarnama";
+import { legalPolicies } from "@/lib/legal";
 import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getExpeditionPros } from "@/lib/expeditions";
 
 // Re-generate the sitemap at most hourly.
@@ -45,6 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
   for (const c of allCategories) add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
   for (const d of destinations) add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7 });
+
+  // --- Legal & policy pages ---
+  add("/legal", { changeFrequency: "monthly", priority: 0.4 });
+  for (const p of legalPolicies) add(`/legal/${p.slug}`, { changeFrequency: "monthly", priority: 0.3 });
 
   // --- Dynamic, APPROVED/PUBLISHED listings (only 200-status public URLs) ---
   const [

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -139,6 +140,7 @@ export function TourCompanyDashboard({
   onSignOut: () => void;
 }) {
   const [tab, setTab] = React.useState<Tab>("profile");
+  const drill = useDashboardDrill();
   const [company, setCompany] = React.useState<TourCompanyRow | null>(null);
   const [packages, setPackages] = React.useState<TourPackageRow[]>([]);
   const [transports, setTransports] = React.useState<TransportRow[]>([]);
@@ -309,7 +311,8 @@ export function TourCompanyDashboard({
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
+        <DashboardBack onClick={drill.back} />
         <aside>
           <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
             <div className="flex items-center gap-3 border-b border-border p-3">

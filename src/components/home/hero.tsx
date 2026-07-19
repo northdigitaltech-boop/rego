@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -166,8 +167,7 @@ export function Hero() {
       {/* Background — slow Ken Burns motion */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <motion.div
-          className="h-full w-full bg-cover bg-center will-change-transform"
-          style={{ backgroundImage: "url('/home-hero.jpg')" }}
+          className="relative h-full w-full will-change-transform"
           initial={{ scale: reduce ? 1 : 1.05 }}
           animate={reduce ? { scale: 1 } : { scale: 1.18, x: ["0%", "-2%", "0%"], y: ["0%", "-1.5%", "0%"] }}
           transition={
@@ -175,7 +175,17 @@ export function Hero() {
               ? { duration: 0 }
               : { duration: 24, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }
           }
-        />
+        >
+          <Image
+            src="/home-hero.jpg"
+            alt=""
+            fill
+            priority
+            quality={62}
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+        </motion.div>
         {/* Soft wash on the left only — keeps the headline readable while the
             photo stays clean and bright. */}
         <div className="absolute inset-0 bg-gradient-to-r from-forest-900/55 via-forest-900/15 to-transparent" />

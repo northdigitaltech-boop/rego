@@ -51,7 +51,7 @@ export function Destinations() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={photo(d.image)}
+                src={photo(d.image, 500)}
                 alt={`${d.name}, Gilgit-Baltistan`}
                 loading="lazy"
                 decoding="async"

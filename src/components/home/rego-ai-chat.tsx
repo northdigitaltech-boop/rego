@@ -308,7 +308,7 @@ function ResultCard({ listing: l }: { listing: Listing }) {
       className="group flex gap-3 rounded-2xl border border-border/70 bg-card p-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-premium"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={photo(l.image)} alt={l.title} className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+      <img src={photo(l.image, 160)} alt={l.title} className="h-20 w-20 shrink-0 rounded-xl object-cover" />
       <div className="min-w-0 flex-1">
         <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-600">
           {l.categoryLabel}

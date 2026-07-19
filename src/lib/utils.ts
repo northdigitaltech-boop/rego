@@ -40,8 +40,8 @@ export function extractListingId(param: string): string {
  * (stable per seed). Real images (Cloudinary, Unsplash, pravatar, etc.) and
  * any other host are returned unchanged.
  */
-export function photo(url?: string | null) {
-  if (!url) return "https://picsum.photos/seed/safarigb/900/600";
+export function photo(url?: string | null, width = 1080) {
+  if (!url) return `https://picsum.photos/seed/safarigb/${width}/${Math.round(width * 0.66)}`;
   if (url.includes("loremflickr.com")) {
     const m = url.match(
       /loremflickr\.com\/(\d+)\/(\d+)\/([^?]*)(?:\?lock=(\d+))?/
@@ -54,6 +54,28 @@ export function photo(url?: string | null) {
           .replace(/^-+|-+$/g, "") + (lock || "");
       return `https://picsum.photos/seed/${seed}/${w}/${h}`;
     }
+  }
+  return optimizeImg(url, width);
+}
+
+/**
+ * Cap remote images to a sensible delivery size with modern formats. Unsplash
+ * and Cloudinary both support on-the-fly resizing, so this dramatically cuts
+ * payloads (full-res originals can be several MB) without any visible change.
+ * Pass a smaller `width` for thumbnails/cards so mobile doesn't download a
+ * full-width image for a small tile.
+ */
+function optimizeImg(url: string, width: number): string {
+  // Unsplash — append resize params if the caller hasn't sized it already.
+  if (url.includes("images.unsplash.com") || url.includes("plus.unsplash.com")) {
+    if (/[?&]w=/.test(url)) return url;
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}w=${width}&q=70&auto=format&fit=crop`;
+  }
+  // Cloudinary — inject an f_auto,q_auto,w_<width> transformation once.
+  if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
+    if (/\/upload\/[^/]*(c_|w_|q_|f_)/.test(url)) return url;
+    return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`);
   }
   return url;
 }

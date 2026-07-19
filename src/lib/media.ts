@@ -97,7 +97,7 @@ export function portfolioCategoriesFor(type: string): string[] {
 }
 
 const PROVIDER_PUBLIC =
-  "id,company_id,company_name,name,logo,cover_image,phone,whatsapp,city,location,areas,service_type,experience_years,languages,bio,equipment,camera_models,drone_available,editing_included,delivery_time,starting_price,social_links,portfolio_link,seasonal_availability,rating,reviews,status,verified,featured,portfolio_views,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,company_id,company_name,name,logo,cover_image,phone,whatsapp,city,location,areas,service_type,experience_years,languages,bio,equipment,camera_models,drone_available,editing_included,delivery_time,starting_price,social_links,portfolio_link,seasonal_availability,rating,reviews,status,verified,featured,ranking_badge,portfolio_views,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 export const SERVICE_TYPES = [
   "Photographer",

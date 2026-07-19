@@ -100,7 +100,7 @@ export async function getHomestays(): Promise<Listing[]> {
     console.error("getHomestays error:", error.message);
     return [];
   }
-  return (data as HomestayRow[]).map(homestayToListing);
+  return (data as unknown as HomestayRow[]).map(homestayToListing);
 }
 
 export async function getHomestayById(id: string): Promise<Listing | null> {
@@ -111,7 +111,7 @@ export async function getHomestayById(id: string): Promise<Listing | null> {
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return null;
-  return homestayToListing(data as HomestayRow);
+  return homestayToListing(data as unknown as HomestayRow);
 }
 
 /** Full public row (no verification docs) for the customer detail page. */
@@ -125,7 +125,7 @@ export async function getHomestayRowById(
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return null;
-  return data as HomestayRow;
+  return data as unknown as HomestayRow;
 }
 
 /* ---------------- Owner / admin reads ---------------- */
@@ -176,7 +176,7 @@ export async function getAllHomestays(): Promise<HomestayRow[]> {
 
 export async function setHomestayStatus(
   id: string,
-  status: "approved" | "rejected" | "pending"
+  status: string
 ) {
   return supabase.from("homestays").update({ status }).eq("id", id);
 }
