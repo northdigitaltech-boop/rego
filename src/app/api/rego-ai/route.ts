@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { answerQuery, buildSystemPrompt } from "@/lib/rego-ai";
+import { classifyQuery, answerFromDatabase } from "@/lib/ai-router";
 
 /* ============================================================
  * Rego AI endpoint.
@@ -69,20 +70,73 @@ export async function POST(req: Request) {
     });
   }
 
-  // 2) Generation — enhance the reply with an LLM if configured.
+  // 2) SMART ROUTER — database first, AI only when required.
+  // Simple listing searches (hotels/transport/guides/… + location/price/sort)
+  // are answered straight from the live catalogue with a template reply and
+  // spend ZERO AI tokens. Feature intents & greetings are also deterministic.
+  const decision = classifyQuery(message);
+
+  // Greetings get the friendly canned welcome — no tokens.
+  const isGreeting =
+    /^(hi|hey|hello|hy|salam|asalam|assalam|aoa|assalamualaikum|good (morning|evening|afternoon))\b/i.test(
+      message.trim()
+    ) && message.trim().length < 30;
+
+  if (isGreeting || answer.feature || (decision.kind === "search" && decision.confidence >= 0.75)) {
+    if (isGreeting) {
+      return NextResponse.json({
+        ok: true,
+        reply: answer.reply,
+        bullets: [],
+        results: [],
+        feature: null,
+        llm: false,
+      });
+    }
+    if (!answer.feature) {
+      const db = await answerFromDatabase(decision);
+      if (db) {
+        return NextResponse.json({
+          ok: true,
+          reply: db.reply,
+          bullets: [],
+          results: db.results,
+          viewAllHref: db.viewAllHref,
+          feature: null,
+          llm: false,
+        });
+      }
+    }
+    // Feature intents (road updates, roadside, solo, events…) or a DB miss:
+    // the deterministic catalogue answer already covers it — still no LLM.
+    return NextResponse.json({
+      ok: true,
+      reply: answer.reply,
+      bullets: answer.bullets,
+      results: answer.results,
+      viewAllHref: answer.viewAllHref,
+      feature: answer.feature ?? null,
+      llm: false,
+    });
+  }
+
+  // 3) Generation — only reasoning/planning/comparison queries reach the LLM,
+  // grounded with a compact structured context (never raw tables).
   let reply = answer.reply;
   let bullets = answer.bullets;
   let llm = false;
-  try {
-    const generated = await generate(message, buildSystemPrompt(answer));
-    if (generated) {
-      reply = generated;
-      bullets = []; // the prose covers the itinerary; avoid duplicate lists
-      llm = true;
+  if (decision.kind === "reasoning" || decision.kind === "other") {
+    try {
+      const generated = await generate(message, buildSystemPrompt(answer));
+      if (generated) {
+        reply = generated;
+        bullets = []; // the prose covers the itinerary; avoid duplicate lists
+        llm = true;
+      }
+    } catch (e) {
+      console.error("[rego-ai] generation failed:", e);
+      // fall back to rule-based reply silently
     }
-  } catch (e) {
-    console.error("[rego-ai] generation failed:", e);
-    // fall back to rule-based reply silently
   }
 
   return NextResponse.json({
