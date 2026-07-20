@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Reveal } from "@/components/ui/reveal";
+import { getPlatformStats } from "@/lib/platform-stats";
 import {
   ChevronRight,
   Mountain,
@@ -150,21 +151,25 @@ export function EventsSection() {
   );
 }
 
-const STATS = [
-  { value: "500+", label: "Hotels" },
-  { value: "100+", label: "Tour Companies" },
-  { value: "50+", label: "Guides" },
-  { value: "1000+", label: "Bookings" },
-];
+export async function PlatformStats() {
+  // Real, live counts from the database — auto-updates as providers register
+  // and bookings happen. Stats at 0 are hidden; if everything is 0 the band
+  // is hidden entirely (never show fake or empty numbers).
+  const stats = (await getPlatformStats()).filter((s) => s.value > 0);
+  if (stats.length === 0) return null;
 
-export function PlatformStats() {
+  const cols =
+    stats.length >= 4 ? "lg:grid-cols-4" : stats.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
+
   return (
     <section className="bg-gradient-forest py-12 text-white sm:py-16">
       <div className="container-px">
-        <Reveal className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-          {STATS.map((s) => (
+        <Reveal className={`grid grid-cols-2 gap-6 ${cols}`}>
+          {stats.map((s) => (
             <div key={s.label} className="text-center">
-              <p className="font-display text-3xl font-bold text-gold sm:text-4xl">{s.value}</p>
+              <p className="font-display text-3xl font-bold text-gold sm:text-4xl">
+                {s.value.toLocaleString()}
+              </p>
               <p className="mt-1 text-sm font-medium text-white/80">{s.label}</p>
             </div>
           ))}

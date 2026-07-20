@@ -57,7 +57,7 @@ export function FeaturedGrid({
         {carousel ? (
           <HotelCarousel items={shown} hidePrice={hidePrice} label={title} />
         ) : (
-          <div className={gridForVariant(variant)}>
+          <div className={gridForVariant(variant, shown.length)}>
             {shown.map((l, i) => (
               <ServiceCard key={l.id} listing={l} index={i} hidePrice={hidePrice} variant={variant} />
             ))}

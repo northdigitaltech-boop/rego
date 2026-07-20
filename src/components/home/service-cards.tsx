@@ -93,24 +93,27 @@ function BrandCard({ listing: l, index }: { listing: Listing; index: number }) {
 /* ---------- Transport — compact spec row ---------- */
 function SpecCard({ listing: l, index, hidePrice }: { listing: Listing; index: number; hidePrice?: boolean }) {
   return (
-    <Wrap index={index} className="flex items-stretch gap-4 rounded-3xl border border-border/70 bg-card p-3 shadow-premium transition-shadow hover:shadow-premium-lg">
+    <Wrap index={index} className="flex items-stretch gap-4 rounded-3xl border border-border/70 bg-card p-3 shadow-premium transition-shadow hover:shadow-premium-lg sm:gap-5 sm:p-4">
       <Link href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
-      <span className="h-28 w-32 shrink-0 overflow-hidden rounded-2xl sm:w-36">
+      <span className="h-32 w-36 shrink-0 overflow-hidden rounded-2xl sm:h-40 sm:w-56">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo(l.image, 400)} alt={l.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        <img src={photo(l.image, 500)} alt={l.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col py-1">
         <span className="inline-flex w-fit items-center gap-1 rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-600">
           <CarFront className="h-3 w-3" /> {l.categoryLabel}
         </span>
-        <h3 className="mt-1 truncate font-display text-base font-semibold text-forest">
+        <h3 className="mt-1.5 truncate font-display text-lg font-semibold text-forest">
           {l.title} <VerifiedBadge className="h-4 w-4" />
         </h3>
-        <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3 text-forest-600" /> {l.location}</p>
-        <div className="mt-auto flex items-end justify-between gap-2 pt-2">
-          <Rating rating={l.rating} reviews={l.reviews} />
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 text-forest-600" /> {l.location}</p>
+        <div className="mt-1.5"><Rating rating={l.rating} reviews={l.reviews} /></div>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+          <span className="rounded-lg bg-forest-800 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors group-hover:bg-forest-700">
+            View details
+          </span>
           {!hidePrice && l.price > 0 && (
-            <span className="font-display text-base font-bold text-forest">
+            <span className="font-display text-lg font-bold text-forest">
               {formatPrice(l.price)} <span className="text-xs font-medium text-muted-foreground">/ {l.unit}</span>
             </span>
           )}
@@ -213,9 +216,15 @@ export function ServiceCard({
   return <ListingCard listing={listing} index={index} hidePrice={hidePrice} />;
 }
 
-/** Grid column classes tuned per card form. */
-export function gridForVariant(v: ServiceCardVariant): string {
-  if (v === "spec") return "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5";
-  if (v === "journey") return "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5";
+/** Grid column classes tuned per card form (and how many items exist, so a
+ *  single listing fills the row instead of leaving half the section empty). */
+export function gridForVariant(v: ServiceCardVariant, count = 4): string {
+  if (v === "spec" || v === "journey") {
+    return count <= 1
+      ? "grid grid-cols-1 gap-3"
+      : "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5";
+  }
+  if (count === 1) return "grid grid-cols-1 gap-3 sm:max-w-sm";
+  if (count === 2) return "grid grid-cols-2 gap-3 sm:gap-5 lg:max-w-3xl";
   return "grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4";
 }
