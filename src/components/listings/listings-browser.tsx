@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { SlidersHorizontal, X, Search } from "lucide-react";
 
-import { ListingCard } from "@/components/home/listing-card";
+import { ServiceCard } from "@/components/home/service-cards";
 import { Button } from "@/components/ui/button";
 import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar";
 import {
@@ -292,7 +292,7 @@ export function ListingsBrowser({
                 className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
               >
                 {results.map((listing, i) => (
-                  <ListingCard key={listing.id} listing={listing} index={i} />
+                  <ServiceCard key={listing.id} listing={listing} index={i} />
                 ))}
               </motion.div>
             ) : (

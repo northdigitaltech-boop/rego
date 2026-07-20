@@ -98,6 +98,7 @@ export default async function Home() {
           viewAllHref="/categories/tours"
           viewAllLabel="View All Packages"
           alt
+          variant="journey"
         />
 
         {/* Reliable Transportation Services */}
@@ -107,6 +108,7 @@ export default async function Home() {
           items={transport}
           viewAllHref="/categories/transport"
           viewAllLabel="View All Transport"
+          variant="spec"
         />
 
         {/* Best Travel Companies */}
@@ -118,6 +120,7 @@ export default async function Home() {
           viewAllLabel="View All Companies"
           hidePrice
           alt
+          variant="brand"
         />
 
         {/* Capture Every Adventure */}
@@ -140,6 +143,7 @@ export default async function Home() {
           viewAllHref="/categories/guides"
           viewAllLabel="View All Guides"
           alt
+          variant="person"
         />
 
         {/* Restaurants & Local Food */}
@@ -149,6 +153,7 @@ export default async function Home() {
           items={restaurants}
           viewAllHref="/categories/restaurants"
           viewAllLabel="View All Restaurants"
+          variant="food"
         />
 
         {/* Featured drone & media creators */}

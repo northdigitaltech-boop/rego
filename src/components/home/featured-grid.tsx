@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { ListingCard } from "@/components/home/listing-card";
 import { HotelCarousel } from "@/components/home/hotel-carousel";
+import { ServiceCard, gridForVariant, type ServiceCardVariant } from "@/components/home/service-cards";
 import { Reveal } from "@/components/ui/reveal";
 import { type Listing } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export function FeaturedGrid({
   hidePrice = false,
   carousel = false,
   alt = false,
+  variant = "default",
 }: {
   title: string;
   subtitle?: string;
@@ -30,11 +31,12 @@ export function FeaturedGrid({
   carousel?: boolean;
   /** Soft off-white background for alternating section rhythm. */
   alt?: boolean;
+  /** Per-service card style (person / brand / spec / journey / food). */
+  variant?: ServiceCardVariant;
 }) {
   if (!items || items.length === 0) return null;
   // Grid sections show at most 4 cards; the carousel slides through more.
   const shown = carousel ? items.slice(0, 12) : items.slice(0, 4);
-  const cols = "lg:grid-cols-4";
 
   return (
     <section className={cn("py-12 sm:py-16", alt ? "bg-muted/30" : "bg-background")}>
@@ -55,9 +57,9 @@ export function FeaturedGrid({
         {carousel ? (
           <HotelCarousel items={shown} hidePrice={hidePrice} label={title} />
         ) : (
-          <div className={`grid grid-cols-2 gap-3 sm:gap-5 ${cols}`}>
+          <div className={gridForVariant(variant)}>
             {shown.map((l, i) => (
-              <ListingCard key={l.id} listing={l} index={i} hidePrice={hidePrice} />
+              <ServiceCard key={l.id} listing={l} index={i} hidePrice={hidePrice} variant={variant} />
             ))}
           </div>
         )}
