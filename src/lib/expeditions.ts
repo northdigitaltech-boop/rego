@@ -305,3 +305,108 @@ export async function getExpeditionProfileType(email: string): Promise<"company"
   if (await getProByOwner(email)) return "individual";
   return null;
 }
+
+/* ================================================================== */
+/* Phase 3 — Team members + Packages (availability & pricing)          */
+/* ================================================================== */
+
+export interface ExpeditionTeamMember {
+  id: string;
+  company_id: string;
+  name: string;
+  role: string | null;
+  photo: string | null;
+  years_experience: number | null;
+  peaks_summited: string[] | null;
+  certifications: string[] | null;
+  bio: string | null;
+  display_order: number;
+  created_at?: string;
+}
+
+export interface PackageGroupTier {
+  min: number;
+  max: number | null;
+  price_per_person: number;
+}
+
+export interface ExpeditionPackageRow {
+  id: string;
+  company_id: string;
+  owner_email: string | null;
+  title: string;
+  peak: string | null;
+  route: string | null;
+  duration_days: number | null;
+  group_min: number;
+  group_max: number | null;
+  price_per_person: number | null; // null = quote on request
+  currency: string;
+  group_tiers: PackageGroupTier[];
+  includes: string[] | null;
+  excludes: string[] | null;
+  season_months: string[] | null;
+  next_departure: string | null;
+  description: string | null;
+  image: string | null;
+  gallery: string[] | null;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/* ---- Team ---- */
+export async function getTeamMembers(companyId: string): Promise<ExpeditionTeamMember[]> {
+  if (!isSupabaseConfigured || !isUuid(companyId)) return [];
+  const { data } = await supabase
+    .from("expedition_team_members")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  return (data as ExpeditionTeamMember[]) ?? [];
+}
+
+export async function saveTeamMember(
+  m: Partial<ExpeditionTeamMember> & { company_id: string; name: string }
+) {
+  if (m.id) return supabase.from("expedition_team_members").update(m).eq("id", m.id);
+  return supabase.from("expedition_team_members").insert(m);
+}
+
+export async function deleteTeamMember(id: string) {
+  return supabase.from("expedition_team_members").delete().eq("id", id);
+}
+
+/* ---- Packages ---- */
+export async function getPackagesByCompany(companyId: string): Promise<ExpeditionPackageRow[]> {
+  if (!isSupabaseConfigured || !isUuid(companyId)) return [];
+  const { data } = await supabase
+    .from("expedition_packages")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false });
+  return (data as ExpeditionPackageRow[]) ?? [];
+}
+
+/** Public: only active packages for an approved company's profile. */
+export async function getActivePackages(companyId: string): Promise<ExpeditionPackageRow[]> {
+  return (await getPackagesByCompany(companyId)).filter((p) => p.active);
+}
+
+export async function savePackage(
+  p: Partial<ExpeditionPackageRow> & { company_id: string; title: string }
+) {
+  if (p.id) return supabase.from("expedition_packages").update(p).eq("id", p.id);
+  return supabase.from("expedition_packages").insert(p);
+}
+
+export async function deletePackage(id: string) {
+  return supabase.from("expedition_packages").delete().eq("id", id);
+}
+
+/** "PKR 250,000 / person" or "Quote on request" display helper. */
+export function packagePriceLabel(p: ExpeditionPackageRow): string {
+  if (p.price_per_person == null) return "Quote on request";
+  return `${p.currency} ${Number(p.price_per_person).toLocaleString()} / person`;
+}

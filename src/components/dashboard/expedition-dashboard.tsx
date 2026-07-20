@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Save, Check, LogOut, Building2, User as UserIcon, ShieldCheck, Clock } from "lucide-react";
+import { Loader2, Save, Check, LogOut, Building2, User as UserIcon, ShieldCheck, Clock, Plus, Trash2, Pencil, Users, Package } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AvatarUpload, ImageUpload, MultiImageUpload } from "@/components/ui/image-upload";
@@ -9,7 +9,10 @@ import { type User } from "@/components/auth/auth-context";
 import {
   getCompanyByOwner, getProByOwner, createCompany, updateCompany, createPro, updatePro,
   getRoles, getPeaks, getRoutes,
+  getTeamMembers, saveTeamMember, deleteTeamMember,
+  getPackagesByCompany, savePackage, deletePackage, packagePriceLabel,
   type ExpeditionCompanyRow, type ExpeditionProRow, type ExpeditionRole, type ExpeditionPeak, type ExpeditionRoute,
+  type ExpeditionTeamMember, type ExpeditionPackageRow, type PackageGroupTier,
 } from "@/lib/expeditions";
 
 const COMPANY_SERVICES = [
@@ -77,6 +80,7 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
   const [roles, setRoles] = React.useState<ExpeditionRole[]>([]);
   const [peaks, setPeaks] = React.useState<ExpeditionPeak[]>([]);
   const [routes, setRoutes] = React.useState<ExpeditionRoute[]>([]);
+  const [tab, setTab] = React.useState<"profile" | "team" | "packages">("profile");
 
   const load = React.useCallback(async () => {
     const [c, p, r, pk, rt] = await Promise.all([
@@ -107,7 +111,36 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
       {!type ? (
         <ProfileTypePicker email={user.email} onCreated={load} />
       ) : type === "company" ? (
-        <CompanyForm company={company!} peaks={peaks} routes={routes} onSaved={load} />
+        <>
+          <div className="mb-6 flex flex-wrap gap-2">
+            {(
+              [
+                ["profile", "Company Profile"],
+                ["team", "Team"],
+                ["packages", "Packages & Pricing"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={
+                  "rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 " +
+                  (tab === id
+                    ? "bg-gradient-forest text-white shadow-soft"
+                    : "border border-border bg-card text-forest hover:bg-muted")
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {tab === "profile" && <CompanyForm company={company!} peaks={peaks} routes={routes} onSaved={load} />}
+          {tab === "team" && <TeamManager companyId={company!.id} roles={roles} />}
+          {tab === "packages" && (
+            <PackagesManager company={company!} peaks={peaks} routes={routes} />
+          )}
+        </>
       ) : (
         <ProForm pro={pro!} roles={roles} peaks={peaks} routes={routes} onSaved={load} />
       )}
@@ -305,6 +338,247 @@ function SaveBar({ status, onSave }: { status: "idle" | "saving" | "saved"; onSa
       <Button variant="gold" onClick={onSave} disabled={status === "saving"}>
         {status === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save profile
       </Button>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Phase 3 — Team management                                           */
+/* ================================================================== */
+
+const csv = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
+const uncsv = (a?: string[] | null) => (a ?? []).join(", ");
+
+function TeamManager({ companyId, roles }: { companyId: string; roles: ExpeditionRole[] }) {
+  const [members, setMembers] = React.useState<ExpeditionTeamMember[] | null>(null);
+  const [editing, setEditing] = React.useState<Partial<ExpeditionTeamMember> | null>(null);
+  const [busy, setBusy] = React.useState(false);
+
+  const load = React.useCallback(async () => setMembers(await getTeamMembers(companyId)), [companyId]);
+  React.useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    if (!editing?.name?.trim()) return;
+    setBusy(true);
+    await saveTeamMember({ ...editing, company_id: companyId, name: editing.name.trim() });
+    setBusy(false); setEditing(null); load();
+  };
+
+  if (!members) return <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-forest-600" /></div>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-forest"><Users className="h-5 w-5 text-forest-600" /> Your Team ({members.length})</h2>
+        <Button variant="gold" onClick={() => setEditing({ display_order: members.length })}><Plus className="h-4 w-4" /> Add member</Button>
+      </div>
+      <p className="text-sm text-muted-foreground">Introduce your guides, high-altitude porters, cooks and camp staff. The team is shown publicly on your company profile — it builds real trust with climbers.</p>
+
+      {editing && (
+        <Card title={editing.id ? "Edit team member" : "New team member"}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Full name *" value={editing.name ?? ""} onChange={(v) => setEditing({ ...editing, name: v })} />
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-forest">Role</span>
+              <select value={editing.role ?? ""} onChange={(e) => setEditing({ ...editing, role: e.target.value || null })} className="auth-input">
+                <option value="">Select role…</option>
+                {roles.filter((r) => r.active).map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
+              </select>
+            </label>
+            <Field label="Years of experience" type="number" value={String(editing.years_experience ?? "")} onChange={(v) => setEditing({ ...editing, years_experience: v ? Number(v) : null })} />
+            <Field label="Peaks summited (comma separated)" value={uncsv(editing.peaks_summited)} onChange={(v) => setEditing({ ...editing, peaks_summited: csv(v) })} />
+            <Field label="Certifications (public, comma separated)" value={uncsv(editing.certifications)} onChange={(v) => setEditing({ ...editing, certifications: csv(v) })} />
+          </div>
+          <div>
+            <span className="mb-1 block text-xs font-semibold text-forest">Photo</span>
+            <AvatarUpload value={editing.photo ?? ""} onChange={(url) => setEditing({ ...editing, photo: url })} />
+          </div>
+          <Area label="Short bio" value={editing.bio ?? ""} onChange={(v) => setEditing({ ...editing, bio: v })} />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button variant="gold" onClick={save} disabled={busy || !editing.name?.trim()}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save member
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {members.length === 0 && !editing && (
+        <p className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">No team members yet — add your first guide or porter.</p>
+      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {members.map((m) => (
+          <div key={m.id} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-muted">
+              {m.photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={m.photo} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <UserIcon className="h-6 w-6 text-forest-600" />
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-forest">{m.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {m.role ?? "Team member"}
+                {m.years_experience ? ` · ${m.years_experience} yrs` : ""}
+              </p>
+              {m.peaks_summited && m.peaks_summited.length > 0 && (
+                <p className="mt-1 truncate text-xs text-forest-600">Summits: {m.peaks_summited.join(", ")}</p>
+              )}
+            </div>
+            <div className="flex gap-1">
+              <button onClick={() => setEditing(m)} aria-label={`Edit ${m.name}`} className="grid h-8 w-8 place-items-center rounded-lg border border-border text-forest hover:bg-muted"><Pencil className="h-3.5 w-3.5" /></button>
+              <button
+                onClick={async () => { if (window.confirm(`Remove ${m.name} from the team?`)) { await deleteTeamMember(m.id); load(); } }}
+                aria-label={`Remove ${m.name}`}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Phase 3 — Packages, availability & pricing                          */
+/* ================================================================== */
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function PackagesManager({ company, peaks, routes }: { company: ExpeditionCompanyRow; peaks: ExpeditionPeak[]; routes: ExpeditionRoute[] }) {
+  const [pkgs, setPkgs] = React.useState<ExpeditionPackageRow[] | null>(null);
+  const [editing, setEditing] = React.useState<Partial<ExpeditionPackageRow> | null>(null);
+  const [busy, setBusy] = React.useState(false);
+
+  const load = React.useCallback(async () => setPkgs(await getPackagesByCompany(company.id)), [company.id]);
+  React.useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    if (!editing?.title?.trim()) return;
+    setBusy(true);
+    await savePackage({ ...editing, company_id: company.id, owner_email: company.owner_email, title: editing.title.trim() });
+    setBusy(false); setEditing(null); load();
+  };
+
+  const tiers: PackageGroupTier[] = (editing?.group_tiers as PackageGroupTier[]) ?? [];
+  const setTier = (i: number, patch: Partial<PackageGroupTier>) =>
+    setEditing({ ...editing!, group_tiers: tiers.map((t, j) => (j === i ? { ...t, ...patch } : t)) });
+
+  if (!pkgs) return <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-forest-600" /></div>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-forest"><Package className="h-5 w-5 text-forest-600" /> Expedition Packages ({pkgs.length})</h2>
+        <Button variant="gold" onClick={() => setEditing({ group_min: 1, currency: company.currency || "PKR", active: true, group_tiers: [] })}><Plus className="h-4 w-4" /> Add package</Button>
+      </div>
+      <p className="text-sm text-muted-foreground">Create sellable expeditions & treks with seasons, group sizes and pricing. Leave the price empty to show “Quote on request”. Active packages appear on your public profile.</p>
+
+      {editing && (
+        <Card title={editing.id ? "Edit package" : "New package"}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Package title *" value={editing.title ?? ""} onChange={(v) => setEditing({ ...editing, title: v })} placeholder="K2 Base Camp Trek 2027" />
+            <Field label="Duration (days)" type="number" value={String(editing.duration_days ?? "")} onChange={(v) => setEditing({ ...editing, duration_days: v ? Number(v) : null })} />
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-forest">Peak</span>
+              <select value={editing.peak ?? ""} onChange={(e) => setEditing({ ...editing, peak: e.target.value || null })} className="auth-input">
+                <option value="">None / custom…</option>
+                {peaks.filter((p) => p.active).map((p) => <option key={p.id} value={p.name}>{p.name}{p.height_m ? ` (${p.height_m}m)` : ""}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-forest">Route / trek</span>
+              <select value={editing.route ?? ""} onChange={(e) => setEditing({ ...editing, route: e.target.value || null })} className="auth-input">
+                <option value="">None / custom…</option>
+                {routes.filter((r) => r.active).map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
+              </select>
+            </label>
+            <Field label="Min group size" type="number" value={String(editing.group_min ?? 1)} onChange={(v) => setEditing({ ...editing, group_min: Math.max(1, Number(v) || 1) })} />
+            <Field label="Max group size" type="number" value={String(editing.group_max ?? "")} onChange={(v) => setEditing({ ...editing, group_max: v ? Number(v) : null })} />
+            <Field label="Price per person (blank = quote on request)" type="number" value={String(editing.price_per_person ?? "")} onChange={(v) => setEditing({ ...editing, price_per_person: v ? Number(v) : null })} />
+            <Field label="Next departure (optional)" type="date" value={editing.next_departure ?? ""} onChange={(v) => setEditing({ ...editing, next_departure: v || null })} />
+          </div>
+
+          <div>
+            <span className="mb-2 block text-xs font-semibold text-forest">Group price tiers (optional — per-person price for group sizes)</span>
+            <div className="space-y-2">
+              {tiers.map((t, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-2">
+                  <input type="number" value={t.min || ""} placeholder="Min" onChange={(e) => setTier(i, { min: Number(e.target.value) || 1 })} className="auth-input w-24" aria-label="Tier minimum group size" />
+                  <span className="text-xs text-muted-foreground">to</span>
+                  <input type="number" value={t.max ?? ""} placeholder="Max" onChange={(e) => setTier(i, { max: e.target.value ? Number(e.target.value) : null })} className="auth-input w-24" aria-label="Tier maximum group size" />
+                  <span className="text-xs text-muted-foreground">people →</span>
+                  <input type="number" value={t.price_per_person || ""} placeholder="Price / person" onChange={(e) => setTier(i, { price_per_person: Number(e.target.value) || 0 })} className="auth-input w-40" aria-label="Tier price per person" />
+                  <button type="button" onClick={() => setEditing({ ...editing!, group_tiers: tiers.filter((_, j) => j !== i) })} aria-label="Remove tier" className="grid h-9 w-9 place-items-center rounded-lg border border-border text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => setEditing({ ...editing!, group_tiers: [...tiers, { min: 2, max: 4, price_per_person: 0 }] })} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-forest-600 hover:text-gold"><Plus className="h-3.5 w-3.5" /> Add tier</button>
+          </div>
+
+          <MultiCheck label="Season / available months" options={MONTHS} value={editing.season_months ?? []} onChange={(v) => setEditing({ ...editing, season_months: v })} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Included (comma separated)" value={uncsv(editing.includes)} onChange={(v) => setEditing({ ...editing, includes: csv(v) })} placeholder="Permits, Porters, Meals, Base camp tents" />
+            <Field label="Not included (comma separated)" value={uncsv(editing.excludes)} onChange={(v) => setEditing({ ...editing, excludes: csv(v) })} placeholder="International flights, Personal gear, Insurance" />
+          </div>
+          <Area label="Description" value={editing.description ?? ""} onChange={(v) => setEditing({ ...editing, description: v })} rows={4} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <span className="mb-1 block text-xs font-semibold text-forest">Cover image</span>
+              <ImageUpload value={editing.image ?? ""} onChange={(url) => setEditing({ ...editing, image: url })} />
+            </div>
+            <div>
+              <span className="mb-1 block text-xs font-semibold text-forest">Gallery</span>
+              <MultiImageUpload value={editing.gallery ?? []} onChange={(urls) => setEditing({ ...editing, gallery: urls })} />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm font-medium text-forest">
+            <input type="checkbox" checked={editing.active !== false} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} className="h-4 w-4 accent-forest-600" />
+            Active (visible on your public profile)
+          </label>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button variant="gold" onClick={save} disabled={busy || !editing.title?.trim()}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save package
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {pkgs.length === 0 && !editing && (
+        <p className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">No packages yet — add your first expedition or trek.</p>
+      )}
+      <div className="space-y-3">
+        {pkgs.map((p) => (
+          <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft">
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-forest">
+                {p.title}
+                {!p.active && <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">Hidden</span>}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {[p.peak, p.route, p.duration_days ? `${p.duration_days} days` : null, p.season_months?.length ? p.season_months.join(", ") : null].filter(Boolean).join(" · ") || "—"}
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-forest-600">{packagePriceLabel(p)}{p.group_tiers?.length ? ` · ${p.group_tiers.length} group tier${p.group_tiers.length > 1 ? "s" : ""}` : ""}</p>
+            </div>
+            <div className="flex gap-1">
+              <button onClick={() => setEditing(p)} aria-label={`Edit ${p.title}`} className="grid h-8 w-8 place-items-center rounded-lg border border-border text-forest hover:bg-muted"><Pencil className="h-3.5 w-3.5" /></button>
+              <button
+                onClick={async () => { if (window.confirm(`Delete package "${p.title}"?`)) { await deletePackage(p.id); load(); } }}
+                aria-label={`Delete ${p.title}`}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
