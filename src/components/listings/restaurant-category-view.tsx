@@ -7,7 +7,6 @@ import {
   Star,
   Heart,
   MapPin,
-  Database,
   BadgeCheck,
   UtensilsCrossed,
   Clock,
@@ -101,7 +100,6 @@ export function RestaurantCategoryView({
         <div className="container-px py-8">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-3xl font-bold text-forest sm:text-4xl">{heading}</h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-forest-600 px-2.5 py-1 text-xs font-semibold text-white"><Database className="h-3.5 w-3.5" /> Live from database</span>
           </div>
           <p className="mt-2 text-muted-foreground">{subheading}</p>
           <div className="mt-4 flex max-w-md items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 shadow-premium">

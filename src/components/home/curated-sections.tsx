@@ -121,13 +121,13 @@ export function RoadsideSection() {
     <CuratedRow
       title="Roadside Assistance"
       subtitle="Help on the road, when you need it."
-      viewAllHref="/categories/transport"
+      viewAllHref="/roadside"
       viewAllLabel="View All Services"
       items={[
-        { title: "Bike Puncture", desc: "On-spot bike tyre repair", href: "/categories/transport", icon: Bike },
-        { title: "Car Puncture", desc: "Tyre repair & replacement", href: "/categories/transport", icon: Car },
-        { title: "Fuel Delivery", desc: "Petrol/diesel to your location", href: "/categories/transport", icon: Fuel },
-        { title: "Vehicle Recovery", desc: "Towing & breakdown recovery", href: "/categories/transport", icon: Truck },
+        { title: "Bike Puncture", desc: "On-spot bike tyre repair", href: "/roadside/bike-puncture", icon: Bike },
+        { title: "Car Puncture", desc: "Tyre repair & replacement", href: "/roadside/car-puncture", icon: Car },
+        { title: "Fuel Delivery", desc: "Petrol/diesel to your location", href: "/roadside/fuel-delivery", icon: Fuel },
+        { title: "Vehicle Recovery", desc: "Towing & breakdown recovery", href: "/roadside/vehicle-recovery", icon: Truck },
       ]}
     />
   );

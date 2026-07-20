@@ -8,7 +8,6 @@ import {
   Heart,
   Users,
   MapPin,
-  Database,
   BadgeCheck,
   Bus,
   Car,
@@ -85,9 +84,6 @@ export function TransportCategoryView({
             <h1 className="font-display text-3xl font-bold text-forest sm:text-4xl">
               {heading}
             </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-forest-600 px-2.5 py-1 text-xs font-semibold text-white">
-              <Database className="h-3.5 w-3.5" /> Live from database
-            </span>
           </div>
           <p className="mt-2 text-muted-foreground">{subheading}</p>
 
