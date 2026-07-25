@@ -66,15 +66,19 @@ export function photo(url?: string | null, width = 1080) {
  * full-width image for a small tile.
  */
 function optimizeImg(url: string, width: number): string {
-  // Unsplash — append resize params if the caller hasn't sized it already.
+  // Unsplash — set or replace the width so the requested size always wins
+  // (some listings are run through photo() twice).
   if (url.includes("images.unsplash.com") || url.includes("plus.unsplash.com")) {
-    if (/[?&]w=/.test(url)) return url;
+    if (/[?&]w=\d+/.test(url)) return url.replace(/([?&]w=)\d+/, `$1${width}`);
     const sep = url.includes("?") ? "&" : "?";
     return `${url}${sep}w=${width}&q=70&auto=format&fit=crop`;
   }
-  // Cloudinary — inject an f_auto,q_auto,w_<width> transformation once.
+  // Cloudinary — replace an existing width in the transformation, else inject one.
   if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
-    if (/\/upload\/[^/]*(c_|w_|q_|f_)/.test(url)) return url;
+    if (/\/upload\/[^/]*w_\d+/.test(url)) {
+      return url.replace(/(\/upload\/[^/]*?)w_\d+/, `$1w_${width}`);
+    }
+    if (/\/upload\/[^/]*(c_|q_|f_)/.test(url)) return url;
     return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`);
   }
   return url;
