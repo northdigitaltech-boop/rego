@@ -23,7 +23,7 @@ export function StoryCard({ story: s }: { story: StoryRow }) {
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg">
       <Link href={`/safarnama/${s.id}`} className="relative block h-44 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo(cover)} alt={s.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+        <img src={photo(cover, 500)} alt={s.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-900/50 to-transparent" />
         {s.travel_type && (
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-forest-600 backdrop-blur">
@@ -41,7 +41,7 @@ export function StoryCard({ story: s }: { story: StoryRow }) {
         {/* Author */}
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo(avatar)} alt={s.author_name ?? ""} className="h-7 w-7 rounded-full object-cover" />
+          <img src={photo(avatar, 96)} alt={s.author_name ?? ""} loading="lazy" decoding="async" className="h-7 w-7 rounded-full object-cover" />
           <span className="flex items-center gap-1 text-xs font-semibold text-forest">
             {s.author_name || "Traveller"}
             {s.verified && <BadgeCheck className="h-3.5 w-3.5 text-gold" />}

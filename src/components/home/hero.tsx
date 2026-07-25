@@ -164,18 +164,10 @@ export function Hero() {
 
   return (
     <section className="relative isolate overflow-hidden">
-      {/* Background — slow Ken Burns motion */}
+      {/* Background — static & light on mobile; slow Ken Burns motion on
+          desktop via cheap CSS (no JS animation on the critical path). */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <motion.div
-          className="relative h-full w-full will-change-transform"
-          initial={{ scale: reduce ? 1 : 1.05 }}
-          animate={reduce ? { scale: 1 } : { scale: 1.18, x: ["0%", "-2%", "0%"], y: ["0%", "-1.5%", "0%"] }}
-          transition={
-            reduce
-              ? { duration: 0 }
-              : { duration: 24, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }
-          }
-        >
+        <div className="hero-kenburns relative h-full w-full">
           <Image
             src="/home-hero.jpg"
             alt=""
@@ -187,7 +179,7 @@ export function Hero() {
             blurDataURL="data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAAAwAgCdASoQAAsAAgA0JaQAAudi0eYAAP7t1/9YnaEbA8/YKAEo/BbaTBLnPGD1nCE+HB2ecW9xEbJfTx4hBK0Q2xUAAA="
             className="object-cover object-center"
           />
-        </motion.div>
+        </div>
         {/* Soft wash on the left only — keeps the headline readable while the
             photo stays clean and bright. */}
         <div className="absolute inset-0 bg-gradient-to-r from-forest-900/55 via-forest-900/15 to-transparent" />

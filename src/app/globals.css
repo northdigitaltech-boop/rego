@@ -264,6 +264,18 @@ summary:focus-visible,
   }
 }
 
+/* ---- Hero Ken Burns — desktop only, GPU-cheap CSS (no JS on LCP path) ---- */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .hero-kenburns {
+    will-change: transform;
+    animation: heroKenBurns 26s ease-in-out infinite alternate;
+  }
+  @keyframes heroKenBurns {
+    from { transform: scale(1.05); }
+    to { transform: scale(1.18) translate(-2%, -1.5%); }
+  }
+}
+
 /* ---- Mobile dashboard drill-down (sidebar menu <-> section content) ---- */
 /* The "Menu" back button is hidden everywhere except mobile content view. */
 .rego-dash-back {

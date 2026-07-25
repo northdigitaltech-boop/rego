@@ -38,8 +38,10 @@ export function TravelerCard({ t }: { t: SoloTravelerRow }) {
       <div className="relative h-28 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photo(cover)}
+          src={photo(cover, 500)}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-900/60 to-transparent" />
@@ -61,8 +63,10 @@ export function TravelerCard({ t }: { t: SoloTravelerRow }) {
           <span className="relative z-10 block h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-4 border-card bg-forest-100 shadow-premium">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photo(avatar)}
+              src={photo(avatar, 160)}
               alt={t.full_name}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 h-full w-full object-cover object-center"
             />
           </span>
