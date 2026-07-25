@@ -8,6 +8,7 @@ import {
   Instagram,
   Youtube,
   MessageCircle,
+  Briefcase,
 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
@@ -44,6 +45,12 @@ export default function ContactPage() {
               Questions about a booking or planning a trip to Gilgit Baltistan?
               Our team is here around the clock.
             </p>
+            <a
+              href="/careers"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-sm font-bold text-forest-900 shadow-gold-glow transition-transform hover:-translate-y-0.5"
+            >
+              <Briefcase className="h-4 w-4" /> We're hiring — view careers
+            </a>
           </div>
         </section>
 

@@ -21,6 +21,7 @@ const quickLinks = [
   { label: "Events & Expo", href: "/categories/festivals" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "About Us", href: "/about" },
+  { label: "Careers", href: "/careers" },
   { label: "Become a Partner", href: "/partner" },
   { label: "Contact Us", href: "/contact" },
 ];
