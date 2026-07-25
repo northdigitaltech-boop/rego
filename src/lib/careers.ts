@@ -1,5 +1,9 @@
 // Rego careers — open positions shown on /careers.
 // Applications go to careers@rego.services (mailto with a pre-filled subject).
+// The array below is the built-in DEFAULT; admins can post/edit/close jobs from
+// the admin panel and edits are stored in `careers_content` (phase57).
+
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export const CAREERS_EMAIL = "careers@rego.services";
 
@@ -92,11 +96,39 @@ export const jobOpenings: JobOpening[] = [
   },
 ];
 
-/** Positions grouped by department for the careers page. */
-export function jobsByDepartment(): { department: string; jobs: JobOpening[] }[] {
+/** Positions grouped by department (from any job list). */
+export function jobsByDepartment(
+  jobs: JobOpening[] = jobOpenings
+): { department: string; jobs: JobOpening[] }[] {
   const map = new Map<string, JobOpening[]>();
-  for (const j of jobOpenings) {
+  for (const j of jobs) {
     map.set(j.department, [...(map.get(j.department) ?? []), j]);
   }
-  return Array.from(map.entries()).map(([department, jobs]) => ({ department, jobs }));
+  return Array.from(map.entries()).map(([department, list]) => ({ department, jobs: list }));
+}
+
+/* ---------------- admin-manageable store ---------------- */
+
+/** Live job openings: admin-posted from Supabase, else the built-in defaults. */
+export async function getJobOpenings(): Promise<JobOpening[]> {
+  if (!isSupabaseConfigured) return jobOpenings;
+  try {
+    const { data, error } = await supabase
+      .from("careers_content")
+      .select("content")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error || !data?.content) return jobOpenings;
+    const stored = data.content as JobOpening[];
+    return Array.isArray(stored) ? stored : jobOpenings;
+  } catch {
+    return jobOpenings;
+  }
+}
+
+/** Upsert the full job list (admin only, app-gated). */
+export async function saveJobOpenings(jobs: JobOpening[]) {
+  return supabase
+    .from("careers_content")
+    .upsert({ id: 1, content: jobs, updated_at: new Date().toISOString() });
 }

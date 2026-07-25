@@ -4,7 +4,9 @@ import { Briefcase, MapPin, Clock, ArrowRight, Sparkles, HeartHandshake, Mountai
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { buildMetadata } from "@/lib/seo";
-import { jobsByDepartment, CAREERS_EMAIL } from "@/lib/careers";
+import { getJobOpenings, jobsByDepartment, CAREERS_EMAIL } from "@/lib/careers";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = buildMetadata({
   title: "Careers — Join the Rego Team",
@@ -19,8 +21,10 @@ const perks = [
   { icon: Sparkles, title: "Grow with us", desc: "Join early and grow as Rego expands across the north." },
 ];
 
-export default function CareersPage() {
-  const groups = jobsByDepartment();
+export default async function CareersPage() {
+  const jobs = await getJobOpenings();
+  const groups = jobsByDepartment(jobs);
+  const totalOpen = jobs.length;
 
   return (
     <>
@@ -62,7 +66,9 @@ export default function CareersPage() {
           <div className="container-px py-12 sm:py-16">
             <h2 className="font-display text-2xl font-bold text-forest">Open Positions</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {jobsByDepartment().reduce((n, g) => n + g.jobs.length, 0)} roles open. Apply by email — we read every application.
+              {totalOpen > 0
+                ? `${totalOpen} role${totalOpen === 1 ? "" : "s"} open. Apply by email — we read every application.`
+                : "No open roles right now — but we're always keen to meet great people."}
             </p>
 
             <div className="mt-8 space-y-10">

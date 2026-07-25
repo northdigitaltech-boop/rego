@@ -181,8 +181,10 @@ export function Hero() {
             alt=""
             fill
             priority
-            quality={62}
-            sizes="100vw"
+            quality={45}
+            sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 100vw"
+            placeholder="blur"
+            blurDataURL="data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAAAwAgCdASoQAAsAAgA0JaQAAudi0eYAAP7t1/9YnaEbA8/YKAEo/BbaTBLnPGD1nCE+HB2ecW9xEbJfTx4hBK0Q2xUAAA="
             className="object-cover object-center"
           />
         </motion.div>
