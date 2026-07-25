@@ -17,9 +17,7 @@ import { EventsGrid } from "@/components/home/events-grid";
 import { ActivitiesGrid } from "@/components/home/activities-grid";
 import { SoloConnectSection } from "@/components/home/solo-connect-section";
 import { SafarnamaSection } from "@/components/home/safarnama-section";
-import { AIAssistantCTA } from "@/components/home/ai-assistant-cta";
-import { WhyUs } from "@/components/home/why-us";
-import { Testimonials } from "@/components/home/testimonials";
+import { DeferredMarketing } from "@/components/home/deferred-marketing";
 import { NewsletterSection } from "@/components/home/newsletter-section";
 import {
   feedHotels,
@@ -182,14 +180,8 @@ export default async function Home() {
         {/* Safarnama — traveller stories (falls back to a write-story CTA). */}
         <SafarnamaSection items={stories} />
 
-        {/* AI Travel Assistant CTA */}
-        <AIAssistantCTA />
-
-        {/* Why Choose Rego */}
-        <WhyUs />
-
-        {/* Testimonials */}
-        <Testimonials />
+        {/* AI CTA, Why Us & Testimonials — lazy-loaded (non-SEO marketing tail). */}
+        <DeferredMarketing />
 
         {/* Platform Statistics */}
         <PlatformStats />

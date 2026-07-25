@@ -3,8 +3,7 @@ import { Montserrat, Dancing_Script } from "next/font/google";
 
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { HelpLine } from "@/components/help/help-line";
-import { RegoAiWidget } from "@/components/home/rego-ai-widget";
+import { DeferredWidgets } from "@/components/layout/deferred-widgets";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
 
@@ -110,8 +109,7 @@ export default function RootLayout({
         <JsonLd data={[organizationSchema(), websiteSchema()]} />
         <Providers>
           {children}
-          <RegoAiWidget />
-          <HelpLine />
+          <DeferredWidgets />
         </Providers>
       </body>
     </html>
