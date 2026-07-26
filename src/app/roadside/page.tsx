@@ -4,6 +4,7 @@ import { ArrowRight, LifeBuoy, TriangleAlert } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { RoadUpdates } from "@/components/roadside/road-updates";
 import { roadsideCategories } from "@/lib/data";
 import { getServiceCounts } from "@/lib/roadside";
 
@@ -36,13 +37,34 @@ export default async function RoadsidePage() {
               Find verified roadside assistance providers across Gilgit Baltistan and send an
               emergency request in seconds — punctures, battery, fuel or full vehicle recovery.
             </p>
-            <Link
-              href="/roadside/updates"
+            <a
+              href="#road-updates"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-gold px-5 py-3 text-sm font-semibold text-forest-900 shadow-soft transition-transform hover:-translate-y-0.5"
             >
               <TriangleAlert className="h-4 w-4" /> Live Road Updates &amp; Alerts
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </a>
+          </div>
+        </section>
+
+        {/* Live road updates — shown inline right after the hero (no extra page). */}
+        <section id="road-updates" className="scroll-mt-24 border-b border-border/70 bg-muted/30">
+          <div className="container-px py-10 sm:py-12">
+            <div className="mb-6 flex items-center gap-2">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gold/15 text-gold">
+                <TriangleAlert className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="font-display text-xl font-bold uppercase text-forest sm:text-2xl">
+                  Live Road Updates &amp; Alerts
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Real-time road conditions across Gilgit-Baltistan — status, blockages, safety
+                  guidance and alternative routes.
+                </p>
+              </div>
+            </div>
+            <RoadUpdates />
           </div>
         </section>
 
