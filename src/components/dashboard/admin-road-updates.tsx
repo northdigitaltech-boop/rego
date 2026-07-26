@@ -13,6 +13,9 @@ import {
   TriangleAlert,
   Sparkles,
   ExternalLink,
+  Pencil,
+  DoorOpen,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -189,6 +192,7 @@ function UpdatesView({ updates, onChange }: { updates: RoadUpdateRow[]; onChange
   };
 
   const [busyId, setBusyId] = React.useState<string | null>(null);
+  const [editing, setEditing] = React.useState<RoadUpdateRow | null>(null);
   const act = async (id: string, fn: () => Promise<unknown>) => {
     setBusyId(id);
     await fn();
@@ -196,8 +200,54 @@ function UpdatesView({ updates, onChange }: { updates: RoadUpdateRow[]; onChange
     setBusyId(null);
   };
 
+  // Notify route subscribers that the road opened / blocked.
+  const notifySubs = async (u: RoadUpdateRow, nextStatus: string) => {
+    if (nextStatus !== "open" && nextStatus !== "blocked") return;
+    const subs = await getSubscribersForRoad(u.road_key);
+    const banner = bannerText({ ...u, status: nextStatus });
+    await Promise.all(
+      subs.map((email) =>
+        sendEmail(
+          email,
+          nextStatus === "open"
+            ? `✅ ${u.road_name} is OPEN — Rego road alert`
+            : `⚠️ ${u.road_name} BLOCKED — Rego road alert`,
+          `<p>${banner}</p>` +
+            (u.location ? `<p><strong>Location:</strong> ${u.location}</p>` : "") +
+            `<p>See live updates at /roadside/updates</p>`
+        ).catch(() => {})
+      )
+    );
+  };
+
+  // One-click: mark a road open and clear the blockage fields.
+  const markOpen = (u: RoadUpdateRow) =>
+    act(u.id, async () => {
+      await updateRoadUpdate(u.id, {
+        status: "open",
+        alert_level: "low",
+        reason: null,
+        expected_opening_time: null,
+        safety_message: defaultSafetyMessage("open"),
+        verified: true,
+      });
+      await notifySubs(u, "open");
+    });
+
   return (
     <div className="space-y-6">
+      {editing && (
+        <EditUpdateModal
+          update={editing}
+          onClose={() => setEditing(null)}
+          onSaved={async (nextStatus) => {
+            const u = editing;
+            setEditing(null);
+            if (u) await notifySubs(u, nextStatus);
+            await onChange();
+          }}
+        />
+      )}
       {/* Post form */}
       <form onSubmit={post} className="rounded-3xl border border-border bg-card p-5 shadow-premium">
         <h3 className="font-display text-base font-bold text-forest">Post / update road status</h3>
@@ -290,6 +340,10 @@ function UpdatesView({ updates, onChange }: { updates: RoadUpdateRow[]; onChange
                       <td className="p-3 text-xs text-muted-foreground">{new Date(u.updated_at).toLocaleString()}</td>
                       <td className="p-3">
                         <div className="flex items-center justify-end gap-1">
+                          {u.status !== "open" && (
+                            <button title="Mark open (road cleared)" disabled={busyRow} onClick={() => markOpen(u)} className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100">{busyRow ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DoorOpen className="h-3.5 w-3.5" />} Open</button>
+                          )}
+                          <button title="Edit update" disabled={busyRow} onClick={() => setEditing(u)} className="rounded-md border border-border p-1.5 text-forest hover:bg-muted"><Pencil className="h-3.5 w-3.5" /></button>
                           <a href="/roadside/updates" target="_blank" rel="noopener noreferrer" title="View live" className="rounded-md border border-border p-1.5 text-forest hover:bg-muted"><ExternalLink className="h-3.5 w-3.5" /></a>
                           <button title={u.verified ? "Unpublish" : "Publish"} disabled={busyRow} onClick={() => act(u.id, () => updateRoadUpdate(u.id, { verified: !u.verified }))} className={cn("rounded-md border p-1.5", u.verified ? "border-forest-200 bg-forest-50 text-forest-600" : "border-border text-forest hover:bg-muted")}><BadgeCheck className="h-3.5 w-3.5" /></button>
                           <button title="Delete" disabled={busyRow} onClick={() => { if (window.confirm("Delete this update?")) act(u.id, () => deleteRoadUpdate(u.id)); }} className="rounded-md border border-red-200 p-1.5 text-red-600 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -302,6 +356,105 @@ function UpdatesView({ updates, onChange }: { updates: RoadUpdateRow[]; onChange
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Edit an existing update ---------------- */
+
+function EditUpdateModal({
+  update,
+  onClose,
+  onSaved,
+}: {
+  update: RoadUpdateRow;
+  onClose: () => void;
+  onSaved: (nextStatus: string) => void | Promise<void>;
+}) {
+  const [status, setStatus] = React.useState(update.status);
+  const [alertLevel, setAlertLevel] = React.useState(update.alert_level);
+  const [location, setLocation] = React.useState(update.location ?? "");
+  const [reason, setReason] = React.useState(update.reason ?? "");
+  const [expected, setExpected] = React.useState(update.expected_opening_time ?? "");
+  const [altRoute, setAltRoute] = React.useState(update.alternative_route ?? "");
+  const [safety, setSafety] = React.useState(update.safety_message ?? "");
+  const [description, setDescription] = React.useState(update.description ?? "");
+  const [busy, setBusy] = React.useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    await updateRoadUpdate(update.id, {
+      status,
+      alert_level: alertLevel,
+      location: location.trim() || null,
+      reason: reason || null,
+      expected_opening_time: expected.trim() || null,
+      alternative_route: altRoute.trim() || null,
+      safety_message: safety.trim() || defaultSafetyMessage(status),
+      description: description.trim() || null,
+      verified: true,
+    });
+    setBusy(false);
+    await onSaved(status);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onClick={onClose}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-card shadow-premium-lg sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card/95 px-5 py-4 backdrop-blur">
+          <div>
+            <h3 className="font-display text-base font-bold text-forest">Edit update</h3>
+            <p className="text-xs text-muted-foreground">{update.road_name}</p>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-forest">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={save} className="grid gap-3 p-5 sm:grid-cols-2">
+          <L label="Status">
+            <select className="auth-input" value={status} onChange={(e) => setStatus(e.target.value)}>
+              {ROAD_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </L>
+          <L label="Alert level">
+            <select className="auth-input" value={alertLevel} onChange={(e) => setAlertLevel(e.target.value)}>
+              {ALERT_LEVELS.map((a) => <option key={a} value={a} className="capitalize">{a}</option>)}
+            </select>
+          </L>
+          <L label="Location">
+            <input className="auth-input" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. near Chilas" />
+          </L>
+          <L label="Reason">
+            <select className="auth-input" value={reason} onChange={(e) => setReason(e.target.value)}>
+              <option value="">—</option>
+              {ROAD_REASONS.map((x) => <option key={x}>{x}</option>)}
+            </select>
+          </L>
+          <L label="Expected opening">
+            <input className="auth-input" value={expected} onChange={(e) => setExpected(e.target.value)} placeholder="e.g. Tomorrow 10am" />
+          </L>
+          <L label="Alternative route">
+            <input className="auth-input" value={altRoute} onChange={(e) => setAltRoute(e.target.value)} placeholder="e.g. via Babusar" />
+          </L>
+          <L label="Safety message" full>
+            <input className="auth-input" value={safety} onChange={(e) => setSafety(e.target.value)} placeholder={defaultSafetyMessage(status)} />
+          </L>
+          <L label="Description" full>
+            <textarea rows={2} className="auth-input resize-none" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </L>
+
+          <div className="mt-1 flex items-center gap-2 sm:col-span-2">
+            <Button type="submit" variant="gold" className="rounded-lg" disabled={busy}>
+              {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Send className="h-4 w-4" /> Save changes</>}
+            </Button>
+            <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-forest hover:bg-muted">
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

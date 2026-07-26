@@ -93,7 +93,7 @@ export function RegoAiWidget() {
               {/* chat */}
               <div className="flex-1 overflow-y-auto p-4">
                 <Suspense fallback={<div className="py-16 text-center text-muted-foreground">Loading…</div>}>
-                  <RegoAiChat />
+                  <RegoAiChat onNavigate={() => setOpen(false)} />
                 </Suspense>
               </div>
             </motion.div>

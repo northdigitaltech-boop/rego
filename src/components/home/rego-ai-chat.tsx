@@ -16,7 +16,7 @@ interface Msg {
   answer?: AiAnswer;
 }
 
-export function RegoAiChat() {
+export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
   const params = useSearchParams();
   const initialQ = params.get("q") ?? "";
   const [messages, setMessages] = React.useState<Msg[]>([]);
@@ -182,6 +182,7 @@ export function RegoAiChat() {
                 {m.answer?.feature && (
                   <Link
                     href={m.answer.feature.href}
+                    onClick={onNavigate}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-forest-100 bg-gradient-to-br from-forest-50/70 to-gold/5 px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-premium"
                   >
                     <span className="flex items-center gap-2.5">
@@ -200,7 +201,7 @@ export function RegoAiChat() {
                 {m.answer && m.answer.results.length > 0 && (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {m.answer.results.map((l) => (
-                      <ResultCard key={l.id} listing={l} />
+                      <ResultCard key={l.id} listing={l} onNavigate={onNavigate} />
                     ))}
                   </div>
                 )}
@@ -208,6 +209,7 @@ export function RegoAiChat() {
                 {m.answer?.viewAllHref && m.answer.results.length > 0 && (
                   <Link
                     href={m.answer.viewAllHref}
+                    onClick={onNavigate}
                     className="inline-flex items-center gap-1 text-sm font-semibold text-forest-600 hover:text-gold"
                   >
                     View all matching listings <ArrowRight className="h-4 w-4" />
@@ -301,10 +303,11 @@ export function RegoAiChat() {
   );
 }
 
-function ResultCard({ listing: l }: { listing: Listing }) {
+function ResultCard({ listing: l, onNavigate }: { listing: Listing; onNavigate?: () => void }) {
   return (
     <Link
       href={`/listings/${l.id}`}
+      onClick={onNavigate}
       className="group flex gap-3 rounded-2xl border border-border/70 bg-card p-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-premium"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
