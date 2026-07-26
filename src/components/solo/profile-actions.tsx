@@ -1,8 +1,28 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+/**
+ * Renders children at document.body so a fixed-position modal escapes any
+ * transformed ancestor (e.g. a card with a hover/reveal transform), which would
+ * otherwise trap `position: fixed` inside the card and break the overlay.
+ */
+function ModalPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
 import {
   UserPlus,
   MessageCircle,
@@ -491,8 +511,9 @@ function ConnectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-card shadow-premium-lg sm:rounded-3xl">
+    <ModalPortal>
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 sm:items-center sm:p-4" onClick={onClose}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-card shadow-premium-lg sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card/95 px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-forest-50 text-forest-600">
@@ -605,6 +626,7 @@ function ConnectModal({
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -637,8 +659,9 @@ function ReportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-3xl bg-card p-6 shadow-premium-lg">
+    <ModalPortal>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-3xl bg-card p-6 shadow-premium-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="font-display text-lg font-bold text-forest">Report user</h3>
           <button onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-forest">
@@ -679,5 +702,6 @@ function ReportModal({
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 }

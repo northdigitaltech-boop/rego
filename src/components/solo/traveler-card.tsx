@@ -30,12 +30,18 @@ export function TravelerCard({ t }: { t: SoloTravelerRow }) {
   const avatar = t.profile_photo || "https://i.pravatar.cc/200?u=" + t.id;
 
   return (
-    <Link
-      href={`/connect/${t.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg"
-    >
+    <div className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg">
+      {/* Whole-card navigation (stretched link). Sits beneath the interactive
+          Connect button so tapping the button never triggers navigation and the
+          button is not illegally nested inside an <a>. */}
+      <Link
+        href={`/connect/${t.id}`}
+        aria-label={`View ${t.full_name}'s profile`}
+        className="absolute inset-0 z-0 rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
+      />
+
       {/* Cover */}
-      <div className="relative h-28 overflow-hidden">
+      <div className="pointer-events-none relative h-28 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photo(cover, 500)}
@@ -58,7 +64,7 @@ export function TravelerCard({ t }: { t: SoloTravelerRow }) {
       </div>
 
       {/* Avatar + identity */}
-      <div className="flex flex-1 flex-col px-4 pb-4">
+      <div className="pointer-events-none relative z-[1] flex flex-1 flex-col px-4 pb-4">
         <div className="-mt-8 flex items-end gap-3">
           <span className="relative z-10 block h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-4 border-card bg-forest-100 shadow-premium">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -134,11 +140,12 @@ export function TravelerCard({ t }: { t: SoloTravelerRow }) {
           </span>
         </div>
 
-        {/* Connect / Travel Partner */}
-        <div className="mt-3">
+        {/* Connect / Travel Partner — re-enable pointer events so the button
+            works and its click never falls through to the card link. */}
+        <div className="pointer-events-auto relative z-10 mt-3">
           <SoloConnectButton traveler={t} className="w-full py-2 text-sm" />
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

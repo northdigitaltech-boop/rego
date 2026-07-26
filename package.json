@@ -8,6 +8,14 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "browserslist": [
+    "chrome >= 92",
+    "edge >= 92",
+    "firefox >= 90",
+    "safari >= 15.4",
+    "ios_saf >= 15.4",
+    "not dead"
+  ],
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",
     "@supabase/supabase-js": "^2.108.1",
