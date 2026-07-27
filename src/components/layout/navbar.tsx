@@ -352,7 +352,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
         (link.children?.some((c) => pathname === c.href.split("#")[0]) ?? false);
 
   return (
-    <header className="sticky top-0 z-50 shadow-premium">
+    <header className={cn("sticky top-0 shadow-premium", open ? "z-[95]" : "z-50")}>
       {/* Desktop utility bar (white) — helpline + currency / wishlist / booking status / notifications */}
       <div className="hidden border-b border-border bg-white xl:block">
         <div className={cn(cx, "flex h-10 items-center justify-between")}>
@@ -638,7 +638,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
             transition={{ duration: 0.3 }}
             className="overflow-hidden border-t border-white/10 bg-gradient-forest-deep xl:hidden"
           >
-            <div className="container-px max-h-[70vh] overflow-y-auto py-4">
+            <div className="container-px h-[calc(100dvh-5rem)] overflow-y-auto py-4">
               <div className="flex flex-col gap-1">
                 {navLinks.map((link) =>
                   link.children ? (
