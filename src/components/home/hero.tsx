@@ -367,24 +367,20 @@ export function Hero() {
                 <UserRound className="h-5 w-5 shrink-0 text-forest-600" />
                 <span className="flex w-full flex-col">
                   <span className="text-xs font-semibold text-forest">{cfg.peopleLabel}</span>
-                  <select
-                    value={guests}
-                    onChange={(e) => setGuests(Number(e.target.value))}
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    inputMode="numeric"
+                    value={guests || ""}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      setGuests(Number.isNaN(v) ? 0 : Math.min(99, Math.max(0, v)));
+                    }}
+                    onBlur={() => setGuests((g) => (g < 1 ? 1 : g))}
+                    placeholder={`Enter ${(cfg.peopleLabel ?? "guests").toLowerCase()}`}
                     className="w-full bg-transparent text-sm text-foreground focus:outline-none"
-                  >
-                    {Array.from({ length: 30 }).map((_, i) => {
-                      const n = i + 1;
-                      const singular =
-                        cfg.peopleLabel === "People"
-                          ? "Person"
-                          : (cfg.peopleLabel ?? "").replace(/s$/, "");
-                      return (
-                        <option key={n} value={n}>
-                          {n} {n > 1 ? cfg.peopleLabel : singular}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  />
                 </span>
               </label>
             )}

@@ -301,17 +301,20 @@ export function ListingDetail({ listing }: { listing: Listing }) {
 
                 {(perPerson || perNight) && (
                   <Field label="Guests">
-                    <select
-                      value={guests}
-                      onChange={(e) => setGuests(Number(e.target.value))}
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      inputMode="numeric"
+                      value={guests || ""}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        setGuests(Number.isNaN(v) ? 0 : Math.min(99, Math.max(0, v)));
+                      }}
+                      onBlur={() => setGuests((g) => (g < 1 ? 1 : g))}
+                      placeholder="Enter number of guests"
                       className="w-full bg-transparent text-sm text-forest focus:outline-none"
-                    >
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          {i + 1} {i === 0 ? "Guest" : "Guests"}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </Field>
                 )}
               </div>
