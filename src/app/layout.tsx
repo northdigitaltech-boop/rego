@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat, Dancing_Script } from "next/font/google";
 
 import "./globals.css";
@@ -25,6 +25,16 @@ const dancingScript = Dancing_Script({
   variable: "--font-signature",
   display: "swap",
 });
+
+// Lock the mobile viewport so the layout can't be pinch-zoomed in/out.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
+  themeColor: "#0F4C3A",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

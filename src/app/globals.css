@@ -200,6 +200,14 @@ body {
      (it made the body a scroll container), so the header scrolled away. */
   overflow-x: clip;
   max-width: 100%;
+  /* Lock the layout: allow only vertical/horizontal panning, no pinch-zoom.
+     This is what stops the whole site from zooming in/out on mobile
+     (iOS Safari ignores the viewport user-scalable flag, but honours this). */
+  touch-action: pan-x pan-y;
+}
+/* The interactive map still needs pinch-zoom, so let Leaflet handle its own. */
+.leaflet-container {
+  touch-action: none;
 }
 * {
   -webkit-tap-highlight-color: transparent;
