@@ -18,6 +18,7 @@ import {
 
 import { useAuth } from "@/components/auth/auth-context";
 import { BrandLogo } from "@/components/layout/logo";
+import { RecommendationsBell } from "@/components/layout/recommendations-bell";
 import { BookingStatusModal } from "@/components/booking/booking-status-modal";
 import { getBookingIdsForUser } from "@/lib/bookings";
 import { getHomestayBookingIdsForUser } from "@/lib/homestay-bookings";
@@ -28,6 +29,7 @@ import { getMediaBookingIdsForUser } from "@/lib/media-bookings";
 import { getRestaurantBookingIdsForUser } from "@/lib/restaurant-bookings";
 import { adminThreadId, getAdminThreads } from "@/lib/messages";
 import { getMessagesForBookings, type MsgMeta } from "@/lib/messages";
+import { getNotifications, markRead, type NotificationRow } from "@/lib/notifications";
 import { useUnread } from "@/lib/use-unread";
 import { useWishlist } from "@/lib/wishlist";
 import { cn } from "@/lib/utils";
@@ -283,6 +285,37 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, idsKey]);
 
+  // Admin/recommendation notifications (from the notifications table).
+  const [sysNotifs, setSysNotifs] = React.useState<NotificationRow[]>([]);
+  React.useEffect(() => {
+    if (!user) {
+      setSysNotifs([]);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      const list = await getNotifications(user.email, 15);
+      if (active) setSysNotifs(list);
+    };
+    load();
+    const t = setInterval(() => { if (document.visibilityState === "visible") load(); }, 60000);
+    return () => {
+      active = false;
+      clearInterval(t);
+    };
+  }, [user]);
+  const sysUnread = sysNotifs.filter((n) => !n.is_read).length;
+  const totalUnread = unread.size + sysUnread;
+
+  const openSysNotif = async (n: NotificationRow) => {
+    if (!n.is_read) {
+      setSysNotifs((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+      markRead(n.id).catch(() => {});
+    }
+    setNotifOpen(false);
+    if (n.action_url) router.push(n.action_url);
+  };
+
   const openNotif = (bookingId: string) => {
     try {
       // Read on arrival when navigating in from another page.
@@ -345,6 +378,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                 </span>
               )}
             </Link>
+            <RecommendationsBell />
             <button
               onClick={() => setStatusOpen(true)}
               aria-label="Booking status"
@@ -361,9 +395,9 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                   className="relative flex items-center text-forest/80 transition-colors hover:text-forest-600"
                 >
                   <Bell className="h-5 w-5" />
-                  {unread.size > 0 && (
+                  {totalUnread > 0 && (
                     <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                      {unread.size}
+                      {totalUnread}
                     </span>
                   )}
                 </button>
@@ -383,16 +417,46 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                   <div className="absolute right-0 top-full z-50 mt-3 w-80 overflow-hidden rounded-2xl border border-border/70 bg-white text-left shadow-premium-lg">
                     <div className="flex items-center justify-between border-b border-border px-4 py-3">
                       <p className="font-display text-sm font-bold text-forest">Notifications</p>
-                      {unread.size > 0 && (
+                      {totalUnread > 0 && (
                         <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                          {unread.size} new
+                          {totalUnread} new
                         </span>
                       )}
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      {notifs.length === 0 ? (
+                      {/* Recommendations & alerts from Rego (admin broadcasts, etc.) */}
+                      {sysNotifs.map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => openSysNotif(n)}
+                          className={cn(
+                            "flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50",
+                            !n.is_read && "bg-gold/5"
+                          )}
+                        >
+                          <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gold/15 text-gold">
+                            <Bell className="h-4 w-4" />
+                            {!n.is_read && (
+                              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500" />
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className={cn("truncate text-sm font-semibold text-forest", !n.is_read && "font-bold")}>
+                                {n.title}
+                              </span>
+                              <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo(n.created_at)}</span>
+                            </span>
+                            {n.message && (
+                              <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">{n.message}</span>
+                            )}
+                          </span>
+                        </button>
+                      ))}
+
+                      {notifs.length === 0 && sysNotifs.length === 0 ? (
                         <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                          No messages yet.
+                          No notifications yet.
                         </p>
                       ) : (
                         notifs.map((n) => {
@@ -472,7 +536,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
           ) : (
             initial ?? <UserRound className="h-5 w-5" />
           )}
-          {user && unread.size > 0 && (
+          {user && totalUnread > 0 && (
             <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-forest-900 bg-red-500" />
           )}
         </Link>
@@ -670,7 +734,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                     </span>
                   )}
                 </Link>
-                <Bell className="h-5 w-5 text-white/90" />
+                <RecommendationsBell triggerClass="text-white/90 hover:text-gold" />
               </div>
             </div>
           </motion.div>

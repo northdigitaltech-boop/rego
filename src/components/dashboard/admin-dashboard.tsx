@@ -37,6 +37,7 @@ import {
   Compass,
   TriangleAlert,
   BookOpen,
+  Megaphone,
 } from "lucide-react";
 
 import {
@@ -87,6 +88,7 @@ import { AdminAbout } from "@/components/dashboard/admin-about";
 import { AdminListingsManager } from "@/components/dashboard/admin-listings-manager";
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
+import { AdminBroadcast } from "@/components/dashboard/admin-broadcast";
 import { AdminSubscription } from "@/components/dashboard/admin-subscription";
 import { AdminExpeditions } from "@/components/dashboard/admin-expeditions";
 import { AdminActivities } from "@/components/dashboard/admin-activities";
@@ -436,6 +438,7 @@ type Tab =
   | "about"
   | "legal"
   | "careers"
+  | "notify"
   | "subscription"
   | "expeditions"
   | "users";
@@ -463,6 +466,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "about", label: "About Page", icon: Info },
   { id: "legal", label: "Legal & Policies", icon: FileText },
   { id: "careers", label: "Careers & Jobs", icon: Briefcase },
+  { id: "notify", label: "Send Notification", icon: Megaphone },
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
   { id: "users", label: "Users", icon: Users },
@@ -937,6 +941,7 @@ export function AdminDashboard() {
           {tab === "about" && <AdminAbout />}
           {tab === "legal" && <AdminLegal />}
           {tab === "careers" && <AdminCareers />}
+          {tab === "notify" && <AdminBroadcast />}
           {tab === "subscription" && <AdminSubscription />}
           {tab === "expeditions" && <AdminExpeditions />}
           {tab === "users" && <UsersTable />}
