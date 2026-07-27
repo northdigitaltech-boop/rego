@@ -734,7 +734,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                     </span>
                   )}
                 </Link>
-                <RecommendationsBell triggerClass="text-white/90 hover:text-gold" />
+                <RecommendationsBell sheet triggerClass="text-white/90 hover:text-gold" />
               </div>
             </div>
           </motion.div>

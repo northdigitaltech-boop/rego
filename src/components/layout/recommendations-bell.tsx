@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Sparkles, MapPin, Star, ArrowRight } from "lucide-react";
+import { Sparkles, MapPin, Star, ArrowRight, X } from "lucide-react";
 
 import { photo, formatPrice, cn } from "@/lib/utils";
 
@@ -38,9 +39,13 @@ function readSeen(): Set<string> {
 export function RecommendationsBell({
   className,
   triggerClass = "text-forest/80 hover:text-forest-600",
+  sheet = false,
 }: {
   className?: string;
   triggerClass?: string;
+  /** Render the panel as a fixed bottom-sheet (for the mobile menu, where an
+   *  absolutely-positioned dropdown would be clipped by the scroll container). */
+  sheet?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   const [items, setItems] = React.useState<RecItem[]>([]);
@@ -85,22 +90,106 @@ export function RecommendationsBell({
 
   if (items.length === 0) return null;
 
+  const list = (
+    <div className="max-h-[70vh] overflow-y-auto sm:max-h-96">
+      {items.map((r) => (
+        <Link
+          key={r.id}
+          href={r.href}
+          onClick={() => setOpen(false)}
+          className="flex gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-0 hover:bg-muted/50"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo(r.image, 120)}
+            alt=""
+            loading="lazy"
+            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-600">
+              {r.categoryLabel}
+            </span>
+            <span className="mt-0.5 line-clamp-1 block font-display text-sm font-bold text-forest">
+              {r.title}
+            </span>
+            <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-0.5">
+                <MapPin className="h-3 w-3" /> {r.location}
+              </span>
+              <span className="inline-flex items-center gap-0.5">
+                <Star className="h-3 w-3 fill-gold text-gold" /> {r.rating.toFixed(1)}
+              </span>
+            </span>
+            {r.price > 0 && (
+              <span className="block text-xs font-bold text-forest">
+                {formatPrice(r.price)}
+                <span className="text-[10px] font-normal text-muted-foreground">/{r.unit}</span>
+              </span>
+            )}
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
+
+  const trigger = (
+    <button
+      onClick={toggle}
+      aria-label="Recommended for you"
+      title="Recommended for you"
+      className={cn("relative flex items-center transition-colors", triggerClass)}
+    >
+      <Sparkles className="h-5 w-5" />
+      {unseen > 0 && (
+        <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-forest-900">
+          {unseen}
+        </span>
+      )}
+    </button>
+  );
+
+  // Mobile: fixed bottom-sheet rendered at <body> so it isn't clipped by the
+  // scrollable mobile menu. Desktop: anchored dropdown under the bell.
+  if (sheet) {
+    return (
+      <div className={cn("flex items-center", className)}>
+        {trigger}
+        {open &&
+          createPortal(
+            <div className="fixed inset-0 z-[130] flex items-end bg-black/50" onClick={() => setOpen(false)}>
+              <div
+                className="max-h-[80vh] w-full overflow-hidden rounded-t-3xl border-t border-border bg-white text-left shadow-premium-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-forest-50 to-gold/10 px-4 py-3">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-gold" />
+                    <p className="font-display text-sm font-bold text-forest">Recommended for you</p>
+                  </span>
+                  <button onClick={() => setOpen(false)} aria-label="Close" className="text-muted-foreground hover:text-forest">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                {list}
+                <Link
+                  href="/listings"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-center gap-1 border-t border-border px-4 py-3 text-center text-sm font-semibold text-forest-600 hover:bg-muted/50"
+                >
+                  Browse all listings <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>,
+            document.body
+          )}
+      </div>
+    );
+  }
+
   return (
     <div className={cn("relative flex items-center", className)}>
-      <button
-        onClick={toggle}
-        aria-label="Recommended for you"
-        title="Recommended for you"
-        className={cn("relative flex items-center transition-colors", triggerClass)}
-      >
-        <Sparkles className="h-5 w-5" />
-        {unseen > 0 && (
-          <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-forest-900">
-            {unseen}
-          </span>
-        )}
-      </button>
-
+      {trigger}
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
@@ -109,46 +198,7 @@ export function RecommendationsBell({
               <Sparkles className="h-4 w-4 text-gold" />
               <p className="font-display text-sm font-bold text-forest">Recommended for you</p>
             </div>
-            <div className="max-h-96 overflow-y-auto">
-              {items.map((r) => (
-                <Link
-                  key={r.id}
-                  href={r.href}
-                  onClick={() => setOpen(false)}
-                  className="flex gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-0 hover:bg-muted/50"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo(r.image, 120)}
-                    alt=""
-                    loading="lazy"
-                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-600">
-                      {r.categoryLabel}
-                    </span>
-                    <span className="mt-0.5 line-clamp-1 block font-display text-sm font-bold text-forest">
-                      {r.title}
-                    </span>
-                    <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="inline-flex items-center gap-0.5">
-                        <MapPin className="h-3 w-3" /> {r.location}
-                      </span>
-                      <span className="inline-flex items-center gap-0.5">
-                        <Star className="h-3 w-3 fill-gold text-gold" /> {r.rating.toFixed(1)}
-                      </span>
-                    </span>
-                    {r.price > 0 && (
-                      <span className="block text-xs font-bold text-forest">
-                        {formatPrice(r.price)}
-                        <span className="text-[10px] font-normal text-muted-foreground">/{r.unit}</span>
-                      </span>
-                    )}
-                  </span>
-                </Link>
-              ))}
-            </div>
+            {list}
             <Link
               href="/listings"
               onClick={() => setOpen(false)}
