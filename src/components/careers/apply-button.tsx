@@ -158,7 +158,15 @@ function ApplyModal({
     });
     if (err) {
       setBusy(false);
-      setError("Could not submit your application. Please try again.");
+      // Surface the real reason so setup problems are obvious (e.g. the
+      // job_applications table/columns not created yet).
+      const msg = (err as { message?: string })?.message ?? "";
+      console.error("Application submit failed:", err);
+      setError(
+        msg
+          ? `Could not submit: ${msg}`
+          : "Could not submit your application. Please try again."
+      );
       return;
     }
 

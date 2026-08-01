@@ -295,7 +295,10 @@ export function ListingsBrowser({
                 className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
               >
                 {results.map((listing, i) => (
-                  <ServiceCard key={listing.id} listing={listing} index={i} />
+                  // The browse grid mixes every category in one uniform grid, so
+                  // force the standard vertical card. (Per-service card shapes
+                  // are used on the homepage where each section is one service.)
+                  <ServiceCard key={listing.id} listing={listing} index={i} variant="default" />
                 ))}
               </motion.div>
             ) : (
