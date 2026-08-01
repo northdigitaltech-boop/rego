@@ -41,12 +41,13 @@ import {
 } from "lucide-react";
 
 import {
-  listings,
   getCategory,
   categories,
   locations,
   type CategorySlug,
+  type Listing,
 } from "@/lib/data";
+import { feedAllListings } from "@/lib/home-feed";
 import {
   listAll,
   addListing,
@@ -1027,6 +1028,18 @@ function ListingsTable({
   onDelete: (l: PartnerListing) => void;
 }) {
   const [q, setQ] = React.useState("");
+  // Real, approved listings from the database (no sample data).
+  const [dbListings, setDbListings] = React.useState<Listing[] | null>(null);
+  React.useEffect(() => {
+    let active = true;
+    feedAllListings().then((rows) => {
+      if (active) setDbListings(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const match = (l: { title?: string; location?: string; category?: string }) => {
     if (!q.trim()) return true;
     const t = q.trim().toLowerCase();
@@ -1037,7 +1050,8 @@ function ListingsTable({
     );
   };
   const addedRows = added.filter(match);
-  const listingRows = listings.filter(match);
+  const listingRows = (dbListings ?? []).filter(match);
+  const loading = dbListings === null;
   return (
     <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
@@ -1048,6 +1062,9 @@ function ListingsTable({
           placeholder="Search by name, category or location…"
           className="w-full bg-transparent text-sm focus:outline-none"
         />
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {loading ? "…" : `${addedRows.length + listingRows.length} listings`}
+        </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -1061,8 +1078,17 @@ function ListingsTable({
             </tr>
           </thead>
           <tbody>
-            {q.trim() && addedRows.length === 0 && listingRows.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No listings match your search.</td></tr>
+            {loading && (
+              <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">Loading listings…</td></tr>
+            )}
+            {!loading && addedRows.length === 0 && listingRows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                  {q.trim()
+                    ? "No listings match your search."
+                    : "No listings yet. Approved provider listings will appear here."}
+                </td>
+              </tr>
             )}
             {addedRows.map((l) => (
               <tr key={l.id} className="border-b border-border bg-gold/5 last:border-0">
@@ -1108,10 +1134,15 @@ function ListingsTable({
                   {formatPrice(l.price)}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="flex items-center gap-1 text-forest">
-                    <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                    {l.rating.toFixed(1)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      Live
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+                      {l.rating.toFixed(1)}
+                    </span>
+                  </div>
                 </td>
               </tr>
             ))}
