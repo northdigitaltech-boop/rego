@@ -28,6 +28,7 @@ import {
   type AccountRole,
 } from "@/components/auth/auth-context";
 import { categories, type CategorySlug } from "@/lib/data";
+import { checkSignupEmail } from "@/lib/email-validation";
 import { sendEmail, verificationCodeEmail } from "@/lib/email";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
   );
   const [showPw, setShowPw] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [notice, setNotice] = React.useState("");
+  // Live email hygiene feedback while typing (signup only).
+  const emailCheck =
+    isSignup && email.trim().length > 3 ? checkSignupEmail(email) : { ok: true as const };
   const [flash, setFlashMsg] = React.useState("");
 
   // Email verification state
@@ -120,9 +125,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setNotice("");
     if (!captcha) {
       setError("Please confirm you're not a robot.");
       return;
+    }
+    // Block fake / disposable emails at signup.
+    if (isSignup) {
+      const check = checkSignupEmail(email);
+      if (!check.ok) {
+        setError(check.error ?? "Please enter a valid email address.");
+        return;
+      }
     }
     // Defense-in-depth throttle: max 5 attempts per 5 min per action+email.
     const gate = clientThrottle(
@@ -154,7 +168,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }
       goAfterAuth();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      // Supabase requires the address to be confirmed → show a friendly notice
+      // instead of a red error, since the signup itself succeeded.
+      if (msg.startsWith("CONFIRM_EMAIL:")) {
+        setNotice(msg.slice("CONFIRM_EMAIL:".length));
+        setError("");
+      } else {
+        setError(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -493,6 +515,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </div>
           )}
 
+          {notice && (
+            <div role="status" className="mt-6 flex items-start gap-2 rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 text-sm font-medium text-forest-700">
+              <Mail className="mt-0.5 h-5 w-5 shrink-0" />
+              <span>
+                {notice}
+                <span className="mt-1 block text-xs font-normal text-forest-700/80">
+                  Can&apos;t find it? Check your spam folder.
+                </span>
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             {isSignup && (
               <div>
@@ -596,6 +630,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   className="w-full bg-transparent text-sm text-forest placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
+              {/* Live fake / disposable / typo feedback (signup only) */}
+              {isSignup && !emailCheck.ok && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600">
+                  {emailCheck.error}
+                  {emailCheck.suggestion && (
+                    <button
+                      type="button"
+                      onClick={() => setEmail(emailCheck.suggestion!)}
+                      className="ml-1 underline hover:text-forest"
+                    >
+                      Use it
+                    </button>
+                  )}
+                </p>
+              )}
+              {isSignup && emailCheck.ok && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Use a real email — you&apos;ll need it to verify your account and receive bookings.
+                </p>
+              )}
             </div>
 
             <div>

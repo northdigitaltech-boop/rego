@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { supabase } from "@/lib/supabase";
 import { type CategorySlug } from "@/lib/data";
+import { checkSignupEmail } from "@/lib/email-validation";
 
 export type AccountRole = "traveler" | "partner" | "admin";
 
@@ -145,10 +146,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       businessCategory?: CategorySlug
     ) => {
       const e = email.trim().toLowerCase();
-      const { error } = await supabase.auth.signUp({
+
+      // Reject fake / disposable / placeholder addresses before hitting the API.
+      const check = checkSignupEmail(e);
+      if (!check.ok) throw new Error(check.error ?? "Please enter a valid email address.");
+
+      const { data, error } = await supabase.auth.signUp({
         email: e,
         password,
         options: {
+          // Where Supabase sends the user after they click the confirm link.
+          emailRedirectTo:
+            typeof window !== "undefined" ? `${window.location.origin}/signin` : undefined,
           data: {
             full_name: name.trim(),
             role,
@@ -157,7 +166,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       if (error) throw new Error(error.message);
-      // Email confirmation is disabled, so sign in immediately.
+
+      // When "Confirm email" is ON in Supabase, signUp returns a user but NO
+      // session — the address must be verified first. Tell the user to check
+      // their inbox instead of silently failing to sign in.
+      if (data.user && !data.session) {
+        throw new Error(
+          `CONFIRM_EMAIL:We've sent a confirmation link to ${e}. Please open it to activate your account.`
+        );
+      }
+
+      // Confirmation disabled → sign in immediately.
       const { error: e2 } = await supabase.auth.signInWithPassword({ email: e, password });
       if (e2) throw new Error(e2.message);
       try {
