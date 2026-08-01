@@ -12,7 +12,12 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
-import { submitApplication, CAREERS_EMAIL } from "@/lib/careers";
+import {
+  submitApplication,
+  CAREERS_EMAIL,
+  MARKETING_SKILLS,
+  SCREENING_QUESTIONS,
+} from "@/lib/careers";
 import { uploadFileToCloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
 import { sendEmail } from "@/lib/email";
 import { cn } from "@/lib/utils";
@@ -87,6 +92,14 @@ function ApplyModal({
   const [experience, setExperience] = React.useState("");
   const [cover, setCover] = React.useState("");
 
+  // Marketing screening
+  const [skills, setSkills] = React.useState<string[]>([]);
+  const [answers, setAnswers] = React.useState<Record<string, string>>({});
+  const [portfolio, setPortfolio] = React.useState("");
+
+  const toggleSkill = (s: string) =>
+    setSkills((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+
   const [cvUrl, setCvUrl] = React.useState("");
   const [cvName, setCvName] = React.useState("");
   const [cvLink, setCvLink] = React.useState("");
@@ -136,6 +149,12 @@ function ApplyModal({
       experience,
       cover_note: cover,
       cv_url: finalCv || null,
+      skills,
+      ran_paid_ads: answers.ran_paid_ads ?? null,
+      tourism_exp: answers.tourism_exp ?? null,
+      has_vehicle: answers.has_vehicle ?? null,
+      can_travel: answers.can_travel ?? null,
+      portfolio_url: portfolio,
     });
     if (err) {
       setBusy(false);
@@ -151,6 +170,11 @@ function ApplyModal({
        <p><strong>Email:</strong> ${email}<br/>
        <strong>Phone:</strong> ${phone || "—"}<br/>
        <strong>City:</strong> ${city || "—"}</p>
+       <p><strong>Skills:</strong> ${skills.length ? skills.join(", ") : "—"}</p>
+       <p>${SCREENING_QUESTIONS.map(
+         (q) => `<strong>${q.label}</strong> ${answers[q.key] ?? "—"}`
+       ).join("<br/>")}</p>
+       ${portfolio ? `<p><strong>Portfolio:</strong> <a href="${portfolio}">${portfolio}</a></p>` : ""}
        <p><strong>Experience:</strong><br/>${(experience || "—").replace(/\n/g, "<br/>")}</p>
        <p><strong>Cover note:</strong><br/>${(cover || "—").replace(/\n/g, "<br/>")}</p>
        ${finalCv ? `<p><a href="${finalCv}">View CV</a></p>` : "<p>No CV attached.</p>"}
@@ -221,6 +245,78 @@ function ApplyModal({
               <label className="block sm:col-span-2">
                 <span className="mb-1 block text-xs font-semibold text-muted-foreground">Why you? (short note)</span>
                 <textarea rows={3} className="auth-input resize-none" value={cover} onChange={(e) => setCover(e.target.value)} placeholder="Tell us why you're a great fit for this role…" />
+              </label>
+
+              {/* Marketing skills — multi-select */}
+              <div className="rounded-2xl border border-border bg-muted/30 p-3 sm:col-span-2">
+                <span className="mb-2 block text-xs font-semibold text-muted-foreground">
+                  Which of these can you do? (tick all that apply)
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {MARKETING_SKILLS.map((s) => {
+                    const on = skills.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => toggleSkill(s)}
+                        aria-pressed={on}
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                          on
+                            ? "border-forest-600 bg-gradient-forest text-white"
+                            : "border-border bg-card text-forest hover:border-gold/60 hover:text-gold"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Yes / No / Some screening */}
+              <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-3 sm:col-span-2">
+                {SCREENING_QUESTIONS.map((q) => (
+                  <div key={q.key}>
+                    <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                      {q.label}
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {q.options.map((opt) => {
+                        const on = answers[q.key] === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setAnswers((a) => ({ ...a, [q.key]: opt }))}
+                            aria-pressed={on}
+                            className={cn(
+                              "min-w-[68px] rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
+                              on
+                                ? "border-forest-600 bg-forest-600 text-white"
+                                : "border-border bg-card text-forest hover:bg-muted"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Portfolio / page you&apos;ve managed (optional)
+                </span>
+                <input
+                  className="auth-input"
+                  value={portfolio}
+                  onChange={(e) => setPortfolio(e.target.value)}
+                  placeholder="Facebook page, Instagram, website or campaign link"
+                />
               </label>
 
               {/* CV — upload a file or paste a link */}

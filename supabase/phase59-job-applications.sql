@@ -17,11 +17,26 @@ create table if not exists public.job_applications (
   experience    text,                     -- years / background summary
   cover_note    text,
   cv_url        text,                     -- uploaded file (Cloudinary) or pasted link
+  skills        text[] default '{}',      -- marketing skills (multi-select)
+  ran_paid_ads  text,                     -- yes | no | some
+  tourism_exp   text,                     -- yes | no | some
+  has_vehicle   text,                     -- yes | no
+  can_travel    text,                     -- yes | no
+  portfolio_url text,
   status        text not null default 'new',  -- new | shortlisted | interview | rejected | hired
   admin_note    text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
+
+-- Marketing / role screening answers (added after first draft — safe to re-run).
+alter table public.job_applications
+  add column if not exists skills          text[] default '{}',
+  add column if not exists ran_paid_ads    text,   -- yes | no | some
+  add column if not exists tourism_exp     text,   -- yes | no | some
+  add column if not exists has_vehicle     text,   -- yes | no
+  add column if not exists can_travel      text,   -- yes | no
+  add column if not exists portfolio_url   text;
 
 create index if not exists job_apps_job_idx     on public.job_applications (job_id);
 create index if not exists job_apps_status_idx  on public.job_applications (status);

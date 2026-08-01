@@ -19,6 +19,7 @@ import {
   setApplicationNote,
   deleteApplication,
   APPLICATION_STATUSES,
+  SCREENING_QUESTIONS,
   type JobApplicationRow,
   type ApplicationStatus,
 } from "@/lib/careers";
@@ -72,12 +73,16 @@ export function AdminApplications() {
       r.email.toLowerCase().includes(t) ||
       r.job_title.toLowerCase().includes(t) ||
       (r.city ?? "").toLowerCase().includes(t) ||
-      (r.phone ?? "").toLowerCase().includes(t)
+      (r.phone ?? "").toLowerCase().includes(t) ||
+      (r.skills ?? []).some((s) => s.toLowerCase().includes(t))
     );
   });
 
   const exportCsv = () => {
-    const head = ["Name", "Email", "Phone", "City", "Role", "Status", "Applied", "CV"];
+    const head = [
+      "Name", "Email", "Phone", "City", "Role", "Status", "Applied",
+      "Skills", "Paid ads", "Tourism exp", "Vehicle", "Can travel", "Portfolio", "CV",
+    ];
     const lines = filtered.map((r) =>
       [
         r.full_name,
@@ -87,6 +92,12 @@ export function AdminApplications() {
         r.job_title,
         r.status,
         new Date(r.created_at).toLocaleDateString(),
+        (r.skills ?? []).join("; "),
+        r.ran_paid_ads ?? "",
+        r.tourism_exp ?? "",
+        r.has_vehicle ?? "",
+        r.can_travel ?? "",
+        r.portfolio_url ?? "",
         r.cv_url ?? "",
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
@@ -210,6 +221,60 @@ export function AdminApplications() {
                         </a>
                       )}
                     </div>
+
+                    {/* Marketing skills */}
+                    {(r.skills?.length ?? 0) > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Skills</p>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {r.skills!.map((s) => (
+                            <span key={s} className="rounded-full bg-forest-50 px-2.5 py-0.5 text-[11px] font-semibold text-forest-700">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Screening answers */}
+                    {SCREENING_QUESTIONS.some((q) => r[q.key]) && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Screening</p>
+                        <div className="mt-1 grid gap-1 sm:grid-cols-2">
+                          {SCREENING_QUESTIONS.filter((q) => r[q.key]).map((q) => {
+                            const a = r[q.key] as string;
+                            return (
+                              <div key={q.key} className="flex items-start gap-2 text-xs">
+                                <span
+                                  className={cn(
+                                    "shrink-0 rounded-full px-2 py-0.5 font-bold",
+                                    a === "Yes"
+                                      ? "bg-green-50 text-green-700"
+                                      : a === "No"
+                                        ? "bg-red-50 text-red-600"
+                                        : "bg-amber-50 text-amber-700"
+                                  )}
+                                >
+                                  {a}
+                                </span>
+                                <span className="text-muted-foreground">{q.label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {r.portfolio_url && (
+                      <a
+                        href={r.portfolio_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-forest-600 hover:text-gold"
+                      >
+                        <FileText className="h-4 w-4" /> Portfolio
+                      </a>
+                    )}
 
                     {r.experience && (
                       <div className="mt-3">

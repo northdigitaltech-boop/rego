@@ -150,6 +150,50 @@ export const APPLICATION_STATUSES: { value: ApplicationStatus; label: string }[]
   { value: "hired", label: "Hired" },
 ];
 
+/** Marketing / field skills an applicant can tick. */
+export const MARKETING_SKILLS: string[] = [
+  "Meta (Facebook/Instagram) Ads",
+  "Google Ads",
+  "TikTok / YouTube marketing",
+  "Physical / on-ground marketing",
+  "Tourism industry experience",
+  "Social media management",
+  "Content creation & photography",
+  "Sales & provider onboarding",
+  "SEO / content writing",
+  "Email & WhatsApp marketing",
+  "Event & expo marketing",
+  "Graphic design (Canva/Adobe)",
+];
+
+/** Yes / No / Some screening questions asked on the apply form. */
+export const SCREENING_QUESTIONS: {
+  key: "ran_paid_ads" | "tourism_exp" | "has_vehicle" | "can_travel";
+  label: string;
+  options: string[];
+}[] = [
+  {
+    key: "ran_paid_ads",
+    label: "Have you run paid ad campaigns before (Meta / Google)?",
+    options: ["Yes", "Some", "No"],
+  },
+  {
+    key: "tourism_exp",
+    label: "Do you have experience in the tourism / hospitality industry?",
+    options: ["Yes", "Some", "No"],
+  },
+  {
+    key: "has_vehicle",
+    label: "Do you have a bike or car for field visits?",
+    options: ["Yes", "No"],
+  },
+  {
+    key: "can_travel",
+    label: "Can you travel across your region for provider meetings?",
+    options: ["Yes", "No"],
+  },
+];
+
 export interface JobApplicationRow {
   id: string;
   job_id: string | null;
@@ -162,6 +206,12 @@ export interface JobApplicationRow {
   experience: string | null;
   cover_note: string | null;
   cv_url: string | null;
+  skills: string[] | null;
+  ran_paid_ads: string | null;
+  tourism_exp: string | null;
+  has_vehicle: string | null;
+  can_travel: string | null;
+  portfolio_url: string | null;
   status: ApplicationStatus | string;
   admin_note: string | null;
   created_at: string;
@@ -179,6 +229,12 @@ export interface JobApplicationInput {
   experience?: string | null;
   cover_note?: string | null;
   cv_url?: string | null;
+  skills?: string[];
+  ran_paid_ads?: string | null;
+  tourism_exp?: string | null;
+  has_vehicle?: string | null;
+  can_travel?: string | null;
+  portfolio_url?: string | null;
 }
 
 /** Submit an application from the public careers page. */
@@ -197,6 +253,12 @@ export async function submitApplication(input: JobApplicationInput) {
     experience: input.experience?.trim() || null,
     cover_note: input.cover_note?.trim() || null,
     cv_url: input.cv_url?.trim() || null,
+    skills: input.skills ?? [],
+    ran_paid_ads: input.ran_paid_ads || null,
+    tourism_exp: input.tourism_exp || null,
+    has_vehicle: input.has_vehicle || null,
+    can_travel: input.can_travel || null,
+    portfolio_url: input.portfolio_url?.trim() || null,
   });
   return { error };
 }
