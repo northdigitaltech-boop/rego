@@ -88,6 +88,7 @@ import { AdminAbout } from "@/components/dashboard/admin-about";
 import { AdminListingsManager } from "@/components/dashboard/admin-listings-manager";
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
+import { AdminApplications } from "@/components/dashboard/admin-applications";
 import { AdminBroadcast } from "@/components/dashboard/admin-broadcast";
 import { AdminSubscription } from "@/components/dashboard/admin-subscription";
 import { AdminExpeditions } from "@/components/dashboard/admin-expeditions";
@@ -438,6 +439,7 @@ type Tab =
   | "about"
   | "legal"
   | "careers"
+  | "applications"
   | "notify"
   | "subscription"
   | "expeditions"
@@ -466,6 +468,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "about", label: "About Page", icon: Info },
   { id: "legal", label: "Legal & Policies", icon: FileText },
   { id: "careers", label: "Careers & Jobs", icon: Briefcase },
+  { id: "applications", label: "Job Applications", icon: FileText },
   { id: "notify", label: "Send Notification", icon: Megaphone },
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
@@ -941,6 +944,7 @@ export function AdminDashboard() {
           {tab === "about" && <AdminAbout />}
           {tab === "legal" && <AdminLegal />}
           {tab === "careers" && <AdminCareers />}
+          {tab === "applications" && <AdminApplications />}
           {tab === "notify" && <AdminBroadcast />}
           {tab === "subscription" && <AdminSubscription />}
           {tab === "expeditions" && <AdminExpeditions />}

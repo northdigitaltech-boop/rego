@@ -132,3 +132,97 @@ export async function saveJobOpenings(jobs: JobOpening[]) {
     .from("careers_content")
     .upsert({ id: 1, content: jobs, updated_at: new Date().toISOString() });
 }
+
+/* ---------------- job applications (phase59) ---------------- */
+
+export type ApplicationStatus =
+  | "new"
+  | "shortlisted"
+  | "interview"
+  | "rejected"
+  | "hired";
+
+export const APPLICATION_STATUSES: { value: ApplicationStatus; label: string }[] = [
+  { value: "new", label: "New" },
+  { value: "shortlisted", label: "Shortlisted" },
+  { value: "interview", label: "Interview" },
+  { value: "rejected", label: "Rejected" },
+  { value: "hired", label: "Hired" },
+];
+
+export interface JobApplicationRow {
+  id: string;
+  job_id: string | null;
+  job_title: string;
+  department: string | null;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  city: string | null;
+  experience: string | null;
+  cover_note: string | null;
+  cv_url: string | null;
+  status: ApplicationStatus | string;
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobApplicationInput {
+  job_id?: string | null;
+  job_title: string;
+  department?: string | null;
+  full_name: string;
+  email: string;
+  phone?: string | null;
+  city?: string | null;
+  experience?: string | null;
+  cover_note?: string | null;
+  cv_url?: string | null;
+}
+
+/** Submit an application from the public careers page. */
+export async function submitApplication(input: JobApplicationInput) {
+  if (!isSupabaseConfigured) {
+    return { error: new Error("Applications are not available right now.") };
+  }
+  const { error } = await supabase.from("job_applications").insert({
+    job_id: input.job_id ?? null,
+    job_title: input.job_title,
+    department: input.department ?? null,
+    full_name: input.full_name.trim(),
+    email: input.email.trim().toLowerCase(),
+    phone: input.phone?.trim() || null,
+    city: input.city?.trim() || null,
+    experience: input.experience?.trim() || null,
+    cover_note: input.cover_note?.trim() || null,
+    cv_url: input.cv_url?.trim() || null,
+  });
+  return { error };
+}
+
+/** All applications, newest first (admin). */
+export async function getApplications(): Promise<JobApplicationRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from("job_applications")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("getApplications:", error.message);
+    return [];
+  }
+  return (data ?? []) as JobApplicationRow[];
+}
+
+export async function setApplicationStatus(id: string, status: ApplicationStatus) {
+  return supabase.from("job_applications").update({ status }).eq("id", id);
+}
+
+export async function setApplicationNote(id: string, admin_note: string) {
+  return supabase.from("job_applications").update({ admin_note }).eq("id", id);
+}
+
+export async function deleteApplication(id: string) {
+  return supabase.from("job_applications").delete().eq("id", id);
+}

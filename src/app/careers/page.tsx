@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Briefcase, MapPin, Clock, ArrowRight, Sparkles, HeartHandshake, Mountain } from "lucide-react";
+import { Briefcase, MapPin, Clock, Sparkles, HeartHandshake, Mountain } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { ApplyButton } from "@/components/careers/apply-button";
 import { buildMetadata } from "@/lib/seo";
-import { getJobOpenings, jobsByDepartment, CAREERS_EMAIL } from "@/lib/careers";
+import { getJobOpenings, jobsByDepartment } from "@/lib/careers";
 
 export const revalidate = 60;
 
@@ -83,11 +84,6 @@ export default async function CareersPage() {
 
                   <div className="grid gap-4 lg:grid-cols-2">
                     {g.jobs.map((job) => {
-                      const mailto = `mailto:${CAREERS_EMAIL}?subject=${encodeURIComponent(
-                        `Application: ${job.title}`
-                      )}&body=${encodeURIComponent(
-                        `Hi Rego team,\n\nI'd like to apply for the ${job.title} role.\n\nName:\nLocation:\nPhone / WhatsApp:\nRelevant experience:\n\n(Please attach your CV.)\n\nThank you.`
-                      )}`;
                       return (
                         <article
                           key={job.id}
@@ -111,12 +107,13 @@ export default async function CareersPage() {
                               </li>
                             ))}
                           </ul>
-                          <a
-                            href={mailto}
-                            className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-gradient-forest px-4 py-2 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
-                          >
-                            Apply now <ArrowRight className="h-4 w-4" />
-                          </a>
+                          <div className="mt-4 self-start">
+                            <ApplyButton
+                              jobId={job.id}
+                              jobTitle={job.title}
+                              department={job.department}
+                            />
+                          </div>
                         </article>
                       );
                     })}
@@ -131,12 +128,14 @@ export default async function CareersPage() {
               <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">
                 We're always looking for great people who love travel and Gilgit-Baltistan. Send us your CV and tell us how you'd like to contribute.
               </p>
-              <a
-                href={`mailto:${CAREERS_EMAIL}?subject=${encodeURIComponent("Open application — Rego")}`}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-forest-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-forest-700"
-              >
-                Send an open application <ArrowRight className="h-4 w-4" />
-              </a>
+              <div className="mt-4 flex justify-center">
+                <ApplyButton
+                  jobTitle="Open application"
+                  department="General"
+                  label="Send an open application"
+                  className="bg-forest-800 bg-none hover:bg-forest-700"
+                />
+              </div>
             </div>
           </div>
         </section>

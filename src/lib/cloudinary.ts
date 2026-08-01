@@ -32,3 +32,36 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   const data = await res.json();
   return data.secure_url as string;
 }
+
+/**
+ * Upload a NON-image document (PDF / DOC / DOCX — e.g. a CV) and return its
+ * secure URL. Uses Cloudinary's `auto` resource type so the same unsigned
+ * preset works for documents as well as images.
+ */
+export async function uploadFileToCloudinary(file: File): Promise<string> {
+  if (!isCloudinaryConfigured) {
+    throw new Error("File uploads aren't set up yet.");
+  }
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", UPLOAD_PRESET);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+    { method: "POST", body: form }
+  );
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const err = await res.json();
+      detail = err?.error?.message ? ` (${err.error.message})` : "";
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`Upload failed${detail}. Check your Cloudinary settings.`);
+  }
+
+  const data = await res.json();
+  return data.secure_url as string;
+}
