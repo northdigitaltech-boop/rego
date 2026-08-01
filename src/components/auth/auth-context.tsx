@@ -68,7 +68,18 @@ function mapRole(r?: string | null): AccountRole {
 interface SupaUser {
   id: string;
   email?: string | null;
+  email_confirmed_at?: string | null;
+  confirmed_at?: string | null;
   user_metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * True when Supabase has verified the address (the user clicked the link we
+ * emailed them). Accounts created before "Confirm email" was switched on are
+ * already stamped confirmed, so this only blocks genuinely unverified ones.
+ */
+function isEmailConfirmed(su: SupaUser): boolean {
+  return Boolean(su.email_confirmed_at || su.confirmed_at);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -90,6 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       return;
     }
+    // Hard gate: an unverified address is not a usable account. Sign the
+    // session straight back out so unconfirmed users can never reach the app.
+    if (!isEmailConfirmed(su)) {
+      await supabase.auth.signOut().catch(() => {});
+      setUser(null);
+      return;
+    }
+
     const meta = su.user_metadata ?? {};
     let role = (meta.role as string) ?? "traveler";
     let fullName = (meta.full_name as string) ?? "";
@@ -189,11 +208,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const login = React.useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
+    const e = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: e, password });
     if (error) throw new Error(error.message);
+
+    // Refuse unverified accounts with a clear, actionable message.
+    if (data.user && !isEmailConfirmed(data.user as SupaUser)) {
+      await supabase.auth.signOut().catch(() => {});
+      throw new Error(
+        `CONFIRM_EMAIL:Your email isn't verified yet. Please open the confirmation link we sent to ${e}.`
+      );
+    }
     try {
       localStorage.removeItem(GUEST_KEY);
     } catch {
