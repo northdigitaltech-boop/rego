@@ -29,6 +29,24 @@ export async function getReviews(hotelId: string): Promise<ReviewRow[]> {
   return (data as ReviewRow[]) ?? [];
 }
 
+/**
+ * Recent, high-rated reviews across the whole platform — used for the
+ * homepage "What Travelers Say" band. Returns [] when there are none yet,
+ * so the section simply hides instead of showing invented testimonials.
+ */
+export async function getFeaturedReviews(limit = 4): Promise<ReviewRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*")
+    .gte("rating", 4)
+    .not("text", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return ((data as ReviewRow[]) ?? []).filter((r) => (r.text ?? "").trim().length > 0);
+}
+
 export async function addReview(input: {
   hotel_id: string;
   customer_email: string;

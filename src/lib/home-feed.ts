@@ -190,3 +190,50 @@ export async function feedTransport(n = 5) {
   if (priced.length > 0) return topN(priced, n);
   return topN((await getApprovedProviders()).map(transportProviderToListing), n);
 }
+
+/**
+ * Every REAL (approved) listing across all services, as a flat Listing[].
+ * Used by the /listings browser and site search — there is no sample data,
+ * so an empty result simply means nothing has been approved yet.
+ */
+export async function feedAllListings(): Promise<Listing[]> {
+  const [
+    hotels,
+    packages,
+    guides,
+    restaurants,
+    photographers,
+    companies,
+    services,
+    rentals,
+    transports,
+  ] = await Promise.all([
+    getHotels(),
+    getApprovedPackages(),
+    getApprovedGuides(),
+    getApprovedRestaurants(),
+    getApprovedMediaProviders(),
+    getApprovedCompanies(),
+    getApprovedServices(),
+    getApprovedRentals(),
+    getApprovedTransports(),
+  ]);
+
+  const all: Listing[] = [
+    ...hotels,
+    ...packages.map(packageToListing),
+    ...guides.map(guideToListing),
+    ...restaurants.map(restaurantToListing),
+    ...photographers.map(providerToListing),
+    ...companies.map(companyToListing),
+    ...services.map(serviceToListing),
+    ...rentals.map(rentalToListing),
+    ...transports.map(transportToListing),
+  ];
+
+  // De-duplicate defensively, then put featured + best-rated first.
+  const seen = new Set<string>();
+  return all
+    .filter((l) => (seen.has(l.id) ? false : (seen.add(l.id), true)))
+    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured) || b.rating - a.rating);
+}

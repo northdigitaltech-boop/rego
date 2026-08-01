@@ -38,6 +38,44 @@ const BOOKING_TABLES = [
   "roadside_requests",
 ];
 
+/** Every listing table on the platform (missing tables count as 0). */
+const LISTING_TABLES = [
+  "hotels",
+  "homestays",
+  "hostels",
+  "tour_companies",
+  "tour_guides",
+  "tour_packages",
+  "transport_providers",
+  "media_providers",
+  "restaurants",
+  "activities",
+  "expedition_companies",
+  "roadside_providers",
+];
+
+export interface AdminOverviewStats {
+  listings: number;
+  users: number;
+  bookings: number;
+}
+
+/**
+ * Real counts for the admin overview cards. Replaces the old hardcoded
+ * placeholder figures — these move as the platform actually grows.
+ */
+export async function getAdminOverviewStats(): Promise<AdminOverviewStats> {
+  if (!isSupabaseConfigured) return { listings: 0, users: 0, bookings: 0 };
+  const listingCounts = await Promise.all(LISTING_TABLES.map((t) => countRows(t)));
+  const bookingCounts = await Promise.all(BOOKING_TABLES.map((t) => countRows(t)));
+  const users = await countRows("profiles");
+  return {
+    listings: listingCounts.reduce((a, b) => a + b, 0),
+    users,
+    bookings: bookingCounts.reduce((a, b) => a + b, 0),
+  };
+}
+
 export async function getPlatformStats(): Promise<PlatformStat[]> {
   if (!isSupabaseConfigured) return [];
   const [hotels, homestays, hostels, companies, guides, expeditionCos, ...bookingCounts] =

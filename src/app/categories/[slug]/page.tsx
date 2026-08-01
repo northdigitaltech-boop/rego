@@ -26,6 +26,7 @@ import {
   type RestaurantRow,
 } from "@/lib/restaurants";
 import { allCategories, getCategory } from "@/lib/data";
+import { feedAllListings } from "@/lib/home-feed";
 import { getHotels } from "@/lib/hotels";
 import { getHomestays } from "@/lib/homestays";
 import { getHostels } from "@/lib/hostels";
@@ -265,6 +266,7 @@ export default async function CategoryPage({
             }
           >
             <ListingsBrowser
+              items={await feedAllListings()}
               initialCategory={category.slug}
               initialLocation={query || undefined}
               heading={category.name}

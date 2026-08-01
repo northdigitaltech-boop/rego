@@ -10,15 +10,17 @@ import { Button } from "@/components/ui/button";
 import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar";
 import {
   categoryGroups,
-  listings,
   locations,
   type CategorySlug,
+  type Listing,
 } from "@/lib/data";
 import { cn, formatPrice } from "@/lib/utils";
 
 const PRICE_MAX = 60000;
 
 interface ListingsBrowserProps {
+  /** Real, approved listings loaded on the server. */
+  items?: Listing[];
   initialCategory?: CategorySlug;
   initialLocation?: string;
   heading?: string;
@@ -27,6 +29,7 @@ interface ListingsBrowserProps {
 }
 
 export function ListingsBrowser({
+  items = [],
   initialCategory: propCategory,
   initialLocation: propLocation,
   heading = "Explore Listings",
@@ -58,7 +61,7 @@ export function ListingsBrowser({
   }, [queryCategory]);
 
   const results = React.useMemo(() => {
-    const list = listings.filter((l) => {
+    const list = items.filter((l) => {
       if (category !== "all" && l.category !== category) return false;
       if (location !== "all") {
         const a = l.location.toLowerCase();
@@ -77,7 +80,7 @@ export function ListingsBrowser({
       reviews: l.reviews,
       featured: l.featured,
     }));
-  }, [category, location, maxPrice, minRating, query, sort]);
+  }, [items, category, location, maxPrice, minRating, query, sort]);
 
   const resetFilters = () => {
     setCategory("all");

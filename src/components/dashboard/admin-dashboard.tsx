@@ -75,6 +75,7 @@ import {
 } from "@/lib/hostels";
 import { setHotelFeatured } from "@/lib/hotels";
 import { setRankingBadge, RANKING_OPTIONS } from "@/lib/ranking";
+import { getAdminOverviewStats, type AdminOverviewStats } from "@/lib/platform-stats";
 import { AdminAnalytics } from "@/components/dashboard/admin-analytics";
 import { AdminClientPasswords } from "@/components/dashboard/admin-client-passwords";
 import { AdminRoadside } from "@/components/dashboard/admin-roadside";
@@ -166,7 +167,7 @@ import {
   slugify,
   type DestinationRow,
 } from "@/lib/destinations";
-import { type HotelRow, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase, type HotelRow, isSupabaseConfigured } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { useAuth } from "@/components/auth/auth-context";
@@ -473,14 +474,6 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
   { id: "users", label: "Users", icon: Users },
-];
-
-const sampleUsers = [
-  { name: "Ahmed Raza", email: "ahmed@example.com", role: "Traveler", city: "Lahore" },
-  { name: "Shangrila Resort", email: "stay@shangrila.com", role: "Partner · Hotel", city: "Skardu" },
-  { name: "Baltistan Rent a Car", email: "info@baltcar.com", role: "Partner · Transport", city: "Skardu" },
-  { name: "Mountain Clicks", email: "hi@mclicks.com", role: "Partner · Photographer", city: "Skardu" },
-  { name: "Sara Khan", email: "sara@example.com", role: "Traveler", city: "Karachi" },
 ];
 
 export function AdminDashboard() {
@@ -987,17 +980,30 @@ function StatCard({
 }
 
 function Overview({ pending, added }: { pending: number; added: number }) {
+  // Real counts from the database — no placeholder figures.
+  const [stats, setStats] = React.useState<AdminOverviewStats | null>(null);
+  React.useEffect(() => {
+    let active = true;
+    getAdminOverviewStats().then((s) => {
+      if (active) setStats(s);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  const show = (n: number | undefined) => (stats ? String(n ?? 0) : "…");
+
   return (
     <div className="space-y-6">
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={Building2}
           label="Total listings"
-          value={String(listings.length + added)}
+          value={stats ? String(stats.listings + added) : "…"}
         />
-        <StatCard icon={Users} label="Registered users" value="1,284" />
-        <StatCard icon={CalendarCheck} label="Bookings (30d)" value="412" />
-        <StatCard icon={Wallet} label="Revenue (30d)" value={formatPrice(3850000)} />
+        <StatCard icon={Users} label="Registered users" value={show(stats?.users)} />
+        <StatCard icon={CalendarCheck} label="Bookings" value={show(stats?.bookings)} />
+        <StatCard icon={ShieldCheck} label="Pending approvals" value={String(pending)} />
       </div>
       <div className="rounded-2xl border border-border bg-card p-6 shadow-premium">
         <h2 className="font-display text-lg font-bold text-forest">
@@ -1980,34 +1986,98 @@ function DestinationsAdmin({
   );
 }
 
+/** Real registered users, loaded live from `profiles`. No sample data. */
 function UsersTable() {
+  const [rows, setRows] = React.useState<
+    { id: string; email: string | null; full_name: string | null; role: string | null; phone: string | null; created_at: string }[]
+  >([]);
+  const [loading, setLoading] = React.useState(true);
+  const [q, setQ] = React.useState("");
+
+  React.useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,email,full_name,role,phone,created_at")
+        .order("created_at", { ascending: false });
+      if (!active) return;
+      setRows((data as typeof rows) ?? []);
+      setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filtered = rows.filter((u) => {
+    if (!q.trim()) return true;
+    const t = q.trim().toLowerCase();
+    return (
+      (u.full_name ?? "").toLowerCase().includes(t) ||
+      (u.email ?? "").toLowerCase().includes(t) ||
+      (u.phone ?? "").toLowerCase().includes(t)
+    );
+  });
+
   return (
-    <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-3 font-semibold">Name</th>
-              <th className="px-4 py-3 font-semibold">Email</th>
-              <th className="px-4 py-3 font-semibold">Role</th>
-              <th className="px-4 py-3 font-semibold">City</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sampleUsers.map((u) => (
-              <tr key={u.email} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-medium text-forest">{u.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-semibold text-forest-600">
-                    {u.role}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{u.city}</td>
+    <div className="space-y-4">
+      <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search users by name, email or phone…"
+          className="w-full bg-transparent text-sm focus:outline-none"
+        />
+        <span className="shrink-0 text-xs text-muted-foreground">{filtered.length}</span>
+      </label>
+
+      <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-3 font-semibold">Name</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">Role</th>
+                <th className="px-4 py-3 font-semibold">Phone</th>
+                <th className="px-4 py-3 font-semibold">Joined</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                    Loading users…
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                    No registered users yet.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((u) => (
+                  <tr key={u.id} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 font-medium text-forest">{u.full_name || "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.email || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-semibold capitalize text-forest-600">
+                        {u.role === "admin" ? "Admin" : u.role === "partner" ? "Partner" : "Traveler"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.phone || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

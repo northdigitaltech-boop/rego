@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/footer";
 import { ListingsBrowser } from "@/components/listings/listings-browser";
 import { destinations } from "@/lib/data";
 import { getDestinationBySlug } from "@/lib/destinations";
+import { feedAllListings } from "@/lib/home-feed";
 import { photo, cn } from "@/lib/utils";
 
 const QUICK_FILTERS = [
@@ -64,6 +65,7 @@ export default async function DestinationPage({
   const activeCat = (Array.isArray(sp.category) ? sp.category[0] : sp.category) ?? "";
   const destination = await getDestinationBySlug(slug);
   if (!destination) notFound();
+  const allListings = await feedAllListings();
 
   return (
     <>
@@ -126,7 +128,7 @@ export default async function DestinationPage({
             </div>
           }
         >
-          <ListingsBrowser initialLocation={destination.location} hideHeader />
+          <ListingsBrowser items={allListings} initialLocation={destination.location} hideHeader />
         </Suspense>
       </main>
       <Footer />
