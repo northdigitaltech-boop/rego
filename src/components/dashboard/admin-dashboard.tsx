@@ -29,6 +29,7 @@ import {
   Pencil,
   Clock,
   ArrowRight,
+  ChevronLeft,
   MessageSquare,
   LifeBuoy,
   CalendarDays,
@@ -1049,21 +1050,124 @@ function ListingsTable({
       (getCategory(l.category as never)?.name ?? "").toLowerCase().includes(t)
     );
   };
-  const addedRows = added.filter(match);
-  const listingRows = (dbListings ?? []).filter(match);
   const loading = dbListings === null;
+
+  // Which service category is being viewed (null = the category card grid).
+  const [openCat, setOpenCat] = React.useState<string | null>(null);
+
+  const all = React.useMemo(
+    () => [
+      ...added.map((l) => ({ ...l, __new: true as const })),
+      ...(dbListings ?? []).map((l) => ({ ...l, __new: false as const })),
+    ],
+    [added, dbListings]
+  );
+
+  // Count per category so each card shows how many listings it holds.
+  const countByCat = React.useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const l of all) m[l.category] = (m[l.category] ?? 0) + 1;
+    return m;
+  }, [all]);
+
+  /* ---------- Category card grid ---------- */
+  if (!openCat) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-display text-xl font-bold text-forest">Listings by Service</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {loading
+              ? "Loading listings…"
+              : `${all.length} live listing${all.length === 1 ? "" : "s"} across ${
+                  Object.keys(countByCat).length
+                } service${Object.keys(countByCat).length === 1 ? "" : "s"}. Open a service to see its listings.`}
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {categories.map((c) => {
+            const count = countByCat[c.slug] ?? 0;
+            const Icon = c.icon;
+            return (
+              <button
+                key={c.slug}
+                onClick={() => setOpenCat(c.slug)}
+                disabled={count === 0}
+                className={cn(
+                  "group flex flex-col items-start rounded-2xl border border-border/70 bg-card p-4 text-left shadow-premium transition-all",
+                  count > 0
+                    ? "hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-premium-lg"
+                    : "opacity-60"
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-2xl transition-colors",
+                    count > 0
+                      ? "bg-gradient-forest text-gold"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <p className="mt-3 font-display text-sm font-bold leading-snug text-forest">
+                  {c.name}
+                </p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{c.tagline}</p>
+                <span className="mt-3 flex w-full items-center justify-between">
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-xs font-bold",
+                      count > 0 ? "bg-forest-50 text-forest-700" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {count} listing{count === 1 ? "" : "s"}
+                  </span>
+                  {count > 0 && (
+                    <ArrowRight className="h-4 w-4 text-forest-600 transition-transform group-hover:translate-x-0.5" />
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------- One category's listings ---------- */
+  const catName = getCategory(openCat as never)?.name ?? openCat;
+  const inCat = all.filter((l) => l.category === openCat).filter(match);
+  const addedRows = inCat.filter((l) => l.__new);
+  const listingRows = inCat.filter((l) => !l.__new);
+
   return (
-    <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          onClick={() => {
+            setOpenCat(null);
+            setQ("");
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"
+        >
+          <ChevronLeft className="h-4 w-4" /> All services
+        </button>
+        <h2 className="font-display text-lg font-bold text-forest">{catName}</h2>
+      </div>
+
+      <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <Search className="h-4 w-4 text-muted-foreground" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name, category or location…"
+          placeholder={`Search in ${catName}…`}
           className="w-full bg-transparent text-sm focus:outline-none"
         />
         <span className="shrink-0 text-xs text-muted-foreground">
-          {loading ? "…" : `${addedRows.length + listingRows.length} listings`}
+          {loading ? "…" : `${inCat.length} listings`}
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -1148,6 +1252,7 @@ function ListingsTable({
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );
