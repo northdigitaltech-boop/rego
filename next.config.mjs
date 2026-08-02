@@ -16,11 +16,9 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
-    // NOTE: `optimizeCss: true` would inline critical CSS and remove the
-    // ~510ms render-blocking stylesheet, but it requires the `beasties`
-    // (formerly `critters`) package. Install it first, then enable:
-    //   npm i -D beasties
-    // optimizeCss: true,
+    // Inlines the critical CSS and defers the rest (via `beasties`), removing
+    // the ~510ms render-blocking stylesheet that was holding back mobile LCP.
+    optimizeCss: true,
   },
 };
 
