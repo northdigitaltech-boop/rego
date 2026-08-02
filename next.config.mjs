@@ -16,9 +16,13 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
-    // Inlines the critical CSS and defers the rest (via `beasties`), removing
-    // the ~510ms render-blocking stylesheet that was holding back mobile LCP.
-    optimizeCss: true,
+    // `optimizeCss` is DISABLED on purpose. It would inline critical CSS and
+    // remove the ~510ms render-blocking stylesheet, but on Next 15.5 the
+    // pages-router runtime (used to prerender /404 and /500) still requires
+    // the old `critters` module — installing `beasties` alone fails the build
+    // with "Cannot find module 'critters'". Re-enable only after verifying a
+    // full `npm run build` passes locally.
+    // optimizeCss: true,
   },
 };
 
