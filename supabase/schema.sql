@@ -12,7 +12,7 @@ create table if not exists public.hotels (
   location    text not null,
   price       integer not null,
   unit        text not null default 'night',
-  rating      numeric(2,1) default 4.5,
+  rating      numeric(2,1) default 0,   -- 0 = no reviews yet (never fake a score)
   reviews     integer default 0,
   image       text,
   description text,

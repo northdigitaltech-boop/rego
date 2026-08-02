@@ -46,22 +46,6 @@ const services = [
   { icon: Plane, title: "Drone / Aerial", desc: "4K aerial shots of GB" },
 ];
 
-const reviews = [
-  {
-    name: "Usman Ali",
-    rating: 5,
-    date: "3 days ago",
-    text: "Best travel photos I've ever had. Captured Hunza perfectly — every shot was frame-worthy!",
-    avatar: "https://i.pravatar.cc/150?img=33",
-  },
-  {
-    name: "Hira Sheikh",
-    rating: 5,
-    date: "2 weeks ago",
-    text: "Our wedding film was beyond beautiful. Professional, punctual and so creative.",
-    avatar: "https://i.pravatar.cc/150?img=47",
-  },
-];
 
 function buildPortfolio(listing: Listing) {
   const n = parseInt(listing.id.replace(/\D/g, ""), 10) || 1;
@@ -323,35 +307,9 @@ export function PhotographerProfile({ listing }: { listing: Listing }) {
             <h2 className="font-display text-xl font-bold text-forest">
               Client Reviews
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {reviews.map((r) => (
-                <figure
-                  key={r.name}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-premium"
-                >
-                  <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={r.avatar}
-                      alt={r.name}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-forest">{r.name}</p>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: r.rating }).map((_, j) => (
-                          <Star key={j} className="h-3.5 w-3.5 fill-gold text-gold" />
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{r.date}</span>
-                  </div>
-                  <blockquote className="mt-3 text-sm leading-relaxed text-forest/85">
-                    “{r.text}”
-                  </blockquote>
-                </figure>
-              ))}
-            </div>
+            <p className="mt-4 rounded-xl border border-dashed border-border bg-muted/40 py-8 text-center text-sm text-muted-foreground">
+              No reviews yet — reviews appear here once clients book and rate this creator.
+            </p>
           </section>
 
           {/* Contact */}

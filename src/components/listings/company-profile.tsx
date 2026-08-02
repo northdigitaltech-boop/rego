@@ -69,22 +69,6 @@ const packages = [
   },
 ];
 
-const reviews = [
-  {
-    name: "Ahmed Raza",
-    rating: 5,
-    date: "2 days ago",
-    text: "Excellent service! The driver was professional, on-time and very cooperative. The vehicle was clean and comfortable. Highly recommended!",
-    avatar: "https://i.pravatar.cc/150?img=12",
-  },
-  {
-    name: "Sara Khan",
-    rating: 5,
-    date: "1 week ago",
-    text: "Smooth booking and a wonderful trip across the valleys. Will definitely use them again.",
-    avatar: "https://i.pravatar.cc/150?img=45",
-  },
-];
 
 const policies = [
   "Free cancellation up to 48 hours before service",
@@ -503,35 +487,9 @@ export function CompanyProfile({ listing }: { listing: Listing }) {
             <h2 className="font-display text-xl font-bold text-forest">
               Top Reviews
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {reviews.map((r) => (
-                <figure
-                  key={r.name}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-premium"
-                >
-                  <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={r.avatar}
-                      alt={r.name}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-forest">{r.name}</p>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: r.rating }).map((_, j) => (
-                          <Star key={j} className="h-3.5 w-3.5 fill-gold text-gold" />
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{r.date}</span>
-                  </div>
-                  <blockquote className="mt-3 text-sm leading-relaxed text-forest/85">
-                    “{r.text}”
-                  </blockquote>
-                </figure>
-              ))}
-            </div>
+            <p className="mt-4 rounded-xl border border-dashed border-border bg-muted/40 py-8 text-center text-sm text-muted-foreground">
+              No reviews yet — reviews appear here once travellers book and rate this company.
+            </p>
           </section>
 
           {/* Gallery */}

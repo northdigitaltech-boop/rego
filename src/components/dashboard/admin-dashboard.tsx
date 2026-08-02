@@ -2127,29 +2127,34 @@ function DestinationsAdmin({
   );
 }
 
+type ProfileLite = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  role: string | null;
+  phone: string | null;
+  created_at: string;
+};
+
 /** Real registered users, loaded live from `profiles`. No sample data. */
 function UsersTable() {
-  const [rows, setRows] = React.useState<
-    { id: string; email: string | null; full_name: string | null; role: string | null; phone: string | null; created_at: string }[]
-  >([]);
+  const [rows, setRows] = React.useState<ProfileLite[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [q, setQ] = React.useState("");
+  const [toDelete, setToDelete] = React.useState<ProfileLite | null>(null);
+
+  const load = React.useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,role,phone,created_at")
+      .order("created_at", { ascending: false });
+    setRows((data as ProfileLite[]) ?? []);
+    setLoading(false);
+  }, []);
 
   React.useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id,email,full_name,role,phone,created_at")
-        .order("created_at", { ascending: false });
-      if (!active) return;
-      setRows((data as typeof rows) ?? []);
-      setLoading(false);
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+    load();
+  }, [load]);
 
   const filtered = rows.filter((u) => {
     if (!q.trim()) return true;
@@ -2184,18 +2189,19 @@ function UsersTable() {
                 <th className="px-4 py-3 font-semibold">Role</th>
                 <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Joined</th>
+                <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                     Loading users…
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                     No registered users yet.
                   </td>
                 </tr>
@@ -2213,11 +2219,165 @@ function UsersTable() {
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end">
+                        {u.role === "admin" ? (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        ) : (
+                          <button
+                            onClick={() => setToDelete(u)}
+                            title="Delete account (frees the email for re-registration)"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {toDelete && (
+        <DeleteUserModal
+          user={toDelete}
+          onClose={() => setToDelete(null)}
+          onDone={async () => {
+            setToDelete(null);
+            await load();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Permanently removes an account so the email can be used to register again. */
+function DeleteUserModal({
+  user,
+  onClose,
+  onDone,
+}: {
+  user: ProfileLite;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [note, setNote] = React.useState("");
+  const [alsoListings, setAlsoListings] = React.useState(true);
+  const [confirmText, setConfirmText] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const canDelete = note.trim().length > 0 && confirmText.trim().toUpperCase() === "DELETE";
+
+  const submit = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session expired. Please sign in again.");
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: user.id, deleteListings: alsoListings, note }),
+      });
+      const json = await res.json().catch(() => ({ ok: false }));
+      if (!json.ok) throw new Error(json.error || "Could not delete this account.");
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card shadow-premium-lg sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h3 className="font-display text-base font-bold text-red-600">Delete account</h3>
+          <button onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-forest">
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3 p-5">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <p className="font-semibold">{user.full_name || "(no name)"}</p>
+            <p className="text-xs">{user.email}</p>
+            <p className="mt-2 text-xs">
+              This permanently removes the account. The email will be free to register again —
+              useful when someone chose the wrong category.
+            </p>
+          </div>
+
+          <label className="flex items-start gap-2 text-sm text-forest">
+            <input
+              type="checkbox"
+              checked={alsoListings}
+              onChange={(e) => setAlsoListings(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Also delete their listings
+              <span className="block text-xs text-muted-foreground">
+                Leave ticked so nothing is orphaned. Untick to keep the listings live.
+              </span>
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+              Reason (recorded in the audit log) *
+            </span>
+            <input
+              className="auth-input"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. registered under the wrong category, re-registering"
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+              Type DELETE to confirm *
+            </span>
+            <input
+              className="auth-input"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+            />
+          </label>
+
+          {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
+
+          <div className="flex gap-2">
+            <button
+              onClick={submit}
+              disabled={!canDelete || busy}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {busy ? "Deleting…" : "Delete permanently"}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-forest hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

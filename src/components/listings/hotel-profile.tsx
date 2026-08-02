@@ -64,32 +64,6 @@ const amenities = [
   "Airport pickup",
 ];
 
-const sampleReviews = [
-  {
-    name: "Bilal Ahmed",
-    city: "Islamabad",
-    rating: 5,
-    date: "May 2026",
-    text: "Incredible stay with stunning views. The staff went above and beyond. Will return for sure!",
-    avatar: "https://i.pravatar.cc/150?img=15",
-  },
-  {
-    name: "Ayesha Tariq",
-    city: "Lahore",
-    rating: 5,
-    date: "Apr 2026",
-    text: "Spotlessly clean rooms and delicious local food. Perfect base for exploring the valley.",
-    avatar: "https://i.pravatar.cc/150?img=32",
-  },
-  {
-    name: "Hamza Sheikh",
-    city: "Karachi",
-    rating: 4,
-    date: "Mar 2026",
-    text: "Great location and warm hospitality. Booking through Rego was quick and easy.",
-    avatar: "https://i.pravatar.cc/150?img=51",
-  },
-];
 
 const ratingBreakdown = [
   { label: "Cleanliness", value: 4.9 },
@@ -787,37 +761,9 @@ export function HotelProfile({
                 </div>
               )
             ) : (
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {sampleReviews.map((r) => (
-                  <figure
-                    key={r.name}
-                    className="rounded-2xl border border-border bg-card p-5 shadow-premium"
-                  >
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: r.rating }).map((_, j) => (
-                        <Star key={j} className="h-4 w-4 fill-gold text-gold" />
-                      ))}
-                    </div>
-                    <blockquote className="mt-2 text-sm leading-relaxed text-forest/85">
-                      “{r.text}”
-                    </blockquote>
-                    <figcaption className="mt-4 flex items-center gap-3 border-t border-border pt-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={r.avatar}
-                        alt={r.name}
-                        className="h-9 w-9 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold text-forest">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {r.city} · {r.date}
-                        </p>
-                      </div>
-                    </figcaption>
-                  </figure>
-                ))}
-              </div>
+              <p className="mt-5 rounded-xl border border-dashed border-border bg-muted/40 py-8 text-center text-sm text-muted-foreground">
+                No reviews yet — be the first to review this hotel.
+              </p>
             )}
           </section>
 

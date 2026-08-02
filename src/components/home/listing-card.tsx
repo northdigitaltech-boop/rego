@@ -83,24 +83,33 @@ export function ListingCard({
         )}
 
         <div className="mt-1.5 flex items-center gap-1.5">
-          <span className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }).map((_, j) => (
-              <Star
-                key={j}
-                className={
-                  j < Math.round(listing.rating)
-                    ? "h-3.5 w-3.5 fill-gold text-gold"
-                    : "h-3.5 w-3.5 text-border"
-                }
-              />
-            ))}
-          </span>
-          <span className="text-xs font-semibold text-forest">
-            {listing.rating.toFixed(1)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            ({listing.reviews})
-          </span>
+          {listing.reviews > 0 && listing.rating > 0 ? (
+            <>
+              <span className="flex items-center gap-0.5">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Star
+                    key={j}
+                    className={
+                      j < Math.round(listing.rating)
+                        ? "h-3.5 w-3.5 fill-gold text-gold"
+                        : "h-3.5 w-3.5 text-border"
+                    }
+                  />
+                ))}
+              </span>
+              <span className="text-xs font-semibold text-forest">
+                {listing.rating.toFixed(1)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ({listing.reviews})
+              </span>
+            </>
+          ) : (
+            /* No real reviews yet — never show an invented score. */
+            <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-600">
+              New
+            </span>
+          )}
         </div>
 
         <p className="mt-1 text-sm text-muted-foreground">{listing.location}</p>
