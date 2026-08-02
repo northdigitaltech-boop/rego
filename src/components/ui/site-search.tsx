@@ -95,6 +95,11 @@ export function SiteSearch({
         }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
+        /* A placeholder is not an accessible name — screen readers need this. */
+        aria-label={placeholder || "Search"}
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
         className={className}
       />
       {open && results.length > 0 && (

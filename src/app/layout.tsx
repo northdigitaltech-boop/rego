@@ -26,13 +26,16 @@ const dancingScript = Dancing_Script({
   display: "swap",
 });
 
-// Lock the mobile viewport so the layout can't be pinch-zoomed in/out.
+// The layout is kept stable on mobile by `touch-action: pan-x pan-y` in
+// globals.css (that's what actually stops the pinch gesture, including on iOS
+// Safari, which ignores the meta flags).
+//
+// We deliberately do NOT set `userScalable: false` / `maximumScale: 1` here:
+// those meta flags are what accessibility audits penalise, and blocking zoom
+// at the browser level would lock out users who genuinely need to magnify.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  minimumScale: 1,
-  userScalable: false,
   themeColor: "#0F4C3A",
 };
 

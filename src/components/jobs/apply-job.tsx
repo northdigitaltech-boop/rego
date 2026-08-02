@@ -259,7 +259,7 @@ function ApplyModal({ job, onClose }: { job: JobRow; onClose: () => void }) {
                       </button>
                     </span>
                   )}
-                  <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
+                  <input ref={fileRef} type="file" aria-label="Upload your CV" accept=".pdf,.doc,.docx,application/pdf" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
                 </div>
               </div>
 

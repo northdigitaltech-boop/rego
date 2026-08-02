@@ -158,8 +158,18 @@ export function ProviderPostJob({
       : await createJob(payload);
     setBusy(false);
 
-    if ((res as { error?: unknown }).error) {
-      setError("Could not save the job. Please try again.");
+    const err = (res as { error?: { message?: string; code?: string } | null }).error;
+    if (err) {
+      console.error("Job save failed:", err);
+      const msg = err.message ?? "";
+      // A missing table means the phase-62 migration hasn't been run yet.
+      if (/relation .*jobs.* does not exist|schema cache/i.test(msg)) {
+        setError(
+          "The jobs table doesn't exist yet. Run supabase/phase62-jobs-portal.sql in Supabase, then try again."
+        );
+      } else {
+        setError(msg ? `Could not save: ${msg}` : "Could not save the job. Please try again.");
+      }
       return;
     }
     setDone(true);

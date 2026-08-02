@@ -361,6 +361,7 @@ function ApplyModal({
                   <input
                     ref={fileRef}
                     type="file"
+                    aria-label="Upload your CV"
                     accept=".pdf,.doc,.docx,application/pdf"
                     className="hidden"
                     onChange={(e) => pickFile(e.target.files?.[0])}
