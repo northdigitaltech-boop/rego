@@ -46,6 +46,9 @@ interface MobileBottomNavigationProps {
   recommendationsSlot: React.ReactNode;
 }
 
+/** Slightly lighter than default — reads crisp and premium at 28px. */
+const ICON_STROKE = 1.75;
+
 /** Cap the badge like native apps do. */
 function badge(n: number): string {
   return n > 99 ? "99+" : String(n);
@@ -102,7 +105,11 @@ export function MobileBottomNavigation({
               className={cn(itemClass, favoritesActive ? activeClass : idleClass)}
             >
               {favoritesActive && <ActiveBar />}
-              <Heart className="h-7 w-7" strokeWidth={1.9} />
+              {/* Solid heart once you're on the page — the familiar native cue. */}
+              <Heart
+                className={cn("h-7 w-7", favoritesActive && "fill-current")}
+                strokeWidth={ICON_STROKE}
+              />
             </Link>
           </Item>
 
@@ -119,7 +126,7 @@ export function MobileBottomNavigation({
               aria-label="Booking Status"
               className={cn(itemClass, idleClass)}
             >
-              <TicketCheck className="h-7 w-7" strokeWidth={1.9} />
+              <TicketCheck className="h-7 w-7" strokeWidth={ICON_STROKE} />
             </button>
           </Item>
 
@@ -131,9 +138,10 @@ export function MobileBottomNavigation({
               active={sheet === "notifications"}
               signedIn={signedIn}
               signInHref={signInHref}
-              onClick={() => setSheet("notifications")}
+              /* Tap again to close, like a native tab. */
+              onClick={() => setSheet((s) => (s === "notifications" ? null : "notifications"))}
             >
-              <Bell className="h-7 w-7" strokeWidth={1.9} />
+              <Bell className="h-7 w-7" strokeWidth={ICON_STROKE} />
             </NavButton>
           </Item>
 
@@ -145,9 +153,10 @@ export function MobileBottomNavigation({
               active={sheet === "messages"}
               signedIn={signedIn}
               signInHref={signInHref}
-              onClick={() => setSheet("messages")}
+              /* Tap again to close, like a native tab. */
+              onClick={() => setSheet((s) => (s === "messages" ? null : "messages"))}
             >
-              <MessageCircle className="h-7 w-7" strokeWidth={1.9} />
+              <MessageCircle className="h-7 w-7" strokeWidth={ICON_STROKE} />
             </NavButton>
           </Item>
         </ul>
@@ -244,10 +253,11 @@ export function MobileBottomNavigation({
 /* ---------------- building blocks ---------------- */
 
 const itemClass =
-  "relative flex h-full w-full min-h-[48px] min-w-[48px] items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-forest-800";
-/* Gold icons on the forest-green bar; the active one brightens to full gold. */
-const idleClass = "text-gold/70 hover:text-gold active:text-gold";
-const activeClass = "text-gold";
+  "relative flex h-full w-full min-h-[48px] min-w-[48px] items-center justify-center rounded-lg transition-all duration-200 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-forest-800";
+/* Snow-white icons on the forest-green bar; the active one goes fully opaque
+   and is marked with the gold indicator bar. */
+const idleClass = "text-white/80 hover:text-white";
+const activeClass = "text-white";
 
 function Item({ children }: { children: React.ReactNode }) {
   return <li className="flex flex-1 items-stretch px-1">{children}</li>;

@@ -143,7 +143,7 @@ export function RecommendationsBell({
       title="Recommended for you"
       className={cn("relative flex items-center transition-colors", triggerClass)}
     >
-      <Sparkles className={iconClass} strokeWidth={1.9} />
+      <Sparkles className={iconClass} strokeWidth={1.75} />
       {unseen > 0 && (
         <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-forest-900">
           {unseen}
