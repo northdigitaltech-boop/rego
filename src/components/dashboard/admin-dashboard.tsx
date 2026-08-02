@@ -30,6 +30,7 @@ import {
   Clock,
   ArrowRight,
   ChevronLeft,
+  LayoutGrid,
   MessageSquare,
   LifeBuoy,
   CalendarDays,
@@ -92,6 +93,7 @@ import { AdminListingsManager } from "@/components/dashboard/admin-listings-mana
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
 import { AdminApplications } from "@/components/dashboard/admin-applications";
+import { AdminServiceRequests } from "@/components/dashboard/admin-service-requests";
 import { AdminBroadcast } from "@/components/dashboard/admin-broadcast";
 import { AdminSubscription } from "@/components/dashboard/admin-subscription";
 import { AdminExpeditions } from "@/components/dashboard/admin-expeditions";
@@ -428,6 +430,7 @@ type Tab =
   | "approvals"
   | "edits"
   | "verification"
+  | "service-requests"
   | "manage"
   | "roadside"
   | "road-updates"
@@ -457,6 +460,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "approvals", label: "Approvals", icon: ShieldCheck },
   { id: "edits", label: "Edit Requests", icon: Pencil },
   { id: "verification", label: "Verification", icon: BadgeCheck },
+  { id: "service-requests", label: "Service Requests", icon: LayoutGrid },
   { id: "manage", label: "Manage & Delete", icon: Trash2 },
   { id: "roadside", label: "Roadside Assistance", icon: LifeBuoy },
   { id: "road-updates", label: "Road Updates & Alerts", icon: TriangleAlert },
@@ -939,6 +943,7 @@ export function AdminDashboard() {
           {tab === "about" && <AdminAbout />}
           {tab === "legal" && <AdminLegal />}
           {tab === "careers" && <AdminCareers />}
+          {tab === "service-requests" && <AdminServiceRequests />}
           {tab === "applications" && <AdminApplications />}
           {tab === "notify" && <AdminBroadcast />}
           {tab === "subscription" && <AdminSubscription />}

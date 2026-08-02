@@ -32,6 +32,7 @@ import { RoadsideProviderDashboard } from "@/components/dashboard/roadside-provi
 import { CoworkingProviderDashboard } from "@/components/dashboard/coworking-provider-dashboard";
 import { ActivityProviderDashboard } from "@/components/dashboard/activity-provider-dashboard";
 import { ExpeditionDashboard } from "@/components/dashboard/expedition-dashboard";
+import { ServiceSwitcher } from "@/components/dashboard/service-switcher";
 import {
   getBookingsByCustomer,
   bookingRef,
@@ -232,50 +233,45 @@ export function Dashboard() {
     router.push("/");
   };
 
+  // Which of the provider's services is currently open (multi-service accounts).
+  const [activeService, setActiveService] = React.useState<string | undefined>(undefined);
+
   if (user.role === "partner") {
-    if (user.businessCategory === "hotels") {
-      return <HotelProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "homestays") {
-      return <HomestayProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "hostels") {
-      return <HostelProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (
-      user.businessCategory === "travel-companies" ||
-      user.businessCategory === "tours"
-    ) {
-      return <TourCompanyDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "transport") {
-      return <TransportProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "guides") {
-      return <GuideDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (
-      user.businessCategory === "photographers" ||
-      user.businessCategory === "drone-pilots"
-    ) {
-      return <MediaDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "restaurants") {
-      return <RestaurantDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "roadside") {
-      return <RoadsideProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "coworking") {
-      return <CoworkingProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "activities") {
-      return <ActivityProviderDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    if (user.businessCategory === "mountaineering") {
-      return <ExpeditionDashboard user={user} onSignOut={handleSignOut} />;
-    }
-    return <PartnerDashboard user={user} onSignOut={handleSignOut} />;
+    // A provider may run several services from one account. `activeService`
+    // picks which dashboard is shown; it defaults to the category they
+    // originally registered with.
+    const cat = activeService ?? user.businessCategory;
+
+    const providerView = (() => {
+      if (cat === "hotels") return <HotelProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "homestays") return <HomestayProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "hostels") return <HostelProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "travel-companies" || cat === "tours")
+        return <TourCompanyDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "transport") return <TransportProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "guides") return <GuideDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "photographers" || cat === "drone-pilots")
+        return <MediaDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "restaurants") return <RestaurantDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "roadside") return <RoadsideProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "coworking") return <CoworkingProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "activities") return <ActivityProviderDashboard user={user} onSignOut={handleSignOut} />;
+      if (cat === "mountaineering") return <ExpeditionDashboard user={user} onSignOut={handleSignOut} />;
+      return <PartnerDashboard user={user} onSignOut={handleSignOut} />;
+    })();
+
+    return (
+      <>
+        <div className="container-px pt-6">
+          <ServiceSwitcher
+            email={user.email}
+            active={cat}
+            onSwitch={(next) => setActiveService(next)}
+          />
+        </div>
+        {providerView}
+      </>
+    );
   }
 
   return (
