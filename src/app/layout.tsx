@@ -109,6 +109,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preload the hero (the LCP element) so it starts downloading in
+            parallel with the stylesheet instead of waiting for CSS to parse. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/hero-1024.webp"
+          imageSrcSet="/hero-640.webp 640w, /hero-1024.webp 1024w, /hero-1536.webp 1536w"
+          imageSizes="100vw"
+          fetchPriority="high"
+        />
         {/* Warm up connections to the image CDNs so card photos load faster. */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />

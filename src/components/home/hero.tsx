@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -168,20 +167,22 @@ export function Hero() {
           desktop via cheap CSS (no JS animation on the critical path). */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="hero-kenburns relative h-full w-full">
-          <Image
-            src="/home-hero.jpg"
+          {/* LCP element. Deliberately a plain <img> with PRE-BUILT WebP files
+              instead of next/image: `/_next/image` transforms on demand, and
+              that per-region cold-start was costing seconds on the first view.
+              These are static assets served straight from the CDN. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero-1024.webp"
+            srcSet="/hero-640.webp 640w, /hero-1024.webp 1024w, /hero-1536.webp 1536w"
+            sizes="100vw"
             alt=""
-            fill
-            priority
-            /* This is the LCP element — tell the browser to fetch it first. */
+            width={1536}
+            height={1024}
             fetchPriority="high"
             loading="eager"
-            decoding="sync"
-            quality={40}
-            sizes="(max-width: 640px) 420px, (max-width: 1024px) 900px, 100vw"
-            placeholder="blur"
-            blurDataURL="data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAAAwAgCdASoQAAsAAgA0JaQAAudi0eYAAP7t1/9YnaEbA8/YKAEo/BbaTBLnPGD1nCE+HB2ecW9xEbJfTx4hBK0Q2xUAAA="
-            className="object-cover object-center"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
         </div>
         {/* Soft wash on the left only — keeps the headline readable while the
