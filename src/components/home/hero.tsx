@@ -173,6 +173,10 @@ export function Hero() {
             alt=""
             fill
             priority
+            /* This is the LCP element — tell the browser to fetch it first. */
+            fetchPriority="high"
+            loading="eager"
+            decoding="sync"
             quality={40}
             sizes="(max-width: 640px) 420px, (max-width: 1024px) 900px, 100vw"
             placeholder="blur"

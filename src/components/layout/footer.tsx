@@ -174,7 +174,8 @@ export function Footer() {
           </ul>
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/50">
+        {/* /50 failed the 4.5:1 contrast requirement — /75 passes comfortably. */}
+        <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/75">
           © {new Date().getFullYear()} Rego. All rights reserved.
         </div>
       </div>

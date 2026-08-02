@@ -89,15 +89,17 @@ export function StoryActions({
   };
 
   if (compact) {
+    // Each control is at least 32px square so it meets the minimum
+    // touch-target size on phones (icons stay visually the same size).
     return (
-      <div className="flex items-center gap-1.5">
-        <button onClick={onLike} className={cn("inline-flex items-center gap-1 text-xs font-semibold", liked ? "text-red-500" : "text-muted-foreground hover:text-red-500")}>
+      <div className="flex items-center gap-0.5">
+        <button onClick={onLike} className={cn("inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md px-1.5 text-xs font-semibold", liked ? "text-red-500" : "text-muted-foreground hover:text-red-500")}>
           <Heart className={cn("h-4 w-4", liked && "fill-red-500")} /> {likes}
         </button>
-        <button onClick={onSave} className={cn("ml-1 inline-flex", saved ? "text-gold" : "text-muted-foreground hover:text-gold")} aria-label="Save">
+        <button onClick={onSave} className={cn("inline-flex h-8 w-8 items-center justify-center rounded-md", saved ? "text-gold" : "text-muted-foreground hover:text-gold")} aria-label="Save">
           {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
         </button>
-        <button onClick={onShare} className="inline-flex text-muted-foreground hover:text-forest-600" aria-label="Share">
+        <button onClick={onShare} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-forest-600" aria-label="Share">
           <Share2 className="h-4 w-4" />
         </button>
       </div>

@@ -16,6 +16,11 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
+    // NOTE: `optimizeCss: true` would inline critical CSS and remove the
+    // ~510ms render-blocking stylesheet, but it requires the `beasties`
+    // (formerly `critters`) package. Install it first, then enable:
+    //   npm i -D beasties
+    // optimizeCss: true,
   },
 };
 
