@@ -743,7 +743,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
             sheet
             className="h-full w-full"
             iconClass="h-7 w-7"
-            triggerClass="h-full w-full justify-center text-neutral-600 hover:text-forest-600"
+            triggerClass="h-full w-full justify-center text-gold/70 hover:text-gold"
           />
         }
       />

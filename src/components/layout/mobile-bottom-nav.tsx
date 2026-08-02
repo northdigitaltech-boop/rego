@@ -73,6 +73,7 @@ export function MobileBottomNavigation({
 }: MobileBottomNavigationProps) {
   const pathname = usePathname();
   const [sheet, setSheet] = React.useState<null | "notifications" | "messages">(null);
+  const hidden = useHideOnScrollDown(sheet !== null);
 
   const favoritesActive = pathname === "/wishlist";
 
@@ -82,8 +83,12 @@ export function MobileBottomNavigation({
         aria-label="Quick actions"
         className={cn(
           "fixed inset-x-0 bottom-0 z-[100] xl:hidden",
-          "border-t border-border bg-white",
-          "shadow-[0_-1px_12px_rgba(0,42,33,0.06)]"
+          // Same forest green as the top navbar.
+          "border-t border-white/10 bg-forest-800",
+          "shadow-[0_-2px_16px_rgba(0,42,33,0.25)]",
+          // Slides away on scroll down, returns on scroll up.
+          "transition-transform duration-300 ease-out will-change-transform",
+          hidden ? "translate-y-[calc(100%+env(safe-area-inset-bottom))]" : "translate-y-0"
         )}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
@@ -153,7 +158,13 @@ export function MobileBottomNavigation({
           title={sheet === "notifications" ? "Notifications" : "Messages"}
           onClose={() => setSheet(null)}
         >
-          {sheet === "notifications" ? (
+          {!signedIn ? (
+            <SignedOut
+              href={signInHref}
+              what={sheet === "notifications" ? "notifications" : "messages"}
+              onGo={() => setSheet(null)}
+            />
+          ) : sheet === "notifications" ? (
             notifications.length === 0 ? (
               <Empty>No notifications yet.</Empty>
             ) : (
@@ -233,9 +244,10 @@ export function MobileBottomNavigation({
 /* ---------------- building blocks ---------------- */
 
 const itemClass =
-  "relative flex h-full w-full min-h-[48px] min-w-[48px] items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2";
-const idleClass = "text-neutral-600 hover:text-forest-600";
-const activeClass = "text-forest-600";
+  "relative flex h-full w-full min-h-[48px] min-w-[48px] items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-forest-800";
+/* Gold icons on the forest-green bar; the active one brightens to full gold. */
+const idleClass = "text-gold/70 hover:text-gold active:text-gold";
+const activeClass = "text-gold";
 
 function Item({ children }: { children: React.ReactNode }) {
   return <li className="flex flex-1 items-stretch px-1">{children}</li>;
@@ -246,9 +258,49 @@ function ActiveBar() {
   return (
     <span
       aria-hidden
-      className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-forest-600"
+      className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-gold"
     />
   );
+}
+
+/**
+ * Hides the bar while scrolling down and brings it back on scroll up —
+ * the standard native-app behaviour. Stays visible when a sheet is open,
+ * near the top of the page, or when the user prefers reduced motion.
+ */
+function useHideOnScrollDown(locked: boolean): boolean {
+  const [hidden, setHidden] = React.useState(false);
+  const lastY = React.useRef(0);
+
+  React.useEffect(() => {
+    if (locked) {
+      setHidden(false);
+      return;
+    }
+    lastY.current = window.scrollY;
+    let ticking = false;
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const delta = y - lastY.current;
+        // Ignore tiny jitter and iOS rubber-banding.
+        if (Math.abs(delta) > 6) {
+          // Always show near the very top of the page.
+          setHidden(y > 80 && delta > 0);
+          lastY.current = y;
+        }
+        ticking = false;
+      });
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [locked]);
+
+  return hidden;
 }
 
 function NavButton({
@@ -268,28 +320,8 @@ function NavButton({
   onClick: () => void;
   children: React.ReactNode;
 }) {
-  const content = (
-    <>
-      {active && <ActiveBar />}
-      <span className="relative">
-        {children}
-        {signedIn && count > 0 && (
-          <span className="absolute -right-2 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
-            {badge(count)}
-          </span>
-        )}
-      </span>
-    </>
-  );
-
-  // Signed-out users are sent to sign in, preserving existing auth rules.
-  if (!signedIn) {
-    return (
-      <Link href={signInHref} aria-label={label} className={cn(itemClass, idleClass)}>
-        {content}
-      </Link>
-    );
-  }
+  // Always opens the panel — signed-out users get a sign-in prompt *inside*
+  // the sheet rather than being navigated away from the page they're on.
   return (
     <button
       type="button"
@@ -298,13 +330,55 @@ function NavButton({
       aria-expanded={active}
       className={cn(itemClass, active ? activeClass : idleClass)}
     >
-      {content}
+      {active && <ActiveBar />}
+      <span className="relative">
+        {children}
+        {signedIn && count > 0 && (
+          <span className="absolute -right-2 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full border border-forest-800 bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+            {badge(count)}
+          </span>
+        )}
+      </span>
     </button>
   );
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="px-4 py-10 text-center text-sm text-muted-foreground">{children}</p>;
+}
+
+/** Shown inside the sheet when there's no session — never a redirect. */
+function SignedOut({
+  href,
+  what,
+  onGo,
+}: {
+  href: string;
+  what: "notifications" | "messages";
+  onGo: () => void;
+}) {
+  return (
+    <div className="px-6 py-10 text-center">
+      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-forest-50 text-forest-600">
+        {what === "notifications" ? <Bell className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+      </span>
+      <p className="mt-3 font-display text-base font-bold text-forest">
+        Sign in to see your {what}
+      </p>
+      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+        {what === "notifications"
+          ? "Booking updates, road alerts and recommendations appear here once you're signed in."
+          : "Messages with your hosts, guides and providers appear here once you're signed in."}
+      </p>
+      <Link
+        href={href}
+        onClick={onGo}
+        className="mt-5 inline-flex items-center justify-center rounded-lg bg-gradient-forest px-5 py-2.5 text-sm font-semibold text-white"
+      >
+        Sign in
+      </Link>
+    </div>
+  );
 }
 
 const rowClass =
