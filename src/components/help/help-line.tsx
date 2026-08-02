@@ -68,7 +68,7 @@ export function HelpLine() {
   return (
     <>
       {/* Floating button — fixed bottom-right, always on top */}
-      <div className="fixed bottom-5 right-5 z-[90]">
+      <div className="rego-float-help fixed bottom-5 right-5 z-[90]">
         <button
           type="button"
           onClick={() => setOpen(true)}

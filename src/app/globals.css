@@ -209,6 +209,22 @@ body {
 .leaflet-container {
   touch-action: none;
 }
+
+/* Fixed mobile bottom navigation (matches its xl:hidden — the same
+   breakpoint at which this project switches to the desktop navbar):
+   reserve space so page content can always be scrolled clear of the bar, and
+   lift the floating Rego AI / Help buttons above it. */
+@media (max-width: 1279px) {
+  body {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  .rego-float-help {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+  .rego-float-ai {
+    bottom: calc(10rem + env(safe-area-inset-bottom));
+  }
+}
 * {
   -webkit-tap-highlight-color: transparent;
 }

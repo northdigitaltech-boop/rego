@@ -26,7 +26,7 @@ export function RegoAiWidget() {
   return (
     <>
       {/* Floating button — stacked above the red help-line button */}
-      <div className="fixed bottom-24 right-5 z-[90]">
+      <div className="rego-float-ai fixed bottom-24 right-5 z-[90]">
         <button
           type="button"
           onClick={() => setOpen(true)}

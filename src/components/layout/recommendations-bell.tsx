@@ -39,10 +39,13 @@ function readSeen(): Set<string> {
 export function RecommendationsBell({
   className,
   triggerClass = "text-forest/80 hover:text-forest-600",
+  iconClass = "h-5 w-5",
   sheet = false,
 }: {
   className?: string;
   triggerClass?: string;
+  /** Icon size — larger in the mobile bottom navigation. */
+  iconClass?: string;
   /** Render the panel as a fixed bottom-sheet (for the mobile menu, where an
    *  absolutely-positioned dropdown would be clipped by the scroll container). */
   sheet?: boolean;
@@ -140,7 +143,7 @@ export function RecommendationsBell({
       title="Recommended for you"
       className={cn("relative flex items-center transition-colors", triggerClass)}
     >
-      <Sparkles className="h-5 w-5" />
+      <Sparkles className={iconClass} strokeWidth={1.9} />
       {unseen > 0 && (
         <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-forest-900">
           {unseen}

@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/components/auth/auth-context";
 import { BrandLogo } from "@/components/layout/logo";
 import { RecommendationsBell } from "@/components/layout/recommendations-bell";
+import { MobileBottomNavigation } from "@/components/layout/mobile-bottom-nav";
 import { BookingStatusModal } from "@/components/booking/booking-status-modal";
 import { getBookingIdsForUser } from "@/lib/bookings";
 import { getHomestayBookingIdsForUser } from "@/lib/homestay-bookings";
@@ -711,31 +712,10 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                   Become a Partner
                 </Link>
               )}
-              <button
-                onClick={() => {
-                  setStatusOpen(true);
-                  setOpen(false);
-                }}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-4 py-3 font-semibold text-white hover:bg-white/5"
-              >
-                <TicketCheck className="h-5 w-5" /> Booking status
-              </button>
+              {/* Favorites, Recommendations and Booking Status now live in the
+                  fixed mobile bottom navigation, so they aren't repeated here. */}
               <div className="flex items-center gap-4 px-4 py-3">
                 <span className="text-sm font-medium text-white/90">PKR</span>
-                <Link
-                  href="/wishlist"
-                  onClick={() => setOpen(false)}
-                  aria-label="Wishlist"
-                  className="relative text-white/90 hover:text-gold"
-                >
-                  <Heart className="h-5 w-5" />
-                  {wishCount > 0 && (
-                    <span className="absolute -right-2 -top-2 grid h-4 min-w-[16px] place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-forest-900">
-                      {wishCount}
-                    </span>
-                  )}
-                </Link>
-                <RecommendationsBell sheet triggerClass="text-white/90 hover:text-gold" />
               </div>
             </div>
           </motion.div>
@@ -743,6 +723,30 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
       </AnimatePresence>
 
       {statusOpen && <BookingStatusModal onClose={() => setStatusOpen(false)} />}
+
+      {/* Phone-only quick actions. All data/handlers are the ones already
+          created above, so nothing is fetched twice. */}
+      <MobileBottomNavigation
+        signedIn={!!user}
+        signInHref="/signin"
+        notificationCount={sysUnread}
+        messageCount={unread.size}
+        notifications={sysNotifs}
+        messages={notifs}
+        isMessageUnread={(id) => unread.has(id)}
+        timeAgo={timeAgo}
+        onOpenNotification={openSysNotif}
+        onOpenMessage={openNotif}
+        onOpenBookingStatus={() => setStatusOpen(true)}
+        recommendationsSlot={
+          <RecommendationsBell
+            sheet
+            className="h-full w-full"
+            iconClass="h-7 w-7"
+            triggerClass="h-full w-full justify-center text-neutral-600 hover:text-forest-600"
+          />
+        }
+      />
     </header>
   );
 }
