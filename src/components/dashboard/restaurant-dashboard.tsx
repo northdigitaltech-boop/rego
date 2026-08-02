@@ -62,6 +62,12 @@ import { RestaurantDetail } from "@/components/listings/restaurant-detail";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { cn, formatPrice } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
 const splitList = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
@@ -70,7 +76,7 @@ const num = (v: string) => {
   return v.trim() && !Number.isNaN(n) ? n : null;
 };
 
-type Tab = "overview" | "profile" | "menu" | "bookings" | "payments" | "messages" | "reviews" | "analytics" | "crm";
+type Tab = "overview" | "profile" | "menu" | "bookings" | "payments" | "messages" | "reviews" | "analytics" | "crm" | "post-job" | "my-jobs" | "job-applications";
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: Eye },
   { id: "profile", label: "Restaurant Profile", icon: UtensilsCrossed },
@@ -81,6 +87,9 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "crm", label: "CRM & Insights", icon: BarChart3 },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
@@ -231,6 +240,9 @@ export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut
         </aside>
 
         <div>
+          {tab === "post-job" && <ProviderPostJob user={user} />}
+          {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+          {tab === "job-applications" && <ProviderJobApplications user={user} />}
           {tab === "overview" && (
             <div>
               <div className="mb-4 rounded-xl border border-forest-200 bg-forest-50/60 px-4 py-3 text-sm text-forest-600">

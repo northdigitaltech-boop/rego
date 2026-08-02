@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { absoluteUrl } from "@/lib/site";
 import { allCategories, destinations } from "@/lib/data";
+import { getPublishedJobs } from "@/lib/jobs";
 import { getHotels } from "@/lib/hotels";
 import { getHomestays } from "@/lib/homestays";
 import { getHostels } from "@/lib/hostels";
@@ -41,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // --- Static, indexable marketing/landing pages ---
   add("/", { changeFrequency: "daily", priority: 1 });
-  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers"]) {
+  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs"]) {
     add(p, { changeFrequency: "weekly", priority: 0.7 });
   }
   for (const c of allCategories) add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
@@ -50,6 +51,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // --- Legal & policy pages ---
   add("/legal", { changeFrequency: "monthly", priority: 0.4 });
   for (const p of legalPolicies) add(`/legal/${p.slug}`, { changeFrequency: "monthly", priority: 0.3 });
+
+  // --- Published jobs (SEO-friendly /jobs/[slug] routes) ---
+  const jobs = await safe(getPublishedJobs);
+  for (const j of (jobs as { slug?: string | null; updated_at?: string }[])) {
+    if (!j?.slug) continue;
+    urls.push({
+      url: absoluteUrl(`/jobs/${j.slug}`),
+      lastModified: j.updated_at ? new Date(j.updated_at) : now,
+      changeFrequency: "daily",
+      priority: 0.7,
+    });
+  }
 
   // --- Dynamic, APPROVED/PUBLISHED listings (only 200-status public URLs) ---
   const [

@@ -10,13 +10,22 @@ import { OwnerCrm } from "@/components/crm/owner-crm";
 import { ActivitiesManager } from "@/components/dashboard/activities-manager";
 import { type User } from "@/components/auth/auth-context";
 import { cn } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
-type Tab = "activities" | "crm" | "account";
+type Tab = "activities" | "crm" | "account" | "post-job" | "my-jobs" | "job-applications";
 
 const nav: { id: Tab; label: string; icon: typeof Mountain }[] = [
   { id: "activities", label: "My Activities", icon: Mountain },
   { id: "crm", label: "CRM & Insights", icon: BarChart3 },
   { id: "account", label: "Account", icon: UserRound },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 export function ActivityProviderDashboard({
@@ -88,6 +97,9 @@ export function ActivityProviderDashboard({
         </aside>
 
         <div>
+          {tab === "post-job" && <ProviderPostJob user={user} />}
+          {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+          {tab === "job-applications" && <ProviderJobApplications user={user} />}
           {tab === "activities" && (
             <ActivitiesManager user={user} ownerType="activity-provider" businessName={user.name} />
           )}

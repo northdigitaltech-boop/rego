@@ -79,6 +79,12 @@ import {
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { cn, formatPrice } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
 /* ---------------- helpers ---------------- */
 const splitList = (s: string) =>
@@ -114,6 +120,9 @@ type Tab =
   | "messages"
   | "reviews"
   | "analytics"
+  | "post-job"
+  | "my-jobs"
+  | "job-applications"
   | "crm";
 
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
@@ -130,6 +139,9 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "crm", label: "CRM & Insights", icon: BarChart3 },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 export function TourCompanyDashboard({
@@ -371,6 +383,9 @@ export function TourCompanyDashboard({
         </aside>
 
         <div>
+          {tab === "post-job" && <ProviderPostJob user={user} />}
+          {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+          {tab === "job-applications" && <ProviderJobApplications user={user} />}
           {tab === "overview" && (
             <div>
               <div className="mb-4 rounded-xl border border-forest-200 bg-forest-50/60 px-4 py-3 text-sm text-forest-600">This is exactly how customers see your company page.</div>

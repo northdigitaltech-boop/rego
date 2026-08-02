@@ -94,6 +94,7 @@ import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
 import { AdminApplications } from "@/components/dashboard/admin-applications";
 import { AdminServiceRequests } from "@/components/dashboard/admin-service-requests";
+import { AdminJobs } from "@/components/dashboard/admin-jobs";
 import { AdminBroadcast } from "@/components/dashboard/admin-broadcast";
 import { AdminSubscription } from "@/components/dashboard/admin-subscription";
 import { AdminExpeditions } from "@/components/dashboard/admin-expeditions";
@@ -431,6 +432,7 @@ type Tab =
   | "edits"
   | "verification"
   | "service-requests"
+  | "jobs-portal"
   | "manage"
   | "roadside"
   | "road-updates"
@@ -461,6 +463,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "edits", label: "Edit Requests", icon: Pencil },
   { id: "verification", label: "Verification", icon: BadgeCheck },
   { id: "service-requests", label: "Service Requests", icon: LayoutGrid },
+  { id: "jobs-portal", label: "Jobs Portal", icon: Briefcase },
   { id: "manage", label: "Manage & Delete", icon: Trash2 },
   { id: "roadside", label: "Roadside Assistance", icon: LifeBuoy },
   { id: "road-updates", label: "Road Updates & Alerts", icon: TriangleAlert },
@@ -944,6 +947,7 @@ export function AdminDashboard() {
           {tab === "legal" && <AdminLegal />}
           {tab === "careers" && <AdminCareers />}
           {tab === "service-requests" && <AdminServiceRequests />}
+          {tab === "jobs-portal" && <AdminJobs />}
           {tab === "applications" && <AdminApplications />}
           {tab === "notify" && <AdminBroadcast />}
           {tab === "subscription" && <AdminSubscription />}

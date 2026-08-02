@@ -31,14 +31,23 @@ import {
   type PartnerListing,
 } from "@/lib/partner-store";
 import { cn, formatPrice } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
-type Tab = "overview" | "listings" | "add" | "profile";
+type Tab = "overview" | "listings" | "add" | "profile" | "post-job" | "my-jobs" | "job-applications";
 
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "listings", label: "My Listings", icon: Building2 },
   { id: "add", label: "Add Listing", icon: PlusCircle },
   { id: "profile", label: "Business Profile", icon: UserRound },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 const partnerCategories = categories.filter((c) => c.slug !== "more");
@@ -135,6 +144,9 @@ export function PartnerDashboard({
 
         {/* Content */}
         <div>
+          {tab === "post-job" && <ProviderPostJob user={user} />}
+          {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+          {tab === "job-applications" && <ProviderJobApplications user={user} />}
           {tab === "overview" && (
             <Overview
               items={items}

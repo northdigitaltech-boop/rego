@@ -117,6 +117,7 @@ const navLinks: NavLink[] = [
       { label: "Cultural Events", href: "/events?category=cultural-events" },
     ],
   },
+  { label: "Jobs", href: "/jobs" },
   { label: "Safarnama", href: "/safarnama" },
   { label: "Rego Map", href: "/map" },
   { label: "About Us", href: "/about" },

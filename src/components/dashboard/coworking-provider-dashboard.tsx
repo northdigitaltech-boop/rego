@@ -37,6 +37,12 @@ import {
 import { getReviews, type ReviewRow } from "@/lib/reviews";
 import { sendEmail } from "@/lib/email";
 import { cn } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
 const splitList = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
@@ -45,7 +51,7 @@ const numOrNull = (v: string) => {
   return v.trim() && !Number.isNaN(n) ? n : null;
 };
 
-type Tab = "overview" | "profile" | "inquiries" | "reviews" | "crm";
+type Tab = "overview" | "profile" | "inquiries" | "reviews" | "crm" | "post-job" | "my-jobs" | "job-applications";
 
 const nav: { id: Tab; label: string; icon: typeof UserRound }[] = [
   { id: "overview", label: "Overview", icon: Eye },
@@ -53,6 +59,9 @@ const nav: { id: Tab; label: string; icon: typeof UserRound }[] = [
   { id: "inquiries", label: "Booking Requests", icon: CalendarCheck },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "crm", label: "CRM & Insights", icon: BarChart3 },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 export function CoworkingProviderDashboard({
@@ -163,6 +172,9 @@ export function CoworkingProviderDashboard({
             </div>
           ) : (
             <>
+              {tab === "post-job" && <ProviderPostJob user={user} />}
+              {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+              {tab === "job-applications" && <ProviderJobApplications user={user} />}
               {tab === "overview" && <Overview space={space} bookings={bookings} reviews={reviews} onGo={setTab} />}
               {tab === "profile" && (
                 <>

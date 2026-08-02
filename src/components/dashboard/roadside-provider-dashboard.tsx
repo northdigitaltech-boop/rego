@@ -55,12 +55,18 @@ import {
 import { sendEmail } from "@/lib/email";
 import { createTrackingSender } from "@/lib/realtime";
 import { cn } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
 const splitList = (s: string) =>
   s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
 
-type Tab = "overview" | "profile" | "requests" | "reviews" | "crm";
+type Tab = "overview" | "profile" | "requests" | "reviews" | "crm" | "post-job" | "my-jobs" | "job-applications";
 
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: Eye },
@@ -68,6 +74,9 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "requests", label: "Requests", icon: LifeBuoy },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "crm", label: "CRM & Insights", icon: BarChart3 },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 export function RoadsideProviderDashboard({
@@ -213,6 +222,9 @@ export function RoadsideProviderDashboard({
             </div>
           ) : (
             <>
+              {tab === "post-job" && <ProviderPostJob user={user} />}
+              {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+              {tab === "job-applications" && <ProviderJobApplications user={user} />}
               {tab === "overview" && (
                 <Overview provider={provider} requests={requests} reviews={reviews} onGo={setTab} />
               )}

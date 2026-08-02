@@ -62,6 +62,12 @@ import { setHomestayBookingRoomsStatus } from "@/lib/homestays";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { cn, formatPrice } from "@/lib/utils";
+import {
+  ProviderPostJob,
+  ProviderMyJobs,
+  ProviderJobApplications,
+} from "@/components/dashboard/provider-jobs";
+import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 
 const AMENITY_OPTIONS = [
   "Free Wi-Fi",
@@ -89,6 +95,9 @@ type Tab =
   | "messages"
   | "add"
   | "crm"
+  | "post-job"
+  | "my-jobs"
+  | "job-applications"
   | "profile";
 
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
@@ -102,6 +111,9 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "add", label: "Add Homestay", icon: PlusCircle },
   { id: "profile", label: "Business Profile", icon: UserRound },
+  { id: "post-job", label: "Post a Job", icon: JobsIcon },
+  { id: "my-jobs", label: "My Jobs", icon: JobsIcon },
+  { id: "job-applications", label: "Job Applications", icon: ApplicantsIcon },
 ];
 
 type RoomDraft = {
@@ -576,6 +588,9 @@ export function HomestayProviderDashboard({
 
         {/* Content */}
         <div>
+          {tab === "post-job" && <ProviderPostJob user={user} />}
+          {tab === "my-jobs" && <ProviderMyJobs user={user} />}
+          {tab === "job-applications" && <ProviderJobApplications user={user} />}
           {tab === "overview" && (
             <Overview
               count={homestays.length}
