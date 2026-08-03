@@ -1,4 +1,4 @@
-# SAFARIGB 🌍
+# rego 🌍
 
 A modern, premium tourism marketplace — a Booking.com-style platform for discovering and booking **Hotels, Homestays, Tour Companies, Transport, Tour Guides, Photographers, Restaurants and Activities**, all in one seamless experience.
 
