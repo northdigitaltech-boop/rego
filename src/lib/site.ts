@@ -19,7 +19,10 @@ export const siteConfig = {
     "Book, explore and experience tourism across Gilgit-Baltistan — hotels, homestays, tour packages, guides, transport, car rentals, activities, restaurants, attractions and more, all in one trusted marketplace.",
   // A real, always-present asset in /public so Open Graph / Twitter cards and
   // JSON-LD never reference a broken image.
-  ogImage: "/home-hero.jpg",
+  // Branded 1200x630 share card shown when the link is posted to WhatsApp,
+  // Facebook, X, LinkedIn etc. (was the hero photo, which read as a stock
+  // landscape rather than as Rego).
+  ogImage: "/og-image.png",
   locale: "en_US",
   twitter: "@rego",
   contactPhone: "+923161290604",
