@@ -150,9 +150,9 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-x-hidden">
       {/* Conversation */}
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
+      <div className="min-h-0 w-full flex-1 space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain p-4">
         {messages.length === 0 && !thinking && (
           <div className="rounded-3xl border border-border/70 bg-card p-6 text-center shadow-premium">
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-forest text-gold">
@@ -167,18 +167,18 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
 
         {messages.map((m) =>
           m.role === "user" ? (
-            <div key={m.id} className="flex justify-end">
-              <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-forest-600 px-4 py-2.5 text-sm text-white">
+            <div key={m.id} className="flex w-full min-w-0 justify-end">
+              <div className="max-w-[85%] break-words rounded-2xl rounded-br-sm bg-forest-600 px-4 py-2.5 text-sm text-white">
                 {m.text}
               </div>
             </div>
           ) : (
-            <div key={m.id} className="flex items-start gap-3">
+            <div key={m.id} className="flex w-full min-w-0 items-start gap-3">
               <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-forest text-gold">
                 <Sparkles className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1 space-y-3">
-                <div className="rounded-2xl rounded-tl-sm border border-border/70 bg-card px-4 py-3 text-sm text-forest shadow-sm">
+                <div className="break-words rounded-2xl rounded-tl-sm border border-border/70 bg-card px-4 py-3 text-sm text-forest shadow-sm">
                   {m.text}
                 </div>
 
@@ -275,7 +275,7 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={listening ? "Listening… speak now" : "e.g. Find a budget hotel in Hunza, or plan a 4-day Skardu trip…"}
-          className="flex-1 bg-transparent px-3 py-2 text-sm text-forest focus:outline-none"
+          className="w-full min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-forest focus:outline-none"
         />
         {voiceSupported && (
           <button

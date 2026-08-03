@@ -7,7 +7,7 @@ import { Sparkles, X } from "lucide-react";
 
 import { RegoAiChat } from "@/components/home/rego-ai-chat";
 import { useScrollLock } from "@/lib/use-scroll-lock";
-import { useViewportHeight } from "@/lib/use-viewport-height";
+import { useViewportMetrics } from "@/lib/use-viewport-height";
 
 /** Floating "Ask Rego AI" button — sits above the Help Line button and opens a
  *  popup where travellers ask questions and get grounded recommendations. */
@@ -16,8 +16,8 @@ export function RegoAiWidget() {
 
   // Pins the page (iOS included) and restores the exact scroll position after.
   useScrollLock(open);
-  // Visible height (shrinks when the mobile keyboard opens).
-  const vh = useViewportHeight(open);
+  // Visible area (shrinks AND shifts when the mobile keyboard opens).
+  const vp = useViewportMetrics(open);
 
   React.useEffect(() => {
     if (!open) return;
@@ -55,7 +55,14 @@ export function RegoAiWidget() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-[120] flex items-stretch justify-center bg-forest-900/60 backdrop-blur-sm sm:items-center sm:p-4"
+            /* Anchored to the VISIBLE viewport, so the keyboard can't scroll
+               the dialog out of view on iOS. */
+            style={
+              vp
+                ? { top: vp.offsetTop, height: vp.height, bottom: "auto" }
+                : undefined
+            }
+            className="fixed inset-x-0 top-0 z-[120] h-[100dvh] flex items-stretch justify-center overflow-hidden bg-forest-900/60 backdrop-blur-sm sm:items-center sm:p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -70,10 +77,7 @@ export function RegoAiWidget() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={{ type: "spring", damping: 26, stiffness: 280 }}
-              /* Height tracks the *visible* viewport, so the header stays put
-                 and the composer sits directly above the keyboard on iOS. */
-              style={vh ? { height: `${vh}px` } : undefined}
-              className="flex h-[100dvh] w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:!h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-3xl"
+              className="flex h-full w-full max-w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-3xl"
             >
               {/* header */}
               <div className="flex shrink-0 items-center justify-between gap-3 bg-gradient-forest px-5 py-4 text-white">
