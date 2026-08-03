@@ -7,6 +7,7 @@ import { Sparkles, X } from "lucide-react";
 
 import { RegoAiChat } from "@/components/home/rego-ai-chat";
 import { useScrollLock } from "@/lib/use-scroll-lock";
+import { useViewportHeight } from "@/lib/use-viewport-height";
 
 /** Floating "Ask Rego AI" button — sits above the Help Line button and opens a
  *  popup where travellers ask questions and get grounded recommendations. */
@@ -15,6 +16,8 @@ export function RegoAiWidget() {
 
   // Pins the page (iOS included) and restores the exact scroll position after.
   useScrollLock(open);
+  // Visible height (shrinks when the mobile keyboard opens).
+  const vh = useViewportHeight(open);
 
   React.useEffect(() => {
     if (!open) return;
@@ -67,10 +70,13 @@ export function RegoAiWidget() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={{ type: "spring", damping: 26, stiffness: 280 }}
-              className="flex h-full w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-3xl"
+              /* Height tracks the *visible* viewport, so the header stays put
+                 and the composer sits directly above the keyboard on iOS. */
+              style={vh ? { height: `${vh}px` } : undefined}
+              className="flex h-[100dvh] w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:!h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-3xl"
             >
               {/* header */}
-              <div className="flex items-center justify-between gap-3 bg-gradient-forest px-5 py-4 text-white">
+              <div className="flex shrink-0 items-center justify-between gap-3 bg-gradient-forest px-5 py-4 text-white">
                 <div className="flex items-center gap-2">
                   <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15 text-gold">
                     <Sparkles className="h-5 w-5" />
@@ -91,7 +97,7 @@ export function RegoAiWidget() {
               </div>
 
               {/* chat */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex min-h-0 flex-1 flex-col">
                 <Suspense fallback={<div className="py-16 text-center text-muted-foreground">Loading…</div>}>
                   <RegoAiChat onNavigate={() => setOpen(false)} />
                 </Suspense>

@@ -150,9 +150,9 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-3xl flex-col">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col">
       {/* Conversation */}
-      <div className="flex-1 space-y-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4">
         {messages.length === 0 && !thinking && (
           <div className="rounded-3xl border border-border/70 bg-card p-6 text-center shadow-premium">
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-forest text-gold">
@@ -246,9 +246,11 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
         <div ref={bottomRef} />
       </div>
 
+      {/* Pinned footer — suggestions + composer stay above the keyboard. */}
+      <div className="shrink-0 border-t border-border bg-card p-3">
       {/* Suggestions */}
       {messages.length === 0 && (
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           {AI_SUGGESTIONS.map((s) => (
             <button
               key={s}
@@ -267,7 +269,7 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
           e.preventDefault();
           ask(input);
         }}
-        className="sticky bottom-4 mt-6 flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-premium"
+        className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-soft"
       >
         <input
           value={input}
@@ -312,6 +314,7 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
           <Send className="h-4 w-4" />
         </button>
       </form>
+      </div>
     </div>
   );
 }
