@@ -113,6 +113,52 @@ Ordered by how much travellers actually search for them — put the first
 
 ---
 
+## RONDU / ROUNDU
+*Between Skardu and Gilgit along the Indus. Almost no tourism coverage —
+your biggest content gap and easiest ranking opportunity.*
+
+- **Tormik Valley** — long side valley running towards the Haramosh range
+- **Thorsay Bilamik Meadows** — high summer meadows above Bilamik
+- **Talu Broq** — traditional Balti summer pasture (*broq* = pasture)
+- **Hango Valley** — quiet villages and walking trails off the main road
+- **Stak Nala** — opens off the Skardu–Gilgit road towards Haramosh / Stak La
+- **Rondu Gorge** — the sheer Indus gorge the Skardu road threads through
+- **Mendi** — riverside village, natural halfway stop
+
+---
+
+## GOJAL (Upper Hunza)
+- **Shimshal Valley** — highest settled valley in Pakistan
+- **Chapursan Valley** — remote, runs to the Afghan Wakhan border
+- **Batura Glacier** — among the longest glaciers outside the poles
+- **Misgar** — old Silk Road side valley
+- **Khunjerab National Park** — snow leopard and Marco Polo sheep
+
+---
+
+## CHILAS
+- **Chilas Rock Carvings** — thousands of petroglyphs along the Indus
+- **Babusar Top** — the summer crossing into Kaghan
+- **Thak Nala** — quiet side valley with more carvings
+- **Raikot Bridge** — turn-off for Fairy Meadows
+
+---
+
+## DAREL & TANGIR
+- **Darel Valley** — dense pine forest, one of the greenest valleys in Diamer
+- **Tangir Valley** — alpine pastures at its head
+- **Shatial Rock Carvings** — major Silk Road inscription site
+
+---
+
+## GUPIS-YASIN
+- **Yasin Valley** — green terraces, old polo grounds, route to Darkot
+- **Khalti Lake** — freezes solid in winter, beside the road
+- **Darkot Pass** — historic crossing towards Broghil and the Wakhan
+- **Ghizer River** — trout water the length of the valley
+
+---
+
 ## KHARMANG
 - **Manthokha Waterfall** — the big one, 180ft
 - **Khamosh Waterfall** — narrow gorge falls

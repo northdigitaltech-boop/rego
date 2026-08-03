@@ -164,9 +164,87 @@ export const SUGGESTED_ATTRACTIONS: Record<string, Preset[]> = {
     { name: "Ansoo Lake", type: "Trek", blurb: "A tear-shaped lake, and a demanding day hike." },
     { name: "Shogran & Siri Paye", type: "Viewpoint", blurb: "Green meadows above the valley floor." },
   ],
+  rondu: [
+    { name: "Tormik Valley", type: "Valley", blurb: "A long side valley running up towards the Haramosh range — villages, terraces and trekking routes." },
+    { name: "Thorsay Bilamik Meadows", type: "Valley", blurb: "High summer meadows above Bilamik, still largely unvisited by tourists." },
+    { name: "Talu Broq", type: "Valley", blurb: "A traditional Balti summer pasture — shepherd huts, open grassland and big mountain views." },
+    { name: "Hango Valley", type: "Valley", blurb: "A quiet Rondu valley of small villages and walking trails off the main road." },
+    { name: "Stak Nala", type: "Valley", blurb: "Opens off the Skardu–Gilgit road and leads towards Haramosh and the Stak La crossing." },
+    { name: "Rondu Gorge", type: "Viewpoint", blurb: "The dramatic Indus gorge the Skardu road threads through — sheer rock walls the whole way." },
+    { name: "Mendi", type: "Valley", blurb: "Riverside village on the Indus, a natural stop between Skardu and Gilgit." },
+  ],
+  gojal: [
+    { name: "Shimshal Valley", type: "Valley", blurb: "The highest settled valley in Pakistan, at the end of a spectacular jeep road." },
+    { name: "Chapursan Valley", type: "Valley", blurb: "Remote valley running to the Afghan Wakhan border." },
+    { name: "Batura Glacier", type: "Glacier", blurb: "One of the longest glaciers outside the polar regions." },
+    { name: "Misgar", type: "Valley", blurb: "An old Silk Road side valley near the Chinese frontier." },
+    { name: "Khunjerab National Park", type: "Park", blurb: "Snow leopard and Marco Polo sheep country up towards the pass." },
+  ],
+  chilas: [
+    { name: "Chilas Rock Carvings", type: "Heritage", blurb: "Thousands of petroglyphs and inscriptions along the Indus, some over 2,000 years old." },
+    { name: "Babusar Top", type: "Pass", blurb: "The summer road over into Kaghan, 4,173m at the top." },
+    { name: "Thak Nala", type: "Valley", blurb: "Side valley with old carvings and quiet walking country." },
+    { name: "Raikot Bridge", type: "Bridge", blurb: "Turn-off for Fairy Meadows and Nanga Parbat." },
+  ],
+  "darel-tangir": [
+    { name: "Darel Valley", type: "Valley", blurb: "Dense pine forest and terraced villages, one of the greenest valleys in Diamer." },
+    { name: "Tangir Valley", type: "Valley", blurb: "Neighbouring forest valley with alpine pastures at its head." },
+    { name: "Shatial Rock Carvings", type: "Heritage", blurb: "A major Silk Road inscription site on the Indus." },
+  ],
+  "gupis-yasin": [
+    { name: "Yasin Valley", type: "Valley", blurb: "Green terraces, old polo grounds and routes towards Darkot." },
+    { name: "Khalti Lake", type: "Lake", blurb: "Freezes solid in winter, right beside the road at Gupis." },
+    { name: "Darkot Pass", type: "Pass", blurb: "Historic crossing towards Broghil and the Wakhan." },
+    { name: "Ghizer River", type: "Valley", blurb: "Trout water running the length of the valley." },
+  ],
 };
 
-/** Presets for a slug, ready to drop into the editor. */
-export function suggestedFor(slug: string): Attraction[] {
-  return (SUGGESTED_ATTRACTIONS[slug] ?? []).map((p) => ({ ...p, image: "" }));
+/* Alternative spellings and common variants, mapped to the keys above. */
+const SLUG_ALIASES: Record<string, string> = {
+  roundu: "rondu",
+  "rondu-valley": "rondu",
+  "roundu-valley": "rondu",
+  rondo: "rondu",
+  baltistan: "skardu",
+  karimabad: "hunza",
+  "upper-hunza": "gojal",
+  gulmit: "gojal",
+  passu: "gojal",
+  sost: "gojal",
+  shimshal: "gojal",
+  diamer: "diamer",
+  "kaghan": "naran",
+  phander: "ghizer",
+  gupis: "gupis-yasin",
+  yasin: "gupis-yasin",
+  darel: "darel-tangir",
+  tangir: "darel-tangir",
+  ghanche: "khaplu",
+  hushe: "khaplu",
+  rama: "astore",
+  "astore-valley": "astore",
+  naltar: "gilgit",
+  "deosai-national-park": "deosai",
+  "cold-desert": "skardu",
+};
+
+function normalizeSlug(s: string) {
+  const k = s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return SLUG_ALIASES[k] ?? k;
+}
+
+/**
+ * Presets for a destination, ready to drop into the editor.
+ * Tries the slug first, then the display name, so "Roundu Valley" and
+ * "rondu" both find the same list.
+ */
+export function suggestedFor(slug: string, name?: string): Attraction[] {
+  const keys = [normalizeSlug(slug)];
+  if (name) keys.push(normalizeSlug(name));
+
+  for (const k of keys) {
+    const hit = SUGGESTED_ATTRACTIONS[k];
+    if (hit) return hit.map((p) => ({ ...p, image: "" }));
+  }
+  return [];
 }

@@ -25,7 +25,10 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
   const [saving, setSaving] = React.useState(false);
   const [note, setNote] = React.useState<{ ok: boolean; text: string } | null>(null);
 
-  const presets = React.useMemo(() => suggestedFor(row.slug), [row.slug]);
+  const presets = React.useMemo(
+    () => suggestedFor(row.slug, row.name),
+    [row.slug, row.name]
+  );
 
   const patch = (i: number, k: keyof Attraction, v: string) =>
     setItems((p) => p.map((a, j) => (j === i ? { ...a, [k]: v } : a)));
