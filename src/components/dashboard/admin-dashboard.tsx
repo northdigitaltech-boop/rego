@@ -31,6 +31,7 @@ import {
   ArrowRight,
   ChevronLeft,
   LayoutGrid,
+  Phone,
   MessageSquare,
   LifeBuoy,
   CalendarDays,
@@ -89,6 +90,7 @@ import { AdminRoadUpdates } from "@/components/dashboard/admin-road-updates";
 import { AdminSafarnama } from "@/components/dashboard/admin-safarnama";
 import { AdminRegoMap } from "@/components/dashboard/admin-rego-map";
 import { AdminAbout } from "@/components/dashboard/admin-about";
+import { AdminContact } from "@/components/dashboard/admin-contact";
 import { AdminListingsManager } from "@/components/dashboard/admin-listings-manager";
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
@@ -445,6 +447,7 @@ type Tab =
   | "messages"
   | "destinations"
   | "about"
+  | "contact"
   | "legal"
   | "careers"
   | "applications"
@@ -476,6 +479,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "destinations", label: "Destinations", icon: MapPin },
   { id: "about", label: "About Page", icon: Info },
+  { id: "contact", label: "Contact Page", icon: Phone },
   { id: "legal", label: "Legal & Policies", icon: FileText },
   { id: "careers", label: "Careers & Jobs", icon: Briefcase },
   { id: "applications", label: "Job Applications", icon: FileText },
@@ -944,6 +948,7 @@ export function AdminDashboard() {
           )}
           {tab === "manage" && <AdminListingsManager />}
           {tab === "about" && <AdminAbout />}
+          {tab === "contact" && <AdminContact />}
           {tab === "legal" && <AdminLegal />}
           {tab === "careers" && <AdminCareers />}
           {tab === "service-requests" && <AdminServiceRequests />}
