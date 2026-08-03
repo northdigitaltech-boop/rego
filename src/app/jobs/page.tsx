@@ -5,7 +5,8 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { JobsBrowser } from "@/components/jobs/jobs-browser";
 import { buildMetadata } from "@/lib/seo";
-import { getPublishedJobs } from "@/lib/jobs";
+import { getPublishedJobs, careerToJob } from "@/lib/jobs";
+import { getJobOpenings } from "@/lib/careers";
 
 export const revalidate = 60;
 
@@ -17,7 +18,12 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function JobsPage() {
-  const jobs = await getPublishedJobs();
+  // Provider vacancies (approved) + Rego's own careers openings, in one list.
+  const [providerJobs, careers] = await Promise.all([
+    getPublishedJobs(),
+    getJobOpenings(),
+  ]);
+  const jobs = [...providerJobs, ...careers.map(careerToJob)];
 
   const cities = Array.from(new Set(jobs.map((j) => j.city).filter(Boolean))).slice(0, 6) as string[];
   const businesses = new Set(jobs.map((j) => j.business_name)).size;

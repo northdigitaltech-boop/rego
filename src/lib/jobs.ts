@@ -462,6 +462,64 @@ export async function deleteApplicant(id: string) {
   return supabase.from("job_applicants").delete().eq("id", id);
 }
 
+/* ---------------- Rego's own careers roles ---------------- */
+
+/**
+ * Rego's in-house openings (the /careers page) presented as portal jobs so
+ * everything lives in one place. They aren't stored in the `jobs` table, so
+ * they're synthesised on read and always link back to /careers to apply.
+ */
+export function careerToJob(o: {
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  type: string;
+  summary: string;
+  responsibilities: string[];
+}): JobRow {
+  const now = new Date().toISOString();
+  return {
+    id: `rego-career-${o.id}`,
+    slug: null,
+    owner_email: "careers@rego.services",
+    business_name: "Rego",
+    business_category: "rego",
+    business_logo: null,
+    business_verified: true,
+    title: o.title,
+    category: o.department,
+    description: o.summary,
+    responsibilities: o.responsibilities.join("\n"),
+    skills: null,
+    experience_level: null,
+    employment_type: o.type,
+    workplace_type: "On-site",
+    vacancies: 1,
+    salary_min: null,
+    salary_max: null,
+    salary_period: null,
+    salary_disclosed: false,
+    district: null,
+    city: o.location,
+    deadline: null,
+    contact_name: null,
+    contact_phone: null,
+    contact_email: "careers@rego.services",
+    cv_required: true,
+    application_method: "rego",
+    external_url: null,
+    status: "published",
+    admin_note: null,
+    featured: false,
+    urgent: false,
+    views: 0,
+    published_at: now,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
 /* ---------------- business auto-link ---------------- */
 
 export interface OwnerBusiness {

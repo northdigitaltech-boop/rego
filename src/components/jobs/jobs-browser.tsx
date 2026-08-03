@@ -26,8 +26,16 @@ import { cn, photo } from "@/lib/utils";
 
 const PAGE_SIZE = 9;
 
+/** Rego's own careers roles are synthesised with this id prefix. */
+export const REGO_CAREER_PREFIX = "rego-career-";
+
+/** Careers roles apply on /careers; provider jobs use their own detail page. */
+function hrefFor(job: JobRow): string | undefined {
+  return job.id.startsWith(REGO_CAREER_PREFIX) ? "/careers" : undefined;
+}
+
 /** Public job card — business identity, location, type, salary, deadline. */
-export function JobCard({ job }: { job: JobRow }) {
+export function JobCard({ job, href }: { job: JobRow; href?: string }) {
   const deadline = job.deadline ? new Date(job.deadline) : null;
   const daysLeft = deadline
     ? Math.ceil((deadline.getTime() - Date.now()) / 86400000)
@@ -35,7 +43,8 @@ export function JobCard({ job }: { job: JobRow }) {
 
   return (
     <article className="group relative flex flex-col rounded-3xl border border-border/70 bg-card p-5 shadow-premium transition-all hover:-translate-y-1 hover:shadow-premium-lg">
-      <Link href={`/jobs/${job.slug}`} className="absolute inset-0 z-10" aria-label={job.title} />
+      {/* `href` lets Rego's own careers roles point at /careers instead. */}
+      <Link href={href ?? `/jobs/${job.slug}`} className="absolute inset-0 z-10" aria-label={job.title} />
 
       <div className="flex items-start gap-3">
         {job.business_logo ? (
@@ -212,7 +221,7 @@ export function JobsBrowser({ jobs }: { jobs: JobRow[] }) {
             <Sparkles className="h-5 w-5 text-gold" /> Featured Jobs
           </h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.slice(0, 3).map((j) => <JobCard key={j.id} job={j} />)}
+            {featured.slice(0, 3).map((j) => <JobCard key={j.id} job={j} href={hrefFor(j)} />)}
           </div>
         </section>
       )}
@@ -233,7 +242,7 @@ export function JobsBrowser({ jobs }: { jobs: JobRow[] }) {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((j) => <JobCard key={j.id} job={j} />)}
+            {shown.map((j) => <JobCard key={j.id} job={j} href={hrefFor(j)} />)}
           </div>
         )}
 
