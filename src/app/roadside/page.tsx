@@ -47,27 +47,6 @@ export default async function RoadsidePage() {
           </div>
         </section>
 
-        {/* Live road updates — shown inline right after the hero (no extra page). */}
-        <section id="road-updates" className="scroll-mt-24 border-b border-border/70 bg-muted/30">
-          <div className="container-px py-10 sm:py-12">
-            <div className="mb-6 flex items-center gap-2">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gold/15 text-gold">
-                <TriangleAlert className="h-5 w-5" />
-              </span>
-              <div>
-                <h2 className="font-display text-xl font-bold uppercase text-forest sm:text-2xl">
-                  Live Road Updates &amp; Alerts
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Real-time road conditions across Gilgit-Baltistan — status, blockages, safety
-                  guidance and alternative routes.
-                </p>
-              </div>
-            </div>
-            <RoadUpdates />
-          </div>
-        </section>
-
         {/* Service cards */}
         <section className="container-px py-12">
           <h2 className="font-display text-xl font-bold uppercase text-forest sm:text-2xl">
@@ -105,6 +84,28 @@ export default async function RoadsidePage() {
             })}
           </div>
         </section>
+
+        {/* Live road updates — below the services (no separate page needed). */}
+        <section id="road-updates" className="scroll-mt-24 border-b border-border/70 bg-muted/30">
+          <div className="container-px py-10 sm:py-12">
+            <div className="mb-6 flex items-center gap-2">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gold/15 text-gold">
+                <TriangleAlert className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="font-display text-xl font-bold uppercase text-forest sm:text-2xl">
+                  Live Road Updates &amp; Alerts
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Real-time road conditions across Gilgit-Baltistan — status, blockages, safety
+                  guidance and alternative routes.
+                </p>
+              </div>
+            </div>
+            <RoadUpdates />
+          </div>
+        </section>
+
       </main>
       <Footer />
     </>
