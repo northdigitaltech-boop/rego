@@ -17,8 +17,10 @@ import { EventsGrid } from "@/components/home/events-grid";
 import { ActivitiesGrid } from "@/components/home/activities-grid";
 import { SoloConnectSection } from "@/components/home/solo-connect-section";
 import { SafarnamaSection } from "@/components/home/safarnama-section";
+import { PromoCarousel } from "@/components/home/promo-carousel";
 import { DeferredMarketing } from "@/components/home/deferred-marketing";
 import { NewsletterSection } from "@/components/home/newsletter-section";
+import { getActiveAdSlides } from "@/lib/ad-slides";
 import {
   feedHotels,
   feedPackages,
@@ -65,6 +67,9 @@ export default async function Home() {
     feedStories(3),
   ]);
 
+  // Sponsored slides (hidden entirely when none are active).
+  const adSlides = await getActiveAdSlides();
+
   return (
     <>
       <Navbar />
@@ -108,6 +113,11 @@ export default async function Home() {
           viewAllLabel="View All Transport"
           variant="spec"
         />
+
+        {/* Sponsored promotions — advertisers, admin-managed */}
+        <div id="promotions" className="scroll-mt-24">
+          <PromoCarousel slides={adSlides} />
+        </div>
 
         {/* Best Travel Companies */}
         <FeaturedGrid

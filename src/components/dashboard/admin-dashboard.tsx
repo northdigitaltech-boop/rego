@@ -91,6 +91,7 @@ import { AdminSafarnama } from "@/components/dashboard/admin-safarnama";
 import { AdminRegoMap } from "@/components/dashboard/admin-rego-map";
 import { AdminAbout } from "@/components/dashboard/admin-about";
 import { AdminContact } from "@/components/dashboard/admin-contact";
+import { AdminAds } from "@/components/dashboard/admin-ads";
 import { AdminListingsManager } from "@/components/dashboard/admin-listings-manager";
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
@@ -448,6 +449,7 @@ type Tab =
   | "destinations"
   | "about"
   | "contact"
+  | "ads"
   | "legal"
   | "careers"
   | "applications"
@@ -480,6 +482,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "destinations", label: "Destinations", icon: MapPin },
   { id: "about", label: "About Page", icon: Info },
   { id: "contact", label: "Contact Page", icon: Phone },
+  { id: "ads", label: "Promotions & Ads", icon: Megaphone },
   { id: "legal", label: "Legal & Policies", icon: FileText },
   { id: "careers", label: "Careers & Jobs", icon: Briefcase },
   { id: "applications", label: "Job Applications", icon: FileText },
@@ -949,6 +952,7 @@ export function AdminDashboard() {
           {tab === "manage" && <AdminListingsManager />}
           {tab === "about" && <AdminAbout />}
           {tab === "contact" && <AdminContact />}
+          {tab === "ads" && <AdminAds />}
           {tab === "legal" && <AdminLegal />}
           {tab === "careers" && <AdminCareers />}
           {tab === "service-requests" && <AdminServiceRequests />}
