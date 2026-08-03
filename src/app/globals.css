@@ -190,25 +190,74 @@ html {
   color: #6b7280;
 }
 
-/* Mobile hardening: never allow the page to scroll sideways, and give taps
-   a clean highlight. Intentional horizontal scrollers (filter chips, kanban)
-   use their own overflow container so they're unaffected. */
+/* ------------------------------------------------------------------ */
+/* VERTICAL-ONLY SCROLLING (global)                                     */
+/* The page may never move sideways. Deliberate horizontal scrollers    */
+/* (filter chips, wide admin tables, the map) opt back in below.        */
+/* ------------------------------------------------------------------ */
 html,
 body {
   /* `clip` contains horizontal overflow WITHOUT creating a scroll container.
      `overflow-x: hidden` here was breaking `position: sticky` on the navbar
      (it made the body a scroll container), so the header scrolled away. */
   overflow-x: clip;
+  width: 100%;
   max-width: 100%;
-  /* Lock the layout: allow only vertical/horizontal panning, no pinch-zoom.
-     This is what stops the whole site from zooming in/out on mobile
-     (iOS Safari ignores the viewport user-scalable flag, but honours this). */
-  touch-action: pan-x pan-y;
+  /* Vertical panning only: kills sideways swipe/rubber-banding AND pinch-zoom
+     (iOS Safari ignores the viewport user-scalable flag but honours this). */
+  touch-action: pan-y;
+  /* Don't let a stray wide child stretch the page. */
+  position: relative;
+  /* Long URLs / unbroken strings can't push the layout wider than the screen. */
+  overflow-wrap: break-word;
 }
-/* The interactive map still needs pinch-zoom, so let Leaflet handle its own. */
+
+/* Nothing may render wider than the viewport. */
+img,
+video,
+svg,
+canvas,
+iframe,
+table,
+pre {
+  max-width: 100%;
+}
+img,
+video {
+  height: auto;
+}
+
+/* Opt back in: containers that are MEANT to scroll sideways keep their
+   horizontal gesture, so filter chips and wide admin tables still work. */
+.overflow-x-auto,
+.overflow-x-scroll,
+.snap-x,
+[data-hscroll] {
+  touch-action: pan-x pan-y;
+  /* Keep the momentum flick on iOS. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* The interactive map handles its own pan and pinch. */
 .leaflet-container {
   touch-action: none;
 }
+
+/* Full-screen overlays (modals, sheets, drawers, the promo carousel) must
+   stay inside the viewport and never bleed sideways. Scrolling inside one
+   must not chain out to the page behind it. */
+[role="dialog"],
+.fixed.inset-0 {
+  max-width: 100vw;
+  overscroll-behavior: contain;
+}
+
+/* NOTE: a global `.flex > * { min-width: 0 }` would also stop long words
+   stretching a row, but it can subtly resize existing layouts — so it is
+   deliberately NOT applied. `overflow-x: clip` above already guarantees the
+   page cannot scroll sideways; add `min-w-0` per-component if a specific
+   row ever needs it. */
 
 /* Fixed mobile bottom navigation (matches its xl:hidden — the same
    breakpoint at which this project switches to the desktop navbar):
