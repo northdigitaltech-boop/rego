@@ -39,6 +39,11 @@ const TRAVEL_SIGNALS = [
   "mountain", "valley", "lake", "glacier", "trek", "hike", "camp", "camping", "safari", "fishing",
   "gilgit", "baltistan", "gb", "northern areas", "rego",
   "solo", "companion", "partner", "event", "festival", "story", "safarnama", "co-working", "coworking",
+  // Roman Urdu — how many GB users actually type. Without these, questions
+  // like "hum ksy register kry" were being refused as off-topic.
+  "kaise", "kese", "ksy", "kaisay", "kya", "karna", "karni", "kry", "kare",
+  "chahiye", "batao", "madad", "rabta", "paisay", "paise", "kitna", "kitne",
+  "safar", "ghumna", "jana", "rehna", "khana", "gari", "sasta", "acha",
 ];
 
 function isGreeting(q: string): boolean {

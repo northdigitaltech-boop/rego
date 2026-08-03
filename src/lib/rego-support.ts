@@ -29,9 +29,37 @@ const HELPLINE = "+92 316 1290604";
 
 const TOPICS: SupportTopic[] = [
   {
+    id: "register",
+    keys: [
+      // English
+      "how do i register", "how to register", "how can i register", "register",
+      "sign up", "signup", "create an account", "make an account", "new account",
+      "how do i join", "how to join", "join rego",
+      // Roman Urdu — how people actually type it
+      "register kry", "register kare", "register karna", "register karen",
+      "ksy register", "kaise register", "kese register", "kaisay register",
+      "account kaise", "account kese", "account banana", "account banaye",
+      "account banao", "sign up kaise", "kaise join", "kese join",
+      "rejister",
+    ],
+    answer: {
+      reply:
+        "Tap Sign in / Create account, enter your name, email and a password, then verify your email — " +
+        "that's it, you can book straight away. If you run a tourism business, choose the partner option " +
+        "instead so you can list your hotel, transport, guiding or restaurant service.",
+      action: {
+        label: "Create your account",
+        href: "/signup",
+        description: "Free to join — takes under a minute.",
+      },
+    },
+  },
+  {
     id: "how-to-book",
     keys: [
       "how do i book", "how to book", "how can i book", "booking process",
+      "booking kaise", "booking kese", "book kaise", "kaise book", "ksy book",
+      "booking karna", "booking karni",
       "how booking works", "book kaise", "booking kaise", "how do i reserve",
       "how to reserve", "make a booking",
     ],
@@ -51,6 +79,7 @@ const TOPICS: SupportTopic[] = [
     id: "booking-status",
     keys: [
       "where is my booking", "track my booking", "booking status", "check my booking",
+      "meri booking", "booking kahan", "booking confirm hui",
       "my reservation", "did my booking", "booking confirm", "is my booking confirmed",
       "booking reference",
     ],
@@ -70,6 +99,7 @@ const TOPICS: SupportTopic[] = [
     id: "cancel-refund",
     keys: [
       "cancel my booking", "how to cancel", "how do i cancel", "cancellation",
+      "cancel kaise", "cancel karna", "paise wapas", "paisay wapas", "refund kaise",
       "cancel karna", "refund", "money back", "get my money", "refund policy",
       "cancellation policy", "cancel booking",
     ],
@@ -89,6 +119,7 @@ const TOPICS: SupportTopic[] = [
     id: "payment",
     keys: [
       "how do i pay", "how to pay", "payment method", "payment options", "is payment safe",
+      "payment kaise", "paise kaise", "adaigi", "payment karna",
       "payment secure", "advance payment", "pay online", "cash payment", "payment kaise",
     ],
     answer: {
@@ -107,6 +138,8 @@ const TOPICS: SupportTopic[] = [
     id: "become-partner",
     keys: [
       "become a partner", "list my business", "list my hotel", "add my hotel",
+      "partner kaise", "partner kese", "apna hotel list", "business register",
+      "apna business", "hotel add karna",
       "register my business", "how do i list", "how to list", "join as provider",
       "add my property", "sell on rego", "partner banna", "apna hotel",
     ],
@@ -162,6 +195,7 @@ const TOPICS: SupportTopic[] = [
     id: "find-job",
     keys: [
       "find a job", "looking for job", "job in", "jobs available", "apply for job",
+      "naukri kaise", "job kaise", "job chahiye",
       "vacancy", "vacancies", "naukri", "employment", "career", "careers", "work with rego",
     ],
     answer: {
@@ -199,6 +233,7 @@ const TOPICS: SupportTopic[] = [
     id: "contact",
     keys: [
       "contact you", "contact rego", "talk to someone", "customer service", "customer support",
+      "rabta", "baat karni", "baat karna", "madad", "help chahiye",
       "helpline", "phone number", "call you", "complaint", "report a problem", "human",
       "speak to", "email you",
     ],
