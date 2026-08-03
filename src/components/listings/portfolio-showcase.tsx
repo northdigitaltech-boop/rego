@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { type MediaPortfolioRow } from "@/lib/media";
 import { cn, photo } from "@/lib/utils";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                            */
@@ -178,12 +179,9 @@ function ProjectViewer({
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  useScrollLock(true);
 
   return (
     <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm sm:p-6">

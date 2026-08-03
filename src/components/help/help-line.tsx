@@ -16,6 +16,7 @@ import {
   LifeBuoy,
   X,
 } from "lucide-react";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /* ------------------------------------------------------------------ */
 /* Configure these with Rego's real numbers (placeholders below).  */
@@ -39,12 +40,9 @@ export function HelpLine() {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+  useScrollLock(open);
 
   const shareLocation = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Images, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { photo } from "@/lib/utils";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /**
  * Premium property-style gallery: large main image on the left, a 2×2 grid of
@@ -182,13 +183,10 @@ function Lightbox({
       if (e.key === "ArrowLeft") go(-1);
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     closeRef.current?.focus(); // move focus into the dialog
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [go, onClose]);
+  useScrollLock(true);
 
   const btn =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-forest-900";

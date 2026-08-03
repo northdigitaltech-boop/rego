@@ -5,6 +5,7 @@ import { Search, ShieldCheck, X, KeyRound, Mail, Phone, Loader2, CheckCircle2, U
 
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 interface ProfileRow {
   id: string;
@@ -172,12 +173,9 @@ function ManageModal({
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  useScrollLock(true);
 
   return (
     <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-forest-900/60 p-3 backdrop-blur-sm sm:p-6" onClick={onClose}>

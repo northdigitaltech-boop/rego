@@ -6,21 +6,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 
 import { RegoAiChat } from "@/components/home/rego-ai-chat";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /** Floating "Ask Rego AI" button — sits above the Help Line button and opens a
  *  popup where travellers ask questions and get grounded recommendations. */
 export function RegoAiWidget() {
   const [open, setOpen] = React.useState(false);
 
+  // Pins the page (iOS included) and restores the exact scroll position after.
+  useScrollLock(open);
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
   return (

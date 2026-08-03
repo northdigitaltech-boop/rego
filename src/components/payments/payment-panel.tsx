@@ -25,6 +25,7 @@ import {
   setPayAtProperty,
   submitPaymentProof,
 } from "@/lib/payments";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 const METHOD_ICON: Record<string, React.ReactNode> = {
   pay_at_property: <Building2 className="h-4 w-4" />,
@@ -66,12 +67,7 @@ export function PaymentPanel({
   const [err, setErr] = React.useState("");
   const [dismissed, setDismissed] = React.useState(false);
 
-  React.useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
+  useScrollLock(true);
 
   // A transfer method only shows if the provider both enabled it AND entered
   // the receiving details for it — so customers never see an empty instructions box.

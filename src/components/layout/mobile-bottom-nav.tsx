@@ -16,6 +16,7 @@ import {
 
 import { type NotificationRow } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /** Latest message per booking, as already computed by the navbar. */
 export interface BottomNavMessage {
@@ -407,15 +408,12 @@ function Sheet({
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  // Pins the page (iOS included) and restores the scroll position on close.
+  useScrollLock(true);
 
   if (!mounted) return null;
 
