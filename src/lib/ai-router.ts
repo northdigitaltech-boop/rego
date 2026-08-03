@@ -66,7 +66,10 @@ const CANONICAL: Record<string, string> = {
 /** intent → keyword list (English + Urdu script + Roman Urdu). */
 const INTENT_KEYWORDS: Record<SearchIntent, string[]> = {
   search_hotels: [
-    "hotel", "hotels", "resort", "accommodation", "stay", "room", "rooms", "lodge",
+    "hotel", "hotels", "resort", "resorts", "accommodation", "accomodation",
+    "stay", "stays", "staying", "room", "rooms", "lodge", "lodging", "motel",
+    "place to stay", "where to stay", "where can i stay", "somewhere to stay",
+    "night stay", "book a room", "hotal", "hottel",
     "rehna", "thehrna", "kamra", "kamray", "sasta hotel", "kam price hotel", "ہوٹل", "کمرہ",
   ],
   search_homestays: [
@@ -74,19 +77,28 @@ const INTENT_KEYWORDS: Record<SearchIntent, string[]> = {
   ],
   search_hostels: ["hostel", "hostels", "dorm", "dormitory", "bunk", "backpacker"],
   search_tour_packages: [
-    "tour package", "packages", "package", "guided tour", "sightseeing", "tour", "ٹور",
+    "tour package", "tour packages", "packages", "package", "guided tour",
+    "sightseeing", "tour", "tours", "trip package", "deal", "deals", "ٹور",
   ],
   search_transport: [
-    "car rent", "rent a car", "rental car", "rent car", "car chahiye", "jeep", "prado",
-    "land cruiser", "bike", "transport", "vehicle", "4x4", "gari", "gaari", "گاڑی", "جیپ",
-    "car for rent", "cars for rent", "rental", "rentals", "driver",
+    "car rent", "rent a car", "rental car", "rent car", "car chahiye", "jeep", "jeeps",
+    "prado", "land cruiser", "bike", "transport", "transportation", "vehicle", "vehicles",
+    "4x4", "gari", "gaari", "گاڑی", "جیپ", "car for rent", "cars for rent",
+    "rental", "rentals", "driver", "drivers", "taxi", "cab", "pick and drop",
+    "pickup", "how to get to", "how to reach", "travel to", "getting around",
   ],
-  search_guides: ["tour guide", "local guide", "guide", "guides", "گائیڈ"],
+  search_guides: [
+    "tour guide", "local guide", "guide", "guides", "guiding", "trek guide",
+    "mountain guide", "porter", "porters", "گائیڈ",
+  ],
   search_photographers: [
     "photographer", "photographers", "photography", "drone", "drone pilot", "videographer", "photo shoot", "shoot",
   ],
   search_restaurants: [
-    "restaurant", "restaurants", "food", "eat", "dining", "cafe", "traditional food", "khana", "کھانا", "ریسٹورنٹ",
+    "restaurant", "restaurants", "resturant", "resturants", "food", "foods",
+    "eat", "eating", "dining", "dine", "cafe", "cafes", "coffee", "dhaba",
+    "traditional food", "local food", "where to eat", "place to eat",
+    "khana", "کھانا", "ریسٹورنٹ",
   ],
 };
 
@@ -175,10 +187,30 @@ function includesAny(q: string, words: string[]): string | null {
 
 /* ---------------- the classifier ---------------- */
 
-export function classifyQuery(raw: string): RouteDecision {
+/** What the previous turns established, so follow-ups make sense. */
+export interface ChatContext {
+  /** Location the user was last talking about ("…and transport there?"). */
+  location?: string | null;
+  /** Service they were last browsing ("show me a cheaper one"). */
+  intent?: SearchIntent | null;
+}
+
+/**
+ * Follow-ups that only make sense with context — "a cheaper one", "what about
+ * there", "any others". These carry the previous intent/location forward.
+ */
+const FOLLOW_UP_SIGNALS = [
+  "cheaper", "cheapest one", "another", "other one", "others", "any other",
+  "what about", "how about", "there", "that one", "this one", "same",
+  "instead", "alternative", "alternatives", "more options", "show more",
+  "aur", "aur koi", "dusra", "doosra", "wahan", "koi aur",
+];
+
+export function classifyQuery(raw: string, ctx: ChatContext = {}): RouteDecision {
   const q = raw.toLowerCase().trim();
 
-  const location = detectLoc(q);
+  // Resolve "there"/"same place" to the location from earlier in the chat.
+  const location = detectLoc(q) ?? (ctx.location ?? null);
   const maxPrice = detectMaxPrice(q);
   const cheap = includesAny(q, CHEAP_WORDS);
   const top = includesAny(q, TOP_WORDS);
@@ -197,6 +229,10 @@ export function classifyQuery(raw: string): RouteDecision {
     }
   }
 
+  // "show me a cheaper one" names no service — inherit it from the last turn.
+  const isFollowUp = !!includesAny(q, FOLLOW_UP_SIGNALS);
+  if (!intent && isFollowUp && ctx.intent) intent = ctx.intent;
+
   const filters: RouteDecision["filters"] = {
     location,
     maxPrice: maxPrice ?? (cheap ? 15000 : null),
@@ -213,11 +249,15 @@ export function classifyQuery(raw: string): RouteDecision {
   // Reasoning signals always win — even "recommend hotels in Hunza" needs the model.
   if (reasoning) return { kind: "reasoning", intent, confidence: 0.9, filters };
 
-  // Questions ("how is…", "is it…", "are you…", "kya…") need understanding,
-  // not a listing dump — unless the user clearly issued a search command.
+  // Questions ("how is…", "is it…", "are you…", "kya…") usually need
+  // understanding rather than a listing dump — BUT a short question that names
+  // a service is really just a search ("where can I stay in Hunza?",
+  // "any cheaper hotels?"), so only send the open-ended ones to the model.
   const asksQuestion = includesAny(q, INTERROGATIVES) || q.endsWith("?");
   const givesCommand = includesAny(q, SEARCH_VERBS);
-  if (asksQuestion && !givesCommand) {
+  const wordCount = q.split(/\s+/).length;
+  const simpleLookup = !!intent && wordCount <= 12;
+  if (asksQuestion && !givesCommand && !simpleLookup) {
     return { kind: "reasoning", intent, confidence: 0.85, filters };
   }
 

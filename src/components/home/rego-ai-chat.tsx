@@ -34,12 +34,25 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
   const recRef = React.useRef<any>(null);
   const finalRef = React.useRef("");
 
+  // Kept in a ref so `ask` stays stable while still seeing the latest thread.
+  const historyRef = React.useRef<Msg[]>([]);
+  React.useEffect(() => {
+    historyRef.current = messages;
+  }, [messages]);
+
   const ask = React.useCallback((text: string) => {
     const q = text.trim();
     if (!q) return;
     setInput("");
     setMessages((m) => [...m, { id: ++idRef.current, role: "user", text: q }]);
     setThinking(true);
+
+    // The last few turns, so the assistant understands follow-ups such as
+    // "a cheaper one" or "and transport there?".
+    const history = historyRef.current.slice(-6).map((m) => ({
+      role: m.role === "ai" ? ("assistant" as const) : ("user" as const),
+      content: m.text,
+    }));
 
     const push = (answer: AiAnswer) => {
       setMessages((m) => [...m, { id: ++idRef.current, role: "ai", text: answer.reply, answer }]);
@@ -53,7 +66,7 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
         const res = await fetch("/api/rego-ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: q }),
+          body: JSON.stringify({ message: q, history }),
         });
         const data = await res.json();
         if (data?.ok) {

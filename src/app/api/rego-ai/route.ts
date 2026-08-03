@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { answerQuery, buildSystemPrompt } from "@/lib/rego-ai";
-import { classifyQuery, answerFromDatabase, answerWeather } from "@/lib/ai-router";
+import {
+  classifyQuery,
+  answerFromDatabase,
+  answerWeather,
+  type ChatContext,
+} from "@/lib/ai-router";
 
 /* ============================================================
  * Rego AI endpoint.
@@ -20,6 +25,29 @@ import { classifyQuery, answerFromDatabase, answerWeather } from "@/lib/ai-route
  * ============================================================ */
 
 const MAX_MSG = 1000;
+/** How many recent turns to remember (3 exchanges) — enough for follow-ups. */
+const MAX_TURNS = 6;
+
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
+ * Walk the recent turns newest-first and pick up the last location and service
+ * the user talked about, so "what about there?" / "a cheaper one" still work.
+ */
+function deriveContext(turns: ChatTurn[]): ChatContext {
+  const ctx: ChatContext = { location: null, intent: null };
+  for (let i = turns.length - 1; i >= 0; i--) {
+    if (turns[i].role !== "user") continue;
+    const d = classifyQuery(turns[i].content);
+    if (!ctx.location && d.filters.location) ctx.location = d.filters.location;
+    if (!ctx.intent && d.intent) ctx.intent = d.intent;
+    if (ctx.location && ctx.intent) break;
+  }
+  return ctx;
+}
 
 function allowedHost(req: Request): boolean {
   const host = req.headers.get("host");
@@ -50,10 +78,29 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid request" }, { status: 400 });
   }
-  const { message } = (body ?? {}) as { message?: unknown };
+  const { message, history } = (body ?? {}) as { message?: unknown; history?: unknown };
   if (typeof message !== "string" || !message.trim() || message.length > MAX_MSG) {
     return NextResponse.json({ ok: false, error: "Invalid message" }, { status: 400 });
   }
+
+  // Recent turns, so follow-ups like "a cheaper one" or "and transport there?"
+  // resolve against what was already discussed. Bounded to keep tokens sane.
+  const turns: ChatTurn[] = Array.isArray(history)
+    ? (history as unknown[])
+        .filter(
+          (t): t is ChatTurn =>
+            !!t &&
+            typeof t === "object" &&
+            (("role" in t && (t as ChatTurn).role === "user") ||
+              (t as ChatTurn).role === "assistant") &&
+            typeof (t as ChatTurn).content === "string"
+        )
+        .slice(-MAX_TURNS)
+        .map((t) => ({ role: t.role, content: t.content.slice(0, MAX_MSG) }))
+    : [];
+
+  // What the conversation has established so far (last location / service).
+  const ctx = deriveContext(turns);
 
   // 1) Retrieval — always grounded in real Rego listings.
   const answer = answerQuery(message);
@@ -74,7 +121,7 @@ export async function POST(req: Request) {
   // Simple listing searches (hotels/transport/guides/… + location/price/sort)
   // are answered straight from the live catalogue with a template reply and
   // spend ZERO AI tokens. Feature intents & greetings are also deterministic.
-  const decision = classifyQuery(message);
+  const decision = classifyQuery(message, ctx);
 
   // Greetings get the friendly canned welcome — no tokens.
   const isGreeting =
@@ -116,7 +163,10 @@ export async function POST(req: Request) {
     }
     if (!answer.feature) {
       const db = await answerFromDatabase(decision);
-      if (db) {
+      // Only short-circuit when the catalogue actually had something to show.
+      // A zero-result search falls through to the model below, which can
+      // suggest nearby alternatives instead of a dead-end "nothing found".
+      if (db && db.results.length > 0) {
         return NextResponse.json({
           ok: true,
           reply: db.reply,
@@ -128,17 +178,19 @@ export async function POST(req: Request) {
         });
       }
     }
-    // Feature intents (road updates, roadside, solo, events…) or a DB miss:
-    // the deterministic catalogue answer already covers it — still no LLM.
-    return NextResponse.json({
-      ok: true,
-      reply: answer.reply,
-      bullets: answer.bullets,
-      results: answer.results,
-      viewAllHref: answer.viewAllHref,
-      feature: answer.feature ?? null,
-      llm: false,
-    });
+    // Feature intents (road updates, roadside, solo, events…) are deterministic.
+    if (answer.feature || isGreeting) {
+      return NextResponse.json({
+        ok: true,
+        reply: answer.reply,
+        bullets: answer.bullets,
+        results: answer.results,
+        viewAllHref: answer.viewAllHref,
+        feature: answer.feature ?? null,
+        llm: false,
+      });
+    }
+    // Otherwise: an empty search — let the model help rather than dead-end.
   }
 
   // 3) Generation — only reasoning/planning/comparison queries reach the LLM,
@@ -146,9 +198,15 @@ export async function POST(req: Request) {
   let reply = answer.reply;
   let bullets = answer.bullets;
   let llm = false;
-  if (decision.kind === "reasoning" || decision.kind === "other") {
+  // Reasoning, unclassified queries, AND searches that found nothing — the
+  // model can suggest alternatives where a template reply would dead-end.
+  if (
+    decision.kind === "reasoning" ||
+    decision.kind === "other" ||
+    decision.kind === "search"
+  ) {
     try {
-      const generated = await generate(message, buildSystemPrompt(answer));
+      const generated = await generate(message, buildSystemPrompt(answer), turns);
       if (generated) {
         reply = generated;
         bullets = []; // the prose covers the itinerary; avoid duplicate lists
@@ -173,7 +231,11 @@ export async function POST(req: Request) {
 
 /* ---------------- LLM providers ---------------- */
 
-async function generate(userMsg: string, system: string): Promise<string | null> {
+async function generate(
+  userMsg: string,
+  system: string,
+  turns: ChatTurn[] = []
+): Promise<string | null> {
   const provider = (process.env.REGO_AI_PROVIDER || "").toLowerCase();
   if (provider === "groq") {
     // Try the configured model first, then fall back through commonly available
@@ -186,7 +248,7 @@ async function generate(userMsg: string, system: string): Promise<string | null>
       ])
     );
     for (const model of models) {
-      const out = await chatCompletions(userMsg, system, {
+      const out = await chatCompletions(userMsg, system, turns, {
         url: "https://api.groq.com/openai/v1/chat/completions",
         key: process.env.GROQ_API_KEY,
         model,
@@ -196,21 +258,21 @@ async function generate(userMsg: string, system: string): Promise<string | null>
     return null;
   }
   if (provider === "openrouter") {
-    return chatCompletions(userMsg, system, {
+    return chatCompletions(userMsg, system, turns, {
       url: "https://openrouter.ai/api/v1/chat/completions",
       key: process.env.OPENROUTER_API_KEY,
       model: process.env.REGO_AI_MODEL || "meta-llama/llama-3.1-8b-instruct:free",
     });
   }
   if (provider === "openai") {
-    return chatCompletions(userMsg, system, {
+    return chatCompletions(userMsg, system, turns, {
       url: "https://api.openai.com/v1/chat/completions",
       key: process.env.OPENAI_API_KEY,
       model: process.env.REGO_AI_MODEL || "gpt-4o-mini",
     });
   }
-  if (provider === "anthropic") return anthropic(userMsg, system);
-  if (provider === "gemini") return gemini(userMsg, system);
+  if (provider === "anthropic") return anthropic(userMsg, system, turns);
+  if (provider === "gemini") return gemini(userMsg, system, turns);
   return null; // not configured
 }
 
@@ -218,6 +280,7 @@ async function generate(userMsg: string, system: string): Promise<string | null>
 async function chatCompletions(
   userMsg: string,
   system: string,
+  turns: ChatTurn[],
   opts: { url: string; key?: string; model: string }
 ): Promise<string | null> {
   if (!opts.key) return null;
@@ -227,9 +290,11 @@ async function chatCompletions(
     body: JSON.stringify({
       model: opts.model,
       temperature: 0.4,
-      max_tokens: 400,
+      max_tokens: 900,
       messages: [
         { role: "system", content: system },
+        // Prior turns give the model the thread, so follow-ups resolve.
+        ...turns,
         { role: "user", content: userMsg },
       ],
     }),
@@ -242,7 +307,11 @@ async function chatCompletions(
   return data?.choices?.[0]?.message?.content?.trim() || null;
 }
 
-async function anthropic(userMsg: string, system: string): Promise<string | null> {
+async function anthropic(
+  userMsg: string,
+  system: string,
+  turns: ChatTurn[] = []
+): Promise<string | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -254,9 +323,9 @@ async function anthropic(userMsg: string, system: string): Promise<string | null
     },
     body: JSON.stringify({
       model: process.env.REGO_AI_MODEL || "claude-3-5-haiku-latest",
-      max_tokens: 400,
+      max_tokens: 900,
       system,
-      messages: [{ role: "user", content: userMsg }],
+      messages: [...turns, { role: "user", content: userMsg }],
     }),
   });
   if (!res.ok) {
@@ -267,7 +336,11 @@ async function anthropic(userMsg: string, system: string): Promise<string | null
   return data?.content?.[0]?.text?.trim() || null;
 }
 
-async function gemini(userMsg: string, system: string): Promise<string | null> {
+async function gemini(
+  userMsg: string,
+  system: string,
+  turns: ChatTurn[] = []
+): Promise<string | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
   const model = process.env.REGO_AI_MODEL || "gemini-2.0-flash";
@@ -278,8 +351,15 @@ async function gemini(userMsg: string, system: string): Promise<string | null> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: "user", parts: [{ text: userMsg }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 400 },
+        contents: [
+          // Gemini calls the assistant role "model".
+          ...turns.map((t) => ({
+            role: t.role === "assistant" ? "model" : "user",
+            parts: [{ text: t.content }],
+          })),
+          { role: "user", parts: [{ text: userMsg }] },
+        ],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
       }),
     }
   );
