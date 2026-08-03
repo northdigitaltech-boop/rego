@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { destinations as staticDestinations, type Destination } from "@/lib/data";
+import { parseAttractions, suggestedFor, type Attraction } from "@/lib/attractions";
 
 /* ---- Row type (matches supabase/phase10-destinations.sql) ---- */
 
@@ -11,6 +12,8 @@ export interface DestinationRow {
   stays: string | null;
   tagline: string | null;
   image: string | null;
+  /** Added in supabase/phase65-destination-attractions.sql. */
+  attractions?: unknown;
   created_at: string;
 }
 
@@ -23,17 +26,24 @@ export function rowToDestination(r: DestinationRow): Destination {
     stays: r.stays ?? "Stays available",
     tagline: r.tagline ?? "",
     image: r.image ?? "https://loremflickr.com/1200/700/mountains,valley",
+    attractions: parseAttractions(r.attractions),
   };
+}
+
+/** Built-in destinations, pre-filled with the suggested spots for that valley. */
+function withSuggested(d: Destination): Destination {
+  return d.attractions?.length ? d : { ...d, attractions: suggestedFor(d.slug) };
 }
 
 /** Public destinations for the site. Falls back to the built-in list. */
 export async function getDestinations(): Promise<Destination[]> {
-  if (!isSupabaseConfigured) return staticDestinations;
+  const fallbackAll = staticDestinations.map(withSuggested);
+  if (!isSupabaseConfigured) return fallbackAll;
   const { data, error } = await supabase
     .from("destinations")
     .select("*")
     .order("created_at", { ascending: true });
-  if (error || !data || data.length === 0) return staticDestinations;
+  if (error || !data || data.length === 0) return fallbackAll;
   return (data as DestinationRow[]).map(rowToDestination);
 }
 
@@ -41,7 +51,8 @@ export async function getDestinations(): Promise<Destination[]> {
 export async function getDestinationBySlug(
   slug: string
 ): Promise<Destination | null> {
-  const fallback = staticDestinations.find((d) => d.slug === slug) ?? null;
+  const found = staticDestinations.find((d) => d.slug === slug);
+  const fallback = found ? withSuggested(found) : null;
   if (!isSupabaseConfigured) return fallback;
   const { data, error } = await supabase
     .from("destinations")
@@ -75,6 +86,15 @@ export interface DestinationInput {
   stays?: string | null;
   tagline?: string | null;
   image?: string | null;
+  attractions?: Attraction[];
+}
+
+/** Save just the attractions list for one destination. */
+export async function updateDestinationAttractions(
+  id: string,
+  attractions: Attraction[]
+) {
+  return supabase.from("destinations").update({ attractions }).eq("id", id);
 }
 
 export async function createDestination(input: DestinationInput) {

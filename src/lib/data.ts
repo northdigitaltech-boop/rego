@@ -200,6 +200,8 @@ export interface Destination {
   stays: string;
   tagline: string;
   image: string;
+  /** Tourist spots shown on the destination page. Admin-managed. */
+  attractions?: import("@/lib/attractions").Attraction[];
 }
 
 export const destinations: Destination[] = [

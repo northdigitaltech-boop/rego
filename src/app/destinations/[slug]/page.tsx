@@ -7,6 +7,7 @@ import { MapPin } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ListingsBrowser } from "@/components/listings/listings-browser";
+import { AttractionsSection } from "@/components/destinations/attractions-section";
 import { destinations } from "@/lib/data";
 import { getDestinationBySlug } from "@/lib/destinations";
 import { feedAllListings } from "@/lib/home-feed";
@@ -120,6 +121,13 @@ export default async function DestinationPage({
             </div>
           </div>
         </section>
+
+        {/* Top attractions — admin-managed per destination */}
+        <AttractionsSection
+          items={destination.attractions ?? []}
+          destinationName={destination.name}
+          fallbackImage={destination.image}
+        />
 
         <Suspense
           fallback={

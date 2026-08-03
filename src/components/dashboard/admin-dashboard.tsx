@@ -175,6 +175,7 @@ import {
   slugify,
   type DestinationRow,
 } from "@/lib/destinations";
+import { AttractionsEditor } from "@/components/dashboard/attractions-editor";
 import { supabase, type HotelRow, isSupabaseConfigured } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -2101,36 +2102,41 @@ function DestinationsAdmin({
             {rows.map((d) => (
               <div
                 key={d.id}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-premium"
+                className="overflow-hidden rounded-2xl border border-border bg-card shadow-premium"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo(d.image)}
-                  alt={d.name}
-                  className="h-16 w-20 shrink-0 rounded-lg object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <h4 className="truncate font-display text-base font-semibold text-forest">
-                    {d.name}
-                  </h4>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {d.location}
-                    {d.stays ? ` · ${d.stays}` : ""}
-                  </p>
-                  <Link
-                    href={`/destinations/${d.slug}`}
-                    className="text-xs font-medium text-forest-600 hover:text-gold"
+                <div className="flex items-center gap-3 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo(d.image)}
+                    alt={d.name}
+                    className="h-16 w-20 shrink-0 rounded-lg object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="truncate font-display text-base font-semibold text-forest">
+                      {d.name}
+                    </h4>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {d.location}
+                      {d.stays ? ` · ${d.stays}` : ""}
+                    </p>
+                    <Link
+                      href={`/destinations/${d.slug}`}
+                      className="text-xs font-medium text-forest-600 hover:text-gold"
+                    >
+                      /destinations/{d.slug}
+                    </Link>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(d.id, d.name)}
+                    aria-label={`Delete ${d.name}`}
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-red-600 hover:bg-red-50"
                   >
-                    /destinations/{d.slug}
-                  </Link>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(d.id, d.name)}
-                  aria-label={`Delete ${d.name}`}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+
+                {/* Tourist spots shown on this destination's page */}
+                <AttractionsEditor row={d} />
               </div>
             ))}
           </div>
