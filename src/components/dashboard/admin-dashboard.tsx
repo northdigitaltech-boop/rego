@@ -41,6 +41,11 @@ import {
   TriangleAlert,
   BookOpen,
   Megaphone,
+  Home,
+  BedDouble,
+  Car,
+  Camera,
+  UtensilsCrossed,
 } from "lucide-react";
 
 import {
@@ -205,11 +210,34 @@ interface PropertyRow {
   license_doc: string | null;
   owner_cnic_doc: string | null;
   ownership_doc: string | null;
+  /** Which verification group this row belongs to (set when the list is built). */
+  group?: string;
   // Homestay-only (optional — hotels won't have these)
   house_rules?: string | null;
   cancellation_policy?: string | null;
   checkin_time?: string | null;
   checkout_time?: string | null;
+}
+
+/* ---------------- Verification groups ----------------
+ * One card per service on the Verification tab. The key is set where the
+ * list is assembled, so it stays accurate even though `category_label`
+ * varies in wording between entity types.                              */
+
+const VERIFY_GROUPS = [
+  { key: "hotels", label: "Hotels", icon: Building2 },
+  { key: "homestays", label: "Homestays", icon: Home },
+  { key: "hostels", label: "Hostels", icon: BedDouble },
+  { key: "tours", label: "Tour Companies", icon: Compass },
+  { key: "transport", label: "Transport", icon: Car },
+  { key: "guides", label: "Guides", icon: Users },
+  { key: "media", label: "Photography & Media", icon: Camera },
+  { key: "restaurants", label: "Restaurants", icon: UtensilsCrossed },
+] as const;
+
+/** Stamp every row with the group it came from. */
+function tagGroup(rows: PropertyRow[], group: string): PropertyRow[] {
+  return rows.map((r) => ({ ...r, group }));
 }
 
 /* Map tour entities into the shared PropertyRow shape for admin screens. */
@@ -592,15 +620,17 @@ export function AdminDashboard() {
   ];
   // Verification only applies to entities with documents
   // (hotels/homestays/companies/transport providers).
+  // Tagged with a group so the verification screen can show one card per
+  // service and drill into it.
   const allProperties: PropertyRow[] = [
-    ...(allHotels as PropertyRow[]),
-    ...allHomestays,
-    ...allHostels,
-    ...allCompanies.map(companyToProp),
-    ...allProviders.map(providerToProp),
-    ...allGuides.map(guideToProp),
-    ...allMedia.map(mediaToProp),
-    ...allRestaurants.map(restaurantToProp),
+    ...tagGroup(allHotels as PropertyRow[], "hotels"),
+    ...tagGroup(allHomestays, "homestays"),
+    ...tagGroup(allHostels, "hostels"),
+    ...tagGroup(allCompanies.map(companyToProp), "tours"),
+    ...tagGroup(allProviders.map(providerToProp), "transport"),
+    ...tagGroup(allGuides.map(guideToProp), "guides"),
+    ...tagGroup(allMedia.map(mediaToProp), "media"),
+    ...tagGroup(allRestaurants.map(restaurantToProp), "restaurants"),
   ];
   React.useEffect(() => {
     refresh();
@@ -1786,23 +1816,199 @@ function VerificationAdmin({
   onFeature: (id: string, featured: boolean) => void;
   onRanking: (id: string, badge: string) => void;
 }) {
+  // null = the service card grid; otherwise the group being reviewed.
+  const [openGroup, setOpenGroup] = React.useState<string | null>(null);
+  const [q, setQ] = React.useState("");
+  const [only, setOnly] = React.useState<"all" | "pending" | "verified">("all");
+
+  const stats = React.useMemo(() => {
+    const m: Record<string, { total: number; pending: number }> = {};
+    for (const g of VERIFY_GROUPS) m[g.key] = { total: 0, pending: 0 };
+    for (const r of items) {
+      const k = r.group ?? "";
+      if (!m[k]) continue;
+      m[k].total += 1;
+      if (!r.verified) m[k].pending += 1;
+    }
+    return m;
+  }, [items]);
+
+  const totalPending = React.useMemo(
+    () => items.filter((r) => !r.verified).length,
+    [items]
+  );
+
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-muted/40 py-16 text-center">
         <BadgeCheck className="mx-auto h-10 w-10 text-forest-600" />
         <p className="mt-2 font-display text-lg font-semibold text-forest">
-          No properties to verify
+          No listings to verify
         </p>
         <p className="text-sm text-muted-foreground">
-          Properties submitted by providers will appear here for document
-          review.
+          Listings submitted by providers will appear here for document review.
         </p>
       </div>
     );
   }
+
+  /* ---------- Service card grid ---------- */
+  if (!openGroup) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-display text-xl font-bold text-forest">
+            Verification by Service
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {totalPending > 0 ? (
+              <>
+                <span className="font-semibold text-gold-700">
+                  {totalPending} awaiting verification
+                </span>{" "}
+                across {items.length} listing{items.length === 1 ? "" : "s"}. Open a
+                service to review its documents.
+              </>
+            ) : (
+              <>
+                All {items.length} listing{items.length === 1 ? "" : "s"} are
+                verified. Open a service to review or revoke.
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {VERIFY_GROUPS.map((g) => {
+            const s = stats[g.key] ?? { total: 0, pending: 0 };
+            const Icon = g.icon;
+            return (
+              <button
+                key={g.key}
+                onClick={() => {
+                  setOpenGroup(g.key);
+                  setQ("");
+                  setOnly(s.pending > 0 ? "pending" : "all");
+                }}
+                disabled={s.total === 0}
+                className={cn(
+                  "group relative flex flex-col items-start rounded-2xl border border-border/70 bg-card p-4 text-left shadow-premium transition-all",
+                  s.total > 0
+                    ? "hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-premium-lg"
+                    : "opacity-60"
+                )}
+              >
+                {s.pending > 0 && (
+                  <span className="absolute right-3 top-3 rounded-full bg-gradient-gold px-2 py-0.5 text-[10px] font-bold text-forest-900">
+                    {s.pending} to review
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-2xl transition-colors",
+                    s.total > 0
+                      ? "bg-gradient-forest text-gold"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <p className="mt-3 font-display text-sm font-bold leading-snug text-forest">
+                  {g.label}
+                </p>
+                <span className="mt-3 flex w-full items-center justify-between">
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-xs font-bold",
+                      s.total > 0
+                        ? "bg-forest-50 text-forest-700"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {s.total} listing{s.total === 1 ? "" : "s"}
+                  </span>
+                  {s.total > 0 && (
+                    <ArrowRight className="h-4 w-4 text-forest-600 transition-transform group-hover:translate-x-0.5" />
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------- One service's listings ---------- */
+  const group = VERIFY_GROUPS.find((g) => g.key === openGroup);
+  const term = q.trim().toLowerCase();
+  const inGroup = items
+    .filter((r) => r.group === openGroup)
+    .filter((r) =>
+      only === "all" ? true : only === "pending" ? !r.verified : r.verified
+    )
+    .filter((r) =>
+      term
+        ? `${r.title} ${r.location} ${r.owner_email ?? ""}`.toLowerCase().includes(term)
+        : true
+    );
+
   return (
     <div className="space-y-4">
-      {items.map((h) => (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          onClick={() => {
+            setOpenGroup(null);
+            setQ("");
+            setOnly("all");
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"
+        >
+          <ChevronLeft className="h-4 w-4" /> All services
+        </button>
+        <h2 className="font-display text-lg font-bold text-forest">
+          {group?.label ?? openGroup}
+        </h2>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={`Search in ${group?.label ?? "this service"}…`}
+            className="w-full bg-transparent py-2 text-sm focus:outline-none"
+          />
+        </div>
+        {(["pending", "verified", "all"] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setOnly(k)}
+            className={cn(
+              "rounded-lg border px-3 py-2 text-sm font-semibold transition-colors",
+              only === k
+                ? "border-forest-600 bg-forest-50 text-forest"
+                : "border-border bg-card text-muted-foreground hover:text-forest"
+            )}
+          >
+            {k === "pending" ? "To review" : k === "verified" ? "Verified" : "All"}
+          </button>
+        ))}
+        <span className="text-xs text-muted-foreground">
+          {inGroup.length} shown
+        </span>
+      </div>
+
+      {inGroup.length === 0 && (
+        <p className="rounded-2xl border border-dashed border-border bg-muted/40 py-12 text-center text-sm text-muted-foreground">
+          {only === "pending"
+            ? "Nothing left to review in this service."
+            : "No listings match your search."}
+        </p>
+      )}
+
+      {inGroup.map((h) => (
         <div
           key={h.id}
           className="rounded-2xl border border-border bg-card p-4 shadow-premium sm:p-5"
