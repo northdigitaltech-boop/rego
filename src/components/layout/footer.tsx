@@ -13,6 +13,7 @@ import {
 
 import { BrandLogo } from "@/components/layout/logo";
 import { legalPolicies } from "@/lib/legal";
+import { siteConfig, contactLinks } from "@/lib/site";
 
 const quickLinks = [
   { label: "Services", href: "/listings" },
@@ -97,15 +98,27 @@ export function Footer() {
               Contact Us
             </h4>
             <ul className="space-y-2.5 text-sm">
-              <li className="flex items-center gap-2 text-white/65">
-                <Phone className="h-4 w-4 text-gold" /> +92 300 1234567
+              <li>
+                <a
+                  href={contactLinks.tel}
+                  className="flex items-center gap-2 text-white/65 transition-colors hover:text-gold"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-gold" />
+                  {siteConfig.contactPhoneDisplay}
+                </a>
               </li>
-              <li className="flex items-center gap-2 text-white/65">
-                <Mail className="h-4 w-4 text-gold" /> info@rego.com
+              <li>
+                <a
+                  href={contactLinks.mail}
+                  className="flex items-center gap-2 break-all text-white/65 transition-colors hover:text-gold"
+                >
+                  <Mail className="h-4 w-4 shrink-0 text-gold" />
+                  {siteConfig.contactEmail}
+                </a>
               </li>
               <li className="flex items-start gap-2 text-white/65">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-                Skardu, Gilgit Baltistan, Pakistan
+                {siteConfig.address}
               </li>
             </ul>
 

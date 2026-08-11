@@ -118,7 +118,14 @@ const navLinks: NavLink[] = [
       { label: "Cultural Events", href: "/events?category=cultural-events" },
     ],
   },
-  { label: "Jobs", href: "/jobs" },
+  {
+    label: "Jobs",
+    href: "/jobs",
+    children: [
+      { label: "Browse All Jobs", href: "/jobs" },
+      { label: "Careers at Rego", href: "/careers" },
+    ],
+  },
   { label: "Safarnama", href: "/safarnama" },
   { label: "Rego Map", href: "/map" },
   { label: "About Us", href: "/about" },

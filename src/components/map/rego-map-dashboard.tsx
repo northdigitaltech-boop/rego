@@ -17,6 +17,7 @@ import {
   type MapPlaceRow, type RoadRouteRow, type RoadAlertRow, type MapReportRow,
 } from "@/lib/rego-map";
 import { photo, cn } from "@/lib/utils";
+import { siteConfig, contactLinks } from "@/lib/site";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -324,7 +325,7 @@ export function RegoMapDashboard({
           </div>
           <div className="mt-3 flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 p-3">
             <LifeBuoy className="h-8 w-8 text-gold" />
-            <div><p className="text-sm font-semibold text-white">Need Help?</p><p className="text-[11px] text-white/60">24/7 · +92 316 1290604</p></div>
+            <div><p className="text-sm font-semibold text-white">Need Help?</p><a href={contactLinks.tel} className="text-[11px] text-white/60 hover:text-gold">24/7 · {siteConfig.contactPhoneDisplay}</a></div>
           </div>
         </aside>
         {sideOpen && <div onClick={() => setSideOpen(false)} className="fixed inset-0 z-40 bg-black/50 xl:hidden" />}

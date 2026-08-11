@@ -17,13 +17,12 @@ import {
   X,
 } from "lucide-react";
 import { useScrollLock } from "@/lib/use-scroll-lock";
+import { siteConfig } from "@/lib/site";
 
-/* ------------------------------------------------------------------ */
-/* Configure these with Rego's real numbers (placeholders below).  */
-/* WhatsApp must be digits only, international format, no + or spaces.  */
-/* ------------------------------------------------------------------ */
-const HELPLINE_TEL = "+925811920001";
-const WHATSAPP_NUM = "923400000000";
+/* Rego's own numbers live in src/lib/site.ts — change them there.
+   The government emergency numbers below are national and fixed. */
+const HELPLINE_TEL = siteConfig.contactPhone;
+const WHATSAPP_NUM = siteConfig.whatsapp;
 
 const EMERGENCY = [
   { label: "Tourism Helpline", tel: "1422", Icon: LifeBuoy },

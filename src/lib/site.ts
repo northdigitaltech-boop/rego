@@ -25,8 +25,29 @@ export const siteConfig = {
   ogImage: "/og-image.png",
   locale: "en_US",
   twitter: "@rego",
+
+  /* ----------------------------------------------------------------
+   * CONTACT DETAILS — change them here and they update everywhere:
+   * the footer, the help-line button, the contact page, the Rego Map
+   * panel, the AI support answers and the JSON-LD for Google.
+   * ---------------------------------------------------------------- */
+
+  /** Dialled number. Keep the country code, no spaces. */
   contactPhone: "+923161290604",
+  /** Same number, spaced for display. */
+  contactPhoneDisplay: "+92 316 1290604",
+  /** WhatsApp number — digits only, no "+" and no spaces. */
+  whatsapp: "923161290604",
+  contactEmail: "info@rego.services",
+  address: "Skardu, Gilgit Baltistan, Pakistan",
 } as const;
+
+/** Ready-made links so components don't rebuild these by hand. */
+export const contactLinks = {
+  tel: `tel:${siteConfig.contactPhone}`,
+  mail: `mailto:${siteConfig.contactEmail}`,
+  whatsapp: `https://wa.me/${siteConfig.whatsapp}`,
+};
 
 /**
  * Whether this deployment may be indexed by search engines.

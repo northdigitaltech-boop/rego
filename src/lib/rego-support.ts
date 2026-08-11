@@ -10,6 +10,8 @@
  * changes, update the linked legal page; keep these summaries short.
  * ============================================================ */
 
+import { siteConfig } from "@/lib/site";
+
 export interface SupportAnswer {
   /** Short spoken answer. */
   reply: string;
@@ -25,7 +27,7 @@ interface SupportTopic {
 }
 
 const CONTACT_HREF = "/contact";
-const HELPLINE = "+92 316 1290604";
+const HELPLINE = siteConfig.contactPhoneDisplay;
 
 const TOPICS: SupportTopic[] = [
   {

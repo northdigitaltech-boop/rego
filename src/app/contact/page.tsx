@@ -11,7 +11,6 @@ import {
   MessageCircle,
   Music2,
   Twitter,
-  Briefcase,
 } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
@@ -59,12 +58,6 @@ export default async function ContactPage() {
             <p className="font-script text-3xl text-gold">{c.eyebrow}</p>
             <h1 className="font-display text-4xl font-extrabold sm:text-5xl">{c.title}</h1>
             <p className="mt-3 max-w-xl text-white/85">{c.intro}</p>
-            <a
-              href="/careers"
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-sm font-bold text-forest-900 shadow-gold-glow transition-transform hover:-translate-y-0.5"
-            >
-              <Briefcase className="h-4 w-4" /> We&apos;re hiring — view careers
-            </a>
           </div>
         </section>
 
