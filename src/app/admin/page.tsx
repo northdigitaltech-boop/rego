@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
+import { AdminMfaGate } from "@/components/auth/admin-mfa-gate";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -14,7 +15,10 @@ export default function AdminPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-background">
-        <AdminDashboard />
+        {/* Two-step verification — admins only. */}
+        <AdminMfaGate>
+          <AdminDashboard />
+        </AdminMfaGate>
       </main>
       <Footer />
     </>

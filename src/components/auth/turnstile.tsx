@@ -26,7 +26,7 @@ interface TurnstileApi {
     opts: {
       sitekey: string;
       callback?: (token: string) => void;
-      "error-callback"?: () => void;
+      "error-callback"?: (code?: string) => void;
       "expired-callback"?: () => void;
       "timeout-callback"?: () => void;
       theme?: "light" | "dark" | "auto";
@@ -91,7 +91,7 @@ export const Turnstile = React.forwardRef<
 >(function Turnstile({ onToken, action, className }, ref) {
   const boxRef = React.useRef<HTMLDivElement | null>(null);
   const widgetId = React.useRef<string | null>(null);
-  const [failed, setFailed] = React.useState(false);
+  const [failed, setFailed] = React.useState<string | null>(null);
 
   // Keep the latest callback without re-rendering the widget.
   const cb = React.useRef(onToken);
@@ -123,14 +123,14 @@ export const Turnstile = React.forwardRef<
           callback: (token) => cb.current(token),
           "expired-callback": () => cb.current(null),
           "timeout-callback": () => cb.current(null),
-          "error-callback": () => {
+          "error-callback": (code) => {
             cb.current(null);
-            setFailed(true);
+            setFailed(code ?? "unknown");
           },
         });
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (!cancelled) setFailed("script");
       });
 
     return () => {
@@ -153,8 +153,10 @@ export const Turnstile = React.forwardRef<
       <div ref={boxRef} />
       {failed && (
         <p className="mt-1.5 text-xs font-semibold text-red-600">
-          The security check couldn&apos;t load. Please refresh the page or check
-          your connection.
+          {failed === "110200"
+            ? "This site isn't authorised for the security check yet. Please contact support."
+            : "The security check couldn't load. Please refresh the page or check your connection."}
+          <span className="ml-1 font-normal opacity-70">(code {failed})</span>
         </p>
       )}
     </div>
