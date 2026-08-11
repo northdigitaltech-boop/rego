@@ -24,14 +24,16 @@ interface AuthContextValue {
     email: string,
     password: string,
     role: AccountRole,
-    businessCategory?: CategorySlug
+    businessCategory?: CategorySlug,
+    /** Cloudflare Turnstile token — verified by Supabase, not by us. */
+    captchaToken?: string
   ) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   resendCode: (email: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   updateProfile: (updates: { name?: string; avatar?: string }) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, captchaToken?: string) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
 }
@@ -162,7 +164,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string,
       password: string,
       role: AccountRole,
-      businessCategory?: CategorySlug
+      businessCategory?: CategorySlug,
+      captchaToken?: string
     ) => {
       const e = email.trim().toLowerCase();
 
@@ -177,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Where Supabase sends the user after they click the confirm link.
           emailRedirectTo:
             typeof window !== "undefined" ? `${window.location.origin}/signin` : undefined,
+          captchaToken,
           data: {
             full_name: name.trim(),
             role,
@@ -196,6 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Confirmation disabled → sign in immediately.
+      // Note: the Turnstile token is single-use, so it is NOT reused here. With
+      // "Confirm email" ON (our setup) this line is never reached.
       const { error: e2 } = await supabase.auth.signInWithPassword({ email: e, password });
       if (e2) throw new Error(e2.message);
       try {
@@ -207,9 +213,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const login = React.useCallback(async (email: string, password: string) => {
+  const login = React.useCallback(
+    async (email: string, password: string, captchaToken?: string) => {
     const e = email.trim().toLowerCase();
-    const { data, error } = await supabase.auth.signInWithPassword({ email: e, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: e,
+      password,
+      options: { captchaToken },
+    });
     if (error) throw new Error(error.message);
 
     // Refuse unverified accounts with a clear, actionable message.
@@ -224,7 +235,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
-  }, []);
+    },
+    []
+  );
 
   // Email confirmation is handled by Supabase, so these are no-ops kept for API compatibility.
   const verifyCode = React.useCallback(async (_email: string, _code: string) => {}, []);

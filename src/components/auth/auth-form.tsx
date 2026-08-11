@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clientThrottle } from "@/lib/client-throttle";
 import { CheckboxCaptcha } from "@/components/auth/checkbox-captcha";
+import {
+  Turnstile,
+  isTurnstileEnabled,
+  type TurnstileHandle,
+} from "@/components/auth/turnstile";
 import { motion } from "framer-motion";
 import {
   Mail,
@@ -86,6 +91,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = React.useState(false);
   const [captcha, setCaptcha] = React.useState(false);
 
+  // Cloudflare Turnstile. When NEXT_PUBLIC_TURNSTILE_SITE_KEY isn't set we fall
+  // back to the simple checkbox, so the form keeps working either way.
+  const [turnstileToken, setTurnstileToken] = React.useState<string | null>(null);
+  const turnstileRef = React.useRef<TurnstileHandle | null>(null);
+  const humanOk = isTurnstileEnabled ? Boolean(turnstileToken) : captcha;
+
   // Forgot-password state
   const [forgotOpen, setForgotOpen] = React.useState(false);
   const [forgotStep, setForgotStep] = React.useState<"email" | "reset">("email");
@@ -126,8 +137,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
     e.preventDefault();
     setError("");
     setNotice("");
-    if (!captcha) {
-      setError("Please confirm you're not a robot.");
+    if (!humanOk) {
+      setError(
+        isTurnstileEnabled
+          ? "Please complete the security check below."
+          : "Please confirm you're not a robot."
+      );
       return;
     }
     // Block fake / disposable emails at signup.
@@ -161,13 +176,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
           email,
           password,
           role,
-          role === "partner" ? (businessCategory as CategorySlug) : undefined
+          role === "partner" ? (businessCategory as CategorySlug) : undefined,
+          turnstileToken ?? undefined
         );
       } else {
-        await login(email, password);
+        await login(email, password, turnstileToken ?? undefined);
       }
       goAfterAuth();
     } catch (err) {
+      // Turnstile tokens are single-use — issue a fresh one for the next try.
+      turnstileRef.current?.reset();
       const msg = err instanceof Error ? err.message : "Something went wrong.";
       // Supabase requires the address to be confirmed → show a friendly notice
       // instead of a red error, since the signup itself succeeded.
@@ -691,13 +709,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
               </div>
             )}
 
-            <CheckboxCaptcha checked={captcha} onChange={setCaptcha} />
+            {isTurnstileEnabled ? (
+              <Turnstile
+                ref={turnstileRef}
+                action={isSignup ? "signup" : "signin"}
+                onToken={setTurnstileToken}
+              />
+            ) : (
+              <CheckboxCaptcha checked={captcha} onChange={setCaptcha} />
+            )}
 
             <Button
               type="submit"
               variant="gold"
               size="lg"
-              disabled={busy || !captcha}
+              disabled={busy || !humanOk}
               aria-busy={busy}
               className="w-full gap-2 rounded-lg bg-forest-600 text-white hover:bg-forest-700 disabled:opacity-70"
             >
