@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { MapPin, CalendarDays, Clock, Eye, MessageCircle, BadgeCheck } from "lucide-react";
+import { MapPin, CalendarDays, BookOpen, Eye, MessageCircle, BadgeCheck } from "lucide-react";
 
 import { StoryActions } from "@/components/safarnama/story-actions";
-import { travelTypeLabel, type StoryRow } from "@/lib/safarnama";
+import { travelTypeLabel, makePreview, type StoryRow } from "@/lib/safarnama";
 import { photo } from "@/lib/utils";
 
 function fmtDate(d: string | null): string {
@@ -12,15 +12,24 @@ function fmtDate(d: string | null): string {
   return dt.toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
+/** "1 View" / "19 Views" — never "1 Views". */
+function plural(n: number, word: string): string {
+  return n === 1 ? word : `${word}s`;
+}
+
 export function StoryCard({ story: s }: { story: StoryRow }) {
   const cover =
     s.cover_image ||
     (s.gallery && s.gallery[0]) ||
     "https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?w=900&q=80";
   const avatar = s.author_avatar || "https://i.pravatar.cc/100?u=" + s.id;
+  // Even a stored preview can contain Markdown, so clean both paths.
+  const preview = makePreview(s.preview || s.story || "", 160);
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg">
+    /* Lift on hover for pointers; a subtle press-in on tap for touch, where
+       there is no hover state to give feedback. */
+    <article className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-200 ease-out hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-premium-lg active:scale-[0.99] active:shadow-premium motion-reduce:transform-none">
       <Link href={`/safarnama/${s.id}`} className="relative block h-44 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(cover, 500)} alt={s.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -67,17 +76,27 @@ export function StoryCard({ story: s }: { story: StoryRow }) {
           )}
         </div>
 
-        {(s.preview || s.story) && (
+        {/* Stories are written in Markdown — flatten it so the card shows a
+            sentence rather than "# My 7-Day Adventure" and "**Destination:**". */}
+        {preview && (
           <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-            {s.preview || s.story}
+            {preview}
           </p>
         )}
 
-        {/* Meta */}
-        <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {s.reading_time} min</span>
-          <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {s.views}</span>
-          <span className="inline-flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {s.comments}</span>
+        {/* Meta — labelled, because a bare "19 💬 1" means nothing on a
+            first visit. Singular/plural so "1 Comments" never appears. */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <BookOpen className="h-3.5 w-3.5" /> {s.reading_time} min read
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Eye className="h-3.5 w-3.5" /> {s.views} {plural(s.views, "View")}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MessageCircle className="h-3.5 w-3.5" /> {s.comments}{" "}
+            {plural(s.comments, "Comment")}
+          </span>
         </div>
 
         {/* Footer actions */}

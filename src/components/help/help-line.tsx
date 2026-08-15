@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useScrollLock } from "@/lib/use-scroll-lock";
 import { siteConfig } from "@/lib/site";
+import { useHideOnScrollDown } from "@/lib/use-hide-on-scroll";
+import { cn } from "@/lib/utils";
 
 /* Rego's own numbers live in src/lib/site.ts — change them there.
    The government emergency numbers below are national and fixed. */
@@ -33,6 +35,8 @@ const EMERGENCY = [
 
 export function HelpLine() {
   const [open, setOpen] = React.useState(false);
+  // Tucks away while scrolling down so it never covers card actions.
+  const hidden = useHideOnScrollDown(open);
 
   // Esc to close + lock body scroll while open.
   React.useEffect(() => {
@@ -65,7 +69,14 @@ export function HelpLine() {
   return (
     <>
       {/* Floating button — fixed bottom-right, always on top */}
-      <div className="rego-float-help fixed bottom-5 right-5 z-[90]">
+      <div
+        className={cn(
+          "rego-float-help fixed bottom-5 right-5 z-[90] transition-all duration-300 ease-out",
+          hidden && !open
+            ? "pointer-events-none translate-y-24 opacity-0"
+            : "translate-y-0 opacity-100"
+        )}
+      >
         <button
           type="button"
           onClick={() => setOpen(true)}

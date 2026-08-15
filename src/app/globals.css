@@ -267,11 +267,13 @@ video {
   body {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
+  /* Lifted ~28px above the bottom nav so they never sit on top of a card's
+     own actions ("Read Story", "Book Now") in the last row of a grid. */
   .rego-float-help {
-    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    bottom: calc(7.25rem + env(safe-area-inset-bottom));
   }
   .rego-float-ai {
-    bottom: calc(10rem + env(safe-area-inset-bottom));
+    bottom: calc(11.75rem + env(safe-area-inset-bottom));
   }
 }
 * {

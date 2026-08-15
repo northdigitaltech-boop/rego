@@ -108,8 +108,41 @@ export function readingTime(text: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
+/**
+ * Flatten Markdown to readable prose.
+ *
+ * Story bodies are Markdown, so a raw excerpt shows "# My 7-Day Adventure"
+ * and "**Destination:**" on the card. Cards want a sentence, not syntax.
+ * (The full story still renders as proper Markdown — see StoryMarkdown.)
+ */
+export function stripMarkdown(text: string): string {
+  return (
+    (text || "")
+      // fenced code blocks, then inline code
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/`([^`]*)`/g, "$1")
+      // images out entirely; links keep their label
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      // headings, quotes, list bullets and numbering at line starts
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/^\s{0,3}>\s?/gm, "")
+      .replace(/^\s{0,3}[-*+]\s+/gm, "")
+      .replace(/^\s{0,3}\d+[.)]\s+/gm, "")
+      // horizontal rules
+      .replace(/^\s{0,3}(-{3,}|\*{3,}|_{3,})\s*$/gm, " ")
+      // emphasis markers
+      .replace(/(\*\*|__)(.*?)\1/g, "$2")
+      .replace(/(\*|_)(.*?)\1/g, "$2")
+      // leftover table pipes
+      .replace(/\|/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
 export function makePreview(text: string, max = 180): string {
-  const clean = (text || "").replace(/\s+/g, " ").trim();
+  const clean = stripMarkdown(text);
   return clean.length > max ? clean.slice(0, max).trimEnd() + "…" : clean;
 }
 

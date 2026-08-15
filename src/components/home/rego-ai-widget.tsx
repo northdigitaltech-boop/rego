@@ -8,6 +8,8 @@ import { Sparkles, X } from "lucide-react";
 import { RegoAiChat } from "@/components/home/rego-ai-chat";
 import { useScrollLock } from "@/lib/use-scroll-lock";
 import { useViewportMetrics } from "@/lib/use-viewport-height";
+import { useHideOnScrollDown } from "@/lib/use-hide-on-scroll";
+import { cn } from "@/lib/utils";
 
 /** Floating "Ask Rego AI" button — sits above the Help Line button and opens a
  *  popup where travellers ask questions and get grounded recommendations. */
@@ -18,6 +20,8 @@ export function RegoAiWidget() {
   useScrollLock(open);
   // Visible area (shrinks AND shifts when the mobile keyboard opens).
   const vp = useViewportMetrics(open);
+  // Get out of the way while the page scrolls down.
+  const hidden = useHideOnScrollDown(open);
 
   React.useEffect(() => {
     if (!open) return;
@@ -28,8 +32,16 @@ export function RegoAiWidget() {
 
   return (
     <>
-      {/* Floating button — stacked above the red help-line button */}
-      <div className="rego-float-ai fixed bottom-24 right-5 z-[90]">
+      {/* Floating button — stacked above the red help-line button. Tucks away
+          while scrolling down so it never covers a card's own actions. */}
+      <div
+        className={cn(
+          "rego-float-ai fixed bottom-24 right-5 z-[90] transition-all duration-300 ease-out",
+          hidden && !open
+            ? "pointer-events-none translate-y-24 opacity-0"
+            : "translate-y-0 opacity-100"
+        )}
+      >
         <button
           type="button"
           onClick={() => setOpen(true)}
