@@ -8,6 +8,8 @@ import { Sparkles, Send, MapPin, Star, ArrowRight, Compass, Mic } from "lucide-r
 import { answerQuery, AI_SUGGESTIONS, type AiAnswer } from "@/lib/rego-ai";
 import { type Listing } from "@/lib/data";
 import { photo, formatPrice, cn } from "@/lib/utils";
+import { AiThinkingSteps } from "@/components/home/ai-thinking-steps";
+import { MIN_VISIBLE_MS } from "@/lib/ai-progress";
 
 interface Msg {
   id: number;
@@ -22,6 +24,8 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [input, setInput] = React.useState("");
   const [thinking, setThinking] = React.useState(false);
+  /** The question currently being worked on — drives the progress steps. */
+  const [pendingQ, setPendingQ] = React.useState("");
   const idRef = React.useRef(0);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const started = React.useRef(false);
@@ -46,6 +50,8 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
     setInput("");
     setMessages((m) => [...m, { id: ++idRef.current, role: "user", text: q }]);
     setThinking(true);
+    setPendingQ(q);
+    const startedAt = Date.now();
 
     // The last few turns, so the assistant understands follow-ups such as
     // "a cheaper one" or "and transport there?".
@@ -54,9 +60,21 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
       content: m.text,
     }));
 
+    /* Render the answer as soon as it exists. The only wait we ever add is
+       topping the elapsed time up to MIN_VISIBLE_MS, so a 150ms reply
+       doesn't flash the progress list and vanish. A slow reply is never
+       delayed further. */
     const push = (answer: AiAnswer) => {
-      setMessages((m) => [...m, { id: ++idRef.current, role: "ai", text: answer.reply, answer }]);
-      setThinking(false);
+      const elapsed = Date.now() - startedAt;
+      const wait = Math.max(0, MIN_VISIBLE_MS - elapsed);
+      window.setTimeout(() => {
+        setMessages((m) => [
+          ...m,
+          { id: ++idRef.current, role: "ai", text: answer.reply, answer },
+        ]);
+        setThinking(false);
+        setPendingQ("");
+      }, wait);
     };
 
     // Ask the server (LLM-grounded if configured). Fall back to the on-device
@@ -233,16 +251,7 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
           )
         )}
 
-        {thinking && (
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-forest text-gold">
-              <Sparkles className="h-4 w-4 animate-pulse" />
-            </span>
-            <div className="flex gap-1 rounded-2xl border border-border/70 bg-card px-4 py-3">
-              <Dot /> <Dot delay={150} /> <Dot delay={300} />
-            </div>
-          </div>
-        )}
+        {thinking && <AiThinkingSteps query={pendingQ} />}
         <div ref={bottomRef} />
       </div>
 
@@ -345,11 +354,5 @@ function ResultCard({ listing: l, onNavigate }: { listing: Listing; onNavigate?:
   );
 }
 
-function Dot({ delay = 0 }: { delay?: number }) {
-  return (
-    <span
-      className="h-2 w-2 animate-bounce rounded-full bg-forest-600"
-      style={{ animationDelay: `${delay}ms` }}
-    />
-  );
-}
+/* The bouncing-dots indicator was replaced by AiThinkingSteps, which shows
+   what the assistant is actually doing rather than that it is busy. */
