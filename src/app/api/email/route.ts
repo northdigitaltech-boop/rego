@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { sendMail, isSmtpConfigured } from "@/lib/mailer";
 
 // Server-side email sender via Resend. The API key stays on the server
 // (no NEXT_PUBLIC prefix), so it is never exposed to the browser.
@@ -43,8 +44,10 @@ export async function POST(req: Request) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    // Not configured yet — succeed quietly so the app keeps working.
+  // SMTP is preferred when configured; Resend stays as a fallback so the
+  // app keeps sending if SMTP credentials are ever removed.
+  if (!isSmtpConfigured && !apiKey) {
+    // Nothing configured — succeed quietly so the app keeps working.
     return NextResponse.json({ ok: false, skipped: true });
   }
 
@@ -74,6 +77,20 @@ export async function POST(req: Request) {
   const safeSubject = subject.replace(/[\r\n]+/g, " ").trim();
 
   // 4) Send — never leak provider/system errors to the client.
+
+  // Preferred path: your own SMTP (Gmail / Workspace / any host).
+  if (isSmtpConfigured) {
+    const r = await sendMail({ to: to.trim(), subject: safeSubject, html });
+    if (!r.ok) {
+      console.error("[email] smtp error:", r.error);
+      return NextResponse.json(
+        { ok: false, error: "Email could not be sent." },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
