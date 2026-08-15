@@ -12,6 +12,7 @@ import {
 import { SoloConnectButton } from "@/components/solo/profile-actions";
 import { computeTrustScore, type SoloTravelerRow } from "@/lib/solo";
 import { photo } from "@/lib/utils";
+import { hasRating } from "@/components/ui/rating";
 
 function fmtDate(d: string | null): string {
   if (!d) return "Flexible";
@@ -76,10 +77,12 @@ export function TravelerCard({ t }: { t: SoloTravelerRow }) {
               className="absolute inset-0 h-full w-full object-cover object-center"
             />
           </span>
-          <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-card/90 px-2 py-0.5 text-xs font-bold text-forest shadow-sm">
-            <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-            {Number(t.rating).toFixed(1)}
-          </span>
+          {hasRating(t.rating) && (
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-card/90 px-2 py-0.5 text-xs font-bold text-forest shadow-sm">
+              <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+              {Number(t.rating).toFixed(1)}
+            </span>
+          )}
         </div>
 
         <div className="mt-2 flex items-center gap-1.5">

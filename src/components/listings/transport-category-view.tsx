@@ -19,6 +19,7 @@ import { useWishlist } from "@/lib/wishlist";
 import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar";
 import { type Listing } from "@/lib/data";
 import { cn, formatPrice, photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export interface TransportCardItem {
   id: string;
@@ -239,9 +240,7 @@ function TransportCard({ item, index }: { item: TransportCardItem; index: number
         )}
 
         <div className="mt-1.5 flex items-center gap-1.5">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span className="text-xs font-semibold text-forest">{item.rating.toFixed(1)}</span>
-          <span className="text-xs text-muted-foreground">({item.reviews})</span>
+          <Rating value={item.rating} reviews={item.reviews} showCount className="text-xs" />
         </div>
 
         <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground">

@@ -2,6 +2,18 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
+
+/* Routes where a floating button would sit on top of the form the user is
+ * trying to fill in — sign-in, sign-up, verification and password reset.
+ * Nobody needs "Ask Rego AI" while typing a password. */
+const HIDE_ON = [
+  "/signin",
+  "/signup",
+  "/reset-password",
+  "/verify",
+  "/auth",
+];
 
 // Floating widgets aren't needed for first paint, so keep their JS out of the
 // initial bundle: load them client-side only, after the page is idle or the
@@ -17,8 +29,13 @@ const HelpLine = dynamic(
 
 export function DeferredWidgets() {
   const [show, setShow] = React.useState(false);
+  const pathname = usePathname() ?? "";
+  const hidden = HIDE_ON.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
 
   React.useEffect(() => {
+    if (hidden) return;
     let done = false;
     const reveal = () => {
       if (done) return;
@@ -44,9 +61,9 @@ export function DeferredWidgets() {
       cleanup();
       if (typeof id === "number") window.clearTimeout(id);
     };
-  }, []);
+  }, [hidden]);
 
-  if (!show) return null;
+  if (hidden || !show) return null;
   return (
     <>
       <RegoAiWidget />

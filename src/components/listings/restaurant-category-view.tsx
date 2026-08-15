@@ -24,6 +24,7 @@ import {
   PRICE_RANGES,
 } from "@/lib/restaurants";
 import { cn, photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 /** Best-effort "open now" — parses "9:00 AM" style hours; unknown ⇒ treated open. */
 function toMinutes(t: string | null): number | null {
@@ -212,9 +213,7 @@ function RestaurantCard({ r, index }: { r: RestaurantRow; index: number }) {
         <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-forest-600"><UtensilsCrossed className="h-3.5 w-3.5" /> {(r.cuisine_types ?? []).slice(0, 2).join(", ") || "Restaurant"}</p>
         {r.property_name && <p className="mt-0.5 text-xs text-muted-foreground">at {r.property_name}</p>}
         <div className="mt-1.5 flex items-center gap-1.5">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span className="text-xs font-semibold text-forest">{Number(r.rating).toFixed(1)}</span>
-          <span className="text-xs text-muted-foreground">({r.reviews})</span>
+          <Rating value={r.rating} reviews={r.reviews} showCount className="text-xs" />
           {r.price_range && <span className="ml-2 text-xs text-muted-foreground">· {r.price_range}</span>}
         </div>
         <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5" /> {r.location || r.city || "Gilgit Baltistan"}</p>

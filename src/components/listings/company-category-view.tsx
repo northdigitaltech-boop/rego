@@ -7,6 +7,7 @@ import { Star, MapPin, ShieldCheck, Briefcase, Search, X } from "lucide-react";
 import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar";
 import { type TourCompanyRow } from "@/lib/tour-companies";
 import { photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export function CompanyCategoryView({
   companies,
@@ -106,13 +107,13 @@ export function CompanyCategoryView({
                 </p>
               )}
               <div className="mt-3 flex items-center justify-between pt-1">
-                <span className="flex items-center gap-1 text-sm font-semibold text-forest">
-                  <Star className="h-4 w-4 fill-gold text-gold" />
-                  {Number(c.rating || 0).toFixed(1)}
-                  <span className="font-normal text-muted-foreground">
-                    ({c.reviews})
-                  </span>
-                </span>
+                <Rating
+                  value={c.rating}
+                  reviews={c.reviews}
+                  showCount
+                  starClass="h-4 w-4"
+                  className="text-sm font-semibold text-forest"
+                />
                 {c.experience_years != null && (
                   <span className="text-xs text-muted-foreground">
                     {c.experience_years} yrs experience

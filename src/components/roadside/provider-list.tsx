@@ -17,6 +17,7 @@ import {
 import { photo, formatPrice, cn } from "@/lib/utils";
 import { serviceName, type RoadsideProviderRow } from "@/lib/roadside";
 import { RoadsideRequestModal } from "@/components/roadside/request-modal";
+import { Rating } from "@/components/ui/rating";
 
 export type ProviderListItem = {
   provider: RoadsideProviderRow;
@@ -104,11 +105,12 @@ export function RoadsideProviderList({
                   <MapPin className="h-3.5 w-3.5" /> {p.city || "Gilgit Baltistan"}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="flex items-center gap-1 text-xs font-semibold text-forest">
-                    <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                    {Number(p.rating).toFixed(1)}
-                    <span className="font-normal text-muted-foreground">({p.total_reviews})</span>
-                  </span>
+                  <Rating
+                    value={p.rating}
+                    reviews={p.total_reviews}
+                    showCount
+                    className="text-xs font-semibold text-forest"
+                  />
                   <AvailabilityDot status={p.availability_status} />
                 </div>
               </div>

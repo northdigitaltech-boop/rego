@@ -14,6 +14,7 @@ import {
   type ActivityRow,
 } from "@/lib/activities";
 import { photo, formatPrice, cn } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -79,14 +80,19 @@ export default async function ActivitiesPage({
         <section className="container-px pt-5">
           <div className="flex flex-wrap gap-2">
             <Chip href={kind === "indoor" ? "/activities?kind=indoor" : "/activities"} active={!category} label={`All (${inKind.length})`} />
-            {cats.map((c) => (
-              <Chip
-                key={c.slug}
-                href={kind === "indoor" ? `/activities?kind=indoor&category=${c.slug}` : `/activities?category=${c.slug}`}
-                active={category === c.slug}
-                label={`${c.name} (${countFor(c.slug)})`}
-              />
-            ))}
+            {/* Only offer a category that actually has something in it — a chip
+                reading "(0)" is an advert for an empty shelf. The currently
+                selected one always stays visible so the filter can be undone. */}
+            {cats
+              .filter((c) => countFor(c.slug) > 0 || category === c.slug)
+              .map((c) => (
+                <Chip
+                  key={c.slug}
+                  href={kind === "indoor" ? `/activities?kind=indoor&category=${c.slug}` : `/activities?category=${c.slug}`}
+                  active={category === c.slug}
+                  label={`${c.name} (${countFor(c.slug)})`}
+                />
+              ))}
           </div>
         </section>
 
@@ -185,9 +191,7 @@ function Card({ activity: a }: { activity: ActivityRow }) {
         </Link>
         {a.business_name && <p className="text-xs font-medium text-forest-600">by {a.business_name}</p>}
         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span className="font-semibold text-forest">{Number(a.rating).toFixed(1)}</span>
-          <span>({a.reviews})</span>
+          <Rating value={a.rating} reviews={a.reviews} showCount />
           <span className="ml-auto flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {a.location || a.city || "Gilgit Baltistan"}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">

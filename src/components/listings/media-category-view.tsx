@@ -21,6 +21,7 @@ import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar"
 import { type Listing } from "@/lib/data";
 import { type MediaProviderRow } from "@/lib/media";
 import { cn, formatPrice, photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export function MediaCategoryView({
   providers,
@@ -243,9 +244,7 @@ function MediaCard({ provider, index }: { provider: MediaProviderRow; index: num
           </p>
         )}
         <div className="mt-1.5 flex items-center gap-1.5">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span className="text-xs font-semibold text-forest">{Number(provider.rating).toFixed(1)}</span>
-          <span className="text-xs text-muted-foreground">({provider.reviews})</span>
+          <Rating value={provider.rating} reviews={provider.reviews} showCount className="text-xs" />
           {provider.experience_years != null && (
             <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Award className="h-3.5 w-3.5" /> {provider.experience_years} yrs

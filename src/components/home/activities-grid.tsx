@@ -4,6 +4,7 @@ import { ChevronRight, Star, MapPin, Clock, BadgeCheck } from "lucide-react";
 import { activityCategoryName, type ActivityRow } from "@/lib/activities";
 import { Reveal } from "@/components/ui/reveal";
 import { photo, formatPrice } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 /** Homepage Activities section — real approved activities. */
 export function ActivitiesGrid({ items }: { items: ActivityRow[] }) {
@@ -47,8 +48,7 @@ export function ActivitiesGrid({ items }: { items: ActivityRow[] }) {
               <div className="flex flex-1 flex-col p-4">
                 <h3 className="font-display text-base font-semibold leading-snug text-forest">{a.title}</h3>
                 <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                  <span className="font-semibold text-forest">{Number(a.rating).toFixed(1)}</span>
+                  <Rating value={a.rating} reviews={a.reviews} />
                   <span className="ml-auto flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {a.location || a.city || "GB"}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between">

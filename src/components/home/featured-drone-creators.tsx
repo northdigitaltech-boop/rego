@@ -13,6 +13,7 @@ import {
 } from "@/lib/media";
 import { Reveal } from "@/components/ui/reveal";
 import { photo } from "@/lib/utils";
+import { hasRating } from "@/components/ui/rating";
 
 const MotionLink = motion.create(Link);
 
@@ -142,10 +143,12 @@ function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
               </span>
             )}
           </span>
-          <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-card/90 px-2 py-0.5 text-xs font-bold text-forest shadow-sm">
-            <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-            {Number(p.rating).toFixed(1)}
-          </span>
+          {hasRating(p.rating) && (
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-card/90 px-2 py-0.5 text-xs font-bold text-forest shadow-sm">
+              <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+              {Number(p.rating).toFixed(1)}
+            </span>
+          )}
         </div>
 
         <h3 className="mt-2 line-clamp-1 font-display text-base font-bold text-forest">{p.name}</h3>

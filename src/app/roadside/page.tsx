@@ -72,11 +72,20 @@ export default async function RoadsidePage() {
                   <h3 className="mt-4 font-display text-lg font-bold text-forest">{c.name}</h3>
                   <p className="mt-1 flex-1 text-sm text-muted-foreground">{c.tagline}</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-forest">
-                      {count} provider{count === 1 ? "" : "s"}
-                    </span>
+                    {/* "0 providers" advertises a gap. When nobody has
+                        registered yet, invite one instead. */}
+                    {count > 0 ? (
+                      <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-forest">
+                        {count} provider{count === 1 ? "" : "s"}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-gold-700">
+                        Accepting providers
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 text-sm font-semibold text-forest-600 group-hover:text-gold">
-                      Find Help <ArrowRight className="h-4 w-4" />
+                      {count > 0 ? "Find Help" : "Learn more"}{" "}
+                      <ArrowRight className="h-4 w-4" />
                     </span>
                   </div>
                 </Link>

@@ -27,6 +27,7 @@ import { StoryActions } from "@/components/safarnama/story-actions";
 import { StoryComments } from "@/components/safarnama/story-comments";
 import { StoryViewBump } from "@/components/safarnama/view-bump";
 import { StoryCard } from "@/components/safarnama/story-card";
+import { StoryMarkdown } from "@/components/safarnama/story-markdown";
 import {
   getStoryById,
   getRelatedStories,
@@ -131,11 +132,12 @@ export default async function StoryDetailPage({
             </div>
 
             <StoryActions storyId={s.id} title={s.title} initialLikes={s.likes} />
+            {/* Story body is traveller-written Markdown — rendered safely. */}
 
             {/* Full story */}
             {s.story && (
               <section>
-                <p className="whitespace-pre-line text-[15px] leading-relaxed text-forest/90">{s.story}</p>
+                <StoryMarkdown text={s.story} />
               </section>
             )}
 

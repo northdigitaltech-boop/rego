@@ -76,7 +76,11 @@ export default async function EventsPage({
         <section className="container-px pt-8">
           <div className="flex flex-wrap gap-2">
             <FilterChip href="/events" active={!category} label={`All (${total})`} />
-            {EVENT_CATEGORIES.map((c) => (
+            {/* Hide categories with no events; keep the active one so the
+                filter can always be cleared. */}
+            {EVENT_CATEGORIES.filter(
+              (c) => (counts[c.slug] ?? 0) > 0 || category === c.slug
+            ).map((c) => (
               <FilterChip
                 key={c.slug}
                 href={`/events?category=${c.slug}`}

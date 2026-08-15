@@ -317,20 +317,15 @@ export function CompanyProfile({ listing }: { listing: Listing }) {
                 <h3 className="font-display text-base font-bold text-forest">
                   Contact Information
                 </h3>
+                {/* Company phone/email aren't captured yet — never invent them. */}
                 <ul className="mt-3 space-y-2.5 text-sm">
-                  <li className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4 text-forest-600" /> +92 300 1234567
-                  </li>
-                  <li className="flex items-center gap-2 text-muted-foreground">
-                    <MessageCircle className="h-4 w-4 text-forest-600" /> +92 300
-                    1234567
-                  </li>
-                  <li className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4 text-forest-600" /> info@rego.com
-                  </li>
                   <li className="flex items-start gap-2 text-muted-foreground">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-forest-600" />{" "}
                     {listing.location}, Gilgit Baltistan, Pakistan
+                  </li>
+                  <li className="text-xs text-muted-foreground">
+                    Send an enquiry through Rego and this company will reply to you
+                    directly.
                   </li>
                 </ul>
                 <h4 className="mt-4 text-sm font-semibold text-forest">Follow Us</h4>

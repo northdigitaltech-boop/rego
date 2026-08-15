@@ -21,6 +21,7 @@ import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar"
 import { type Listing } from "@/lib/data";
 import { type TourGuideRow } from "@/lib/tour-companies";
 import { cn, formatPrice, photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 const WHATSAPP_FALLBACK = "923001234567";
 
@@ -254,9 +255,7 @@ function GuideCard({ guide, index, typeLabel }: { guide: TourGuideRow; index: nu
         )}
 
         <div className="mt-1.5 flex items-center gap-1.5">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span className="text-xs font-semibold text-forest">{Number(guide.rating).toFixed(1)}</span>
-          <span className="text-xs text-muted-foreground">({guide.reviews})</span>
+          <Rating value={guide.rating} reviews={guide.reviews} showCount className="text-xs" />
           {guide.experience_years != null && (
             <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Award className="h-3.5 w-3.5" /> {guide.experience_years} yrs

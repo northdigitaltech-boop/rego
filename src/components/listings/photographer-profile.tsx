@@ -319,16 +319,15 @@ export function PhotographerProfile({ listing }: { listing: Listing }) {
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-border bg-card p-5 shadow-premium">
+                {/* Provider contact details aren't collected yet — show the
+                    location only rather than a made-up number. */}
                 <ul className="space-y-2.5 text-sm">
-                  <li className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4 text-forest-600" /> +92 300 1234567
-                  </li>
-                  <li className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4 text-forest-600" /> info@rego.com
-                  </li>
                   <li className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4 text-forest-600" /> {listing.location},
                     GB
+                  </li>
+                  <li className="text-xs text-muted-foreground">
+                    Use the enquiry button above to reach this provider through Rego.
                   </li>
                 </ul>
               </div>

@@ -16,6 +16,7 @@ import {
 import { type RoadsideCard } from "@/lib/home-feed";
 import { Reveal } from "@/components/ui/reveal";
 import { formatPrice } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 /** Homepage Roadside Assistance section — real approved provider cards. */
 export function RoadsideProviderGrid({ items }: { items: RoadsideCard[] }) {
@@ -92,9 +93,7 @@ export function RoadsideProviderGrid({ items }: { items: RoadsideCard[] }) {
                 </h3>
 
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                  <span className="text-xs font-semibold text-forest">{p.rating.toFixed(1)}</span>
-                  <span className="text-xs text-muted-foreground">({p.reviews})</span>
+                  <Rating value={p.rating} reviews={p.reviews} showCount className="text-xs" />
                   <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3.5 w-3.5" /> {p.location}
                   </span>
