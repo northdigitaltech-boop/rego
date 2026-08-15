@@ -341,7 +341,7 @@ export function RestaurantDetail({
             </div>
 
             <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked}>
-              {booking ? "Sending…" : booked ? "Request sent ✓" : !user ? "Sign in to book" : "Next → Payment"}
+              {booking ? "Sending…" : booked ? "Request sent ✓" : !user ? "Sign in to book" : "Next"}
             </Button>
             {bookError && <p className="mt-2 text-center text-sm font-medium text-red-600">{bookError}</p>}
 

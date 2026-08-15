@@ -729,7 +729,7 @@ export function HomestayProfile({
                   ? "Request sent ✓"
                   : !user
                     ? "Sign in to book"
-                    : "Next → Payment"}
+                    : "Next"}
             </Button>
             {bookError && (
               <p className="mt-2 text-center text-sm text-red-600">{bookError}</p>
