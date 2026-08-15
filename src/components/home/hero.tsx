@@ -47,6 +47,9 @@ const tabToCategory: Record<string, CategorySlug> = {
   "Visa & Travel Services": "visa",
 };
 
+/** How many service tabs appear before the Flights shortcut. */
+const FLIGHTS_AFTER = 4;
+
 // Extra services revealed by the "More" button (not shown as primary tabs).
 const moreServices: { name: string; slug: CategorySlug }[] = [
   { name: "Drone Camera Pilot", slug: "drone-pilots" },
@@ -297,32 +300,38 @@ export function Hero() {
         >
           {/* Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 pb-3">
-            {/* Flights opens its dedicated search page */}
-            <button
-              onClick={() => router.push("/flights")}
-              className="flex shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold text-forest/70 transition-colors hover:bg-forest/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
-            >
-              <PlaneTakeoff className="h-4 w-4" />
-              Flights
-            </button>
-            {searchTabs.map((tab) => {
+            {/* Stays leads — it's what most people come for. Flights sits
+                after the fourth service because it leaves Rego for its own
+                search page, so it shouldn't be the first thing on offer. */}
+            {searchTabs.map((tab, i) => {
               const Icon = tab.icon;
               const active = tab.name === activeTab;
               return (
-                <button
-                  key={tab.name}
-                  onClick={() => setActiveTab(tab.name)}
-                  aria-pressed={active}
-                  className={cn(
-                    "flex shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600",
-                    active
-                      ? "bg-gradient-forest text-white shadow-soft"
-                      : "text-forest/70 hover:bg-forest/5"
+                <React.Fragment key={tab.name}>
+                  <button
+                    onClick={() => setActiveTab(tab.name)}
+                    aria-pressed={active}
+                    className={cn(
+                      "flex shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600",
+                      active
+                        ? "bg-gradient-forest text-white shadow-soft"
+                        : "text-forest/70 hover:bg-forest/5"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.name}
+                  </button>
+
+                  {i === FLIGHTS_AFTER - 1 && (
+                    <button
+                      onClick={() => router.push("/flights")}
+                      className="flex shrink-0 items-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold text-forest/70 transition-colors hover:bg-forest/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
+                    >
+                      <PlaneTakeoff className="h-4 w-4" />
+                      Flights
+                    </button>
                   )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.name}
-                </button>
+                </React.Fragment>
               );
             })}
             {/* More — opens a dropdown overlay (doesn't push the layout) */}
