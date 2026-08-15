@@ -9,7 +9,7 @@ import { answerQuery, AI_SUGGESTIONS, type AiAnswer } from "@/lib/rego-ai";
 import { type Listing } from "@/lib/data";
 import { photo, formatPrice, cn } from "@/lib/utils";
 import { AiThinkingSteps } from "@/components/home/ai-thinking-steps";
-import { MIN_VISIBLE_MS } from "@/lib/ai-progress";
+import { MIN_VISIBLE_MS, REQUEST_TIMEOUT_MS } from "@/lib/ai-progress";
 
 interface Msg {
   id: number;
@@ -80,11 +80,19 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
     // Ask the server (LLM-grounded if configured). Fall back to the on-device
     // brain if the request fails, so the assistant always responds.
     (async () => {
+      // Never let the UI hang on a stalled request — after the timeout we
+      // answer from the on-device brain instead of spinning forever.
+      const controller = new AbortController();
+      const abortTimer = window.setTimeout(
+        () => controller.abort(),
+        REQUEST_TIMEOUT_MS
+      );
       try {
         const res = await fetch("/api/rego-ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: q, history }),
+          signal: controller.signal,
         });
         const data = await res.json();
         if (data?.ok) {
@@ -100,6 +108,8 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
         throw new Error("bad response");
       } catch {
         push(answerQuery(q));
+      } finally {
+        window.clearTimeout(abortTimer);
       }
     })();
   }, []);

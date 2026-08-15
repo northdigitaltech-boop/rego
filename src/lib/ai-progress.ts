@@ -18,8 +18,32 @@ export interface ProgressStep {
 /** Never let a reply render faster than this — avoids a jarring flash. */
 export const MIN_VISIBLE_MS = 400;
 
-/** How long each step is shown before moving on, while we genuinely wait. */
-export const STEP_INTERVAL_MS = 550;
+/**
+ * Total time the step sequence is paced to cover.
+ *
+ * Steps are spread across this window rather than run at a fixed tick, so a
+ * 4-second request still has something moving at second 3 instead of sitting
+ * frozen on the last line. Nothing here delays a fast answer — if the reply
+ * lands at 300ms we stop immediately.
+ */
+export const PACE_WINDOW_MS = 5000;
+
+/** Floor/ceiling on per-step timing so pacing stays sane at any step count. */
+export const STEP_MIN_MS = 450;
+export const STEP_MAX_MS = 1100;
+
+/** Past this, warn the user it's unusually slow rather than looking stuck. */
+export const SLOW_AFTER_MS = 5000;
+
+/** Hard stop. Beyond this we give up on the server and answer locally. */
+export const REQUEST_TIMEOUT_MS = 15000;
+
+/** Spread `count` steps across the pacing window, within sane bounds. */
+export function stepIntervalFor(count: number): number {
+  if (count <= 1) return STEP_MAX_MS;
+  const even = PACE_WINDOW_MS / count;
+  return Math.min(STEP_MAX_MS, Math.max(STEP_MIN_MS, even));
+}
 
 const HOTEL = /hotel|stay|room|accommodat|resort|homestay|hostel|guest ?house/i;
 const TRANSPORT = /transport|car|jeep|van|taxi|rent|vehicle|driver|bus|coaster/i;

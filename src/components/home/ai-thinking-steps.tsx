@@ -5,7 +5,8 @@ import { Check, Loader2, Sparkles } from "lucide-react";
 
 import {
   progressStepsFor,
-  STEP_INTERVAL_MS,
+  stepIntervalFor,
+  SLOW_AFTER_MS,
   type ProgressStep,
 } from "@/lib/ai-progress";
 import { cn } from "@/lib/utils";
@@ -23,20 +24,31 @@ export function AiThinkingSteps({ query }: { query: string }) {
     [query]
   );
   const [active, setActive] = React.useState(0);
+  const [slow, setSlow] = React.useState(false);
 
   React.useEffect(() => {
     setActive(0);
-    if (steps.length <= 1) return;
+    setSlow(false);
 
-    const id = window.setInterval(() => {
+    // Spread the steps across ~5s so a slower request still has movement at
+    // second 3, rather than freezing on the last line after 2 seconds.
+    const tick = stepIntervalFor(steps.length);
+    const stepTimer = window.setInterval(() => {
       setActive((i) => {
         // Hold on the last step rather than pretending we're done.
         const max = steps.length - 1;
         return i >= max ? max : i + 1;
       });
-    }, STEP_INTERVAL_MS);
+    }, tick);
 
-    return () => window.clearInterval(id);
+    // Past 5 seconds, say so. Silence reads as "broken"; an honest note
+    // reads as "still working".
+    const slowTimer = window.setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+
+    return () => {
+      window.clearInterval(stepTimer);
+      window.clearTimeout(slowTimer);
+    };
   }, [steps]);
 
   return (
@@ -71,6 +83,12 @@ export function AiThinkingSteps({ query }: { query: string }) {
             </li>
           );
         })}
+
+        {slow && (
+          <li className="pt-0.5 text-xs text-muted-foreground">
+            Taking longer than usual — still searching.
+          </li>
+        )}
       </ul>
     </div>
   );
