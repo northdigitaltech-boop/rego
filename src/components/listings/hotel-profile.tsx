@@ -202,6 +202,8 @@ export function HotelProfile({
   const [bookedId, setBookedId] = React.useState("");
   const [booking, setBooking] = React.useState(false);
   const [bookError, setBookError] = React.useState("");
+  /** Room summary captured at step 1, used in the alert sent at step 2. */
+  const [pendingSummary, setPendingSummary] = React.useState("");
 
   // Reviews
   const isDbHotel = isUuid(listing.id);
@@ -418,17 +420,30 @@ export function HotelProfile({
       );
     }
 
+    // NOTE: no emails or owner alerts here. The booking row exists but the
+    // customer still has to choose how to pay and press Submit. Notifying
+    // now would tell the owner about bookings that get abandoned.
+    setPendingSummary(`${listing.title}${roomSummary ? ` · ${roomSummary}` : ""}`);
+  };
+
+  /**
+   * Runs only when the customer completes the payment step. This is the
+   * moment the booking becomes real, so this is where everyone is told.
+   */
+  const notifyBookingSubmitted = React.useCallback(() => {
+    if (!user || !bookedId) return;
     const fullName = custName.trim() || user.name;
-    if (data?.id) {
-      await sendBookingNotification({
-        booking_id: data.id,
-        customer_email: user.email,
-        customer_name: fullName,
-        customer_avatar: user.avatar,
-        ref,
-        summary: `${listing.title}${roomSummary ? ` · ${roomSummary}` : ""}`,
-      });
-    }
+    const ref = bookingRef(bookedId);
+
+    void sendBookingNotification({
+      booking_id: bookedId,
+      customer_email: user.email,
+      customer_name: fullName,
+      customer_avatar: user.avatar,
+      ref,
+      summary: pendingSummary || listing.title,
+    });
+
     sendEmail(
       user.email,
       "Your Rego booking request",
@@ -451,7 +466,16 @@ export function HotelProfile({
         })
       );
     }
-  };
+  }, [
+    user,
+    bookedId,
+    custName,
+    pendingSummary,
+    listing.title,
+    checkIn,
+    checkOut,
+    ownerEmail,
+  ]);
 
   return (
     <div className="bg-background">
@@ -966,6 +990,7 @@ export function HotelProfile({
                   summary={[checkIn && checkOut ? `${checkIn} → ${checkOut}` : ""].filter(Boolean) as string[]}
                   total={total}
                   config={paymentConfig ?? paymentConfigFrom(listing as unknown as Record<string, unknown>)}
+                  onConfirmed={notifyBookingSubmitted}
                 />
               </div>
             ) : (

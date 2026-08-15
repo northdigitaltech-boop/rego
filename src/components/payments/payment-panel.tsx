@@ -49,6 +49,7 @@ export function PaymentPanel({
   total,
   config,
   bookingStatus = "Pending",
+  onConfirmed,
 }: {
   table: PayTable;
   bookingId: string;
@@ -58,6 +59,15 @@ export function PaymentPanel({
   total: number;
   config: PaymentConfig;
   bookingStatus?: string;
+  /**
+   * Fired once the customer actually completes this step — either by
+   * confirming pay-at-property or by submitting payment proof.
+   *
+   * Owner emails and in-app alerts belong HERE, not on the "Next" button.
+   * Someone who opens this dialog and closes it has not booked anything,
+   * and the owner should never hear about it.
+   */
+  onConfirmed?: () => void;
 }) {
   const [method, setMethod] = React.useState<PaymentMethodId | null>(null);
   const [txRef, setTxRef] = React.useState("");
@@ -110,6 +120,7 @@ export function PaymentPanel({
     await setPayAtProperty(table, bookingId);
     setBusy(false);
     setDone("property");
+    onConfirmed?.();
   };
 
   const submitProof = async () => {
@@ -130,6 +141,7 @@ export function PaymentPanel({
       return;
     }
     setDone("proof");
+    onConfirmed?.();
   };
 
   if (dismissed) return null;
