@@ -57,18 +57,20 @@ export function RoleSetupGate({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-5 py-10">
+    /* Forest gradient, matching the sign-in brand panel — and the white
+       Rego mark only reads properly on a dark background. */
+    <div className="flex min-h-screen items-center justify-center bg-gradient-forest px-5 py-10">
       <div className="w-full max-w-md">
-        <BrandLogo className="mx-auto h-14 w-auto" />
+        <BrandLogo className="mx-auto h-16 w-auto" />
 
-        <h1 className="mt-6 text-center font-display text-2xl font-bold text-forest">
+        <h1 className="mt-6 text-center font-display text-2xl font-bold text-white">
           Welcome{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
         </h1>
-        <p className="mt-1.5 text-center text-sm text-muted-foreground">
+        <p className="mt-1.5 text-center text-sm text-white/80">
           One quick question before you start.
         </p>
 
-        <div className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-premium sm:p-6">
+        <div className="mt-6 rounded-3xl bg-card p-5 shadow-premium-lg sm:p-6">
           <p className="mb-2 text-sm font-semibold text-forest">
             How will you use Rego?
           </p>
@@ -175,7 +177,7 @@ export function RoleSetupGate({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-4 text-center text-xs text-white/70">
           Signed in as {user?.email}
         </p>
       </div>
