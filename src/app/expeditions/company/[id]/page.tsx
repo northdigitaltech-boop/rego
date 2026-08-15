@@ -8,6 +8,7 @@ import { ProfileGallery } from "@/components/listings/profile-gallery";
 import { getCompanyById, getTeamMembers, getActivePackages, packagePriceLabel } from "@/lib/expeditions";
 import { buildMetadata } from "@/lib/seo";
 import { formatPrice, photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -64,7 +65,7 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
                 </div>
                 <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" /> {c.city || "Gilgit-Baltistan"}{c.district ? `, ${c.district}` : ""}
-                  <span className="inline-flex items-center gap-1"><Star className="h-4 w-4 fill-gold text-gold" /> {c.rating.toFixed(1)} ({c.reviews})</span>
+                  <Rating value={c.rating} reviews={c.reviews} showCount starClass="h-4 w-4" />
                 </p>
               </div>
 

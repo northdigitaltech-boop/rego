@@ -26,6 +26,7 @@ import {
 } from "@/lib/tour-companies";
 import { providerToListing, type MediaProviderRow } from "@/lib/media";
 import { photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export function TourCompanyProfile({
   company,
@@ -89,9 +90,7 @@ export function TourCompanyProfile({
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <span className="flex items-center gap-1 font-semibold text-forest">
-                <Star className="h-4 w-4 fill-gold text-gold" />
-                {Number(company.rating || 0).toFixed(1)}
-                <span className="font-normal text-muted-foreground">({company.reviews} reviews)</span>
+                <Rating value={company.rating} reviews={company.reviews} showCount starClass="h-4 w-4" />
               </span>
               <span className="flex items-center gap-1 text-muted-foreground">
                 <MapPin className="h-4 w-4" /> {company.location ?? "Gilgit Baltistan"}

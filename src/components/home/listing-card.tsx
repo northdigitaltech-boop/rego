@@ -120,8 +120,8 @@ export function ListingCard({
             </>
           ) : (
             /* No real reviews yet — never show an invented score. */
-            <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-600">
-              New
+            <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-forest-600">
+              No reviews yet
             </span>
           )}
         </div>

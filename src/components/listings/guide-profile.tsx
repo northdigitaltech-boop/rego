@@ -47,6 +47,7 @@ import {
   bookingRequestEmailToOwner,
 } from "@/lib/email";
 import { cn, formatPrice, photo } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 function daysBetween(a: string, b: string) {
   if (!a || !b) return 0;
@@ -244,8 +245,7 @@ export function GuideProfile({
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                 <span className="flex items-center gap-1 font-semibold text-forest">
-                  <Star className="h-4 w-4 fill-gold text-gold" /> {Number(guide.rating).toFixed(1)}
-                  <span className="font-normal text-muted-foreground">({guide.reviews} reviews)</span>
+                  <Rating value={guide.rating} reviews={guide.reviews} showCount starClass="h-4 w-4" />
                 </span>
                 {guide.experience_years != null && (
                   <span className="inline-flex items-center gap-1 text-muted-foreground"><Award className="h-4 w-4" /> {guide.experience_years} yrs experience</span>

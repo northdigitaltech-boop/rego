@@ -22,8 +22,8 @@ export function Rating({
   value,
   reviews,
   showCount = false,
-  /** "New" for tight card corners, "No reviews yet" where there's room. */
-  emptyLabel = "New",
+  /** Shown when nothing has been rated yet. Pass null to render nothing. */
+  emptyLabel = "No reviews yet",
   className,
   starClass = "h-3.5 w-3.5",
 }: {

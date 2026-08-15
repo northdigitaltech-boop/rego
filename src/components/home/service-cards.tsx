@@ -43,11 +43,11 @@ function Rating({ rating, reviews, light = false }: { rating: number; reviews?: 
     return (
       <span
         className={cn(
-          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide",
           light ? "bg-white/20 text-white" : "bg-forest-50 text-forest-600"
         )}
       >
-        New
+        No reviews yet
       </span>
     );
   }

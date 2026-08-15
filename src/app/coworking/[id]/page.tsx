@@ -24,6 +24,7 @@ import { CoworkingReviews } from "@/components/coworking/coworking-reviews";
 import { ViewTracker } from "@/components/crm/view-tracker";
 import { getCoworkingById, planName } from "@/lib/coworking";
 import { photo, formatPrice } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -108,8 +109,7 @@ export default async function CoworkingDetailPage({
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                   <span className="flex items-center gap-1 font-semibold text-forest">
-                    <Star className="h-4 w-4 fill-gold text-gold" /> {Number(s.rating).toFixed(1)}
-                    <span className="font-normal text-muted-foreground">({s.reviews} reviews)</span>
+                    <Rating value={s.rating} reviews={s.reviews} showCount starClass="h-4 w-4" />
                   </span>
                   <span className="inline-flex items-center gap-1 text-muted-foreground">
                     <MapPin className="h-4 w-4" /> {s.city || "Gilgit Baltistan"}

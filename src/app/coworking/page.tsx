@@ -14,6 +14,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { getApprovedCoworking, fromPrice, type CoworkingSpaceRow } from "@/lib/coworking";
 import { photo, formatPrice } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -101,9 +102,7 @@ function SpaceCard({ space: s }: { space: CoworkingSpaceRow }) {
       <div className="flex flex-1 flex-col p-4">
         <h3 className="font-display text-base font-bold leading-snug text-forest">{s.name}</h3>
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-          <span className="font-semibold text-forest">{Number(s.rating).toFixed(1)}</span>
-          <span>({s.reviews})</span>
+          <Rating value={s.rating} reviews={s.reviews} showCount />
           <span className="ml-auto flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" /> {s.city || "Gilgit Baltistan"}
           </span>

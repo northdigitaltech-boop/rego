@@ -8,6 +8,7 @@ import { ProfileGallery } from "@/components/listings/profile-gallery";
 import { getProById, getRoles, roleName } from "@/lib/expeditions";
 import { buildMetadata } from "@/lib/seo";
 import { formatPrice } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -59,7 +60,7 @@ export default async function ProDetail({ params }: { params: Promise<{ id: stri
                 {p.title && <p className="text-sm font-medium text-forest-600">{p.title}</p>}
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" /> {p.home_village || p.city || "Gilgit-Baltistan"}
-                  <span className="inline-flex items-center gap-1"><Star className="h-4 w-4 fill-gold text-gold" /> {p.rating.toFixed(1)} ({p.reviews})</span>
+                  <Rating value={p.rating} reviews={p.reviews} showCount starClass="h-4 w-4" />
                   {p.highest_peak && <span className="inline-flex items-center gap-1"><Mountain className="h-4 w-4 text-forest-600" /> {p.highest_peak}</span>}
                 </p>
               </div>

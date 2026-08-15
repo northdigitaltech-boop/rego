@@ -25,6 +25,7 @@ import { ActivityReviews } from "@/components/activities/activity-reviews";
 import { ViewTracker } from "@/components/crm/view-tracker";
 import { getActivityById, activityCategoryName } from "@/lib/activities";
 import { photo, formatPrice } from "@/lib/utils";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -79,8 +80,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
           <div className="order-2 min-w-0 space-y-8 lg:order-1">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <span className="flex items-center gap-1 font-semibold text-forest">
-                <Star className="h-4 w-4 fill-gold text-gold" /> {Number(a.rating).toFixed(1)}
-                <span className="font-normal text-muted-foreground">({a.reviews} reviews)</span>
+                <Rating value={a.rating} reviews={a.reviews} showCount starClass="h-4 w-4" />
               </span>
               {a.verified && <span className="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-semibold text-forest-600"><BadgeCheck className="h-3.5 w-3.5" /> Verified</span>}
               <span className="inline-flex items-center gap-1 text-muted-foreground"><MapPin className="h-4 w-4" /> {a.location || a.city || "Gilgit Baltistan"}</span>
