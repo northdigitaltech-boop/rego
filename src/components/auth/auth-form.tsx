@@ -36,6 +36,7 @@ import { categories, type CategorySlug } from "@/lib/data";
 import { checkSignupEmail } from "@/lib/email-validation";
 import { sendEmail, verificationCodeEmail } from "@/lib/email";
 import { cn } from "@/lib/utils";
+import { friendlyAuthError } from "@/lib/auth-errors";
 
 type Mode = "signin" | "signup";
 
@@ -48,6 +49,18 @@ const partnerCategories = [
   // Co-working spaces for remote workers / freelancers.
   { slug: "coworking", name: "Co-working Space" } as (typeof categories)[number],
 ];
+
+/** Google's mark, inline so the button needs no network request. */
+function GoogleMark() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.76c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.05l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+    </svg>
+  );
+}
 
 const benefits = [
   "Book hotels, tours, transport & guides in one place",
@@ -65,6 +78,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     requestPasswordReset,
     resetPassword,
     login,
+    loginWithGoogle,
   } = useAuth();
 
   const [name, setName] = React.useState("");
@@ -193,7 +207,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
         setNotice(msg.slice("CONFIRM_EMAIL:".length));
         setError("");
       } else {
-        setError(msg);
+        // Translate Supabase's terse wording into something actionable.
+        setError(friendlyAuthError(msg).message);
       }
     } finally {
       setBusy(false);
@@ -545,7 +560,37 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {/* Google first: it skips the confirm-email step entirely, which is
+              where most signups are lost. */}
+          <button
+            type="button"
+            onClick={async () => {
+              setError("");
+              try {
+                await loginWithGoogle(redirectTo || undefined);
+              } catch (err) {
+                setError(
+                  friendlyAuthError(
+                    err instanceof Error ? err.message : "Could not reach Google."
+                  ).message
+                );
+              }
+            }}
+            className="mt-6 flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm font-semibold text-forest transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
+          >
+            <GoogleMark />
+            Continue with Google
+          </button>
+
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs font-medium text-muted-foreground">
+              or use your email
+            </span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isSignup && (
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-forest">

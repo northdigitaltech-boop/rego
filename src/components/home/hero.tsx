@@ -10,6 +10,7 @@ import {
   UserRound,
   CheckCircle2,
   MoreHorizontal,
+  RotateCcw,
   PlaneTakeoff,
 } from "lucide-react";
 
@@ -18,6 +19,12 @@ import { SiteSearch } from "@/components/ui/site-search";
 import { HeroWeather } from "@/components/home/hero-weather";
 import { searchTabs, type CategorySlug } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import {
+  getSavedFilters,
+  saveFilters,
+  clearSavedFilters,
+  addRecentSearch,
+} from "@/lib/search-memory";
 
 const trustBadges = [
   "Best Price Guarantee",
@@ -121,7 +128,39 @@ export function Hero() {
   const [guests, setGuests] = React.useState(1);
 
   const [moreOpen, setMoreOpen] = React.useState(false);
+  const [fieldError, setFieldError] = React.useState<
+    null | { field: "dates"; message: string }
+  >(null);
   const cfg = tabConfig[activeTab] ?? GENERIC_CFG;
+
+  const today = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  /* Bring back what they searched last time — but only if it's still
+     sensible (see getSavedFilters: past dates are dropped). */
+  React.useEffect(() => {
+    const saved = getSavedFilters();
+    if (!saved) return;
+    if (saved.service && (tabConfig[saved.service] || moreServices.some((m) => m.name === saved.service))) {
+      setActiveTab(saved.service);
+    }
+    if (saved.destination) setDestination(saved.destination);
+    if (saved.checkIn) setCheckIn(saved.checkIn);
+    if (saved.checkOut) setCheckOut(saved.checkOut);
+    if (saved.guests && saved.guests > 1) setGuests(saved.guests);
+  }, []);
+
+  const hasInput =
+    destination.trim() !== "" || checkIn !== "" || checkOut !== "" || guests > 1;
+
+  const resetSearch = () => {
+    setDestination("");
+    setPickedHref("");
+    setCheckIn("");
+    setCheckOut("");
+    setGuests(1);
+    setFieldError(null);
+    clearSavedFilters();
+  };
 
   const dateParams = () => {
     const p = new URLSearchParams();
@@ -139,6 +178,27 @@ export function Hero() {
 
   // Only runs when the Search button is clicked.
   const handleSearch = () => {
+    // Validate beside the field rather than in a banner at the top.
+    setFieldError(null);
+    if (cfg.dates === "range" && checkIn && checkOut && checkOut <= checkIn) {
+      setFieldError({
+        field: "dates",
+        message: "Check-out must be after check-in.",
+      });
+      return;
+    }
+
+    saveFilters({
+      service: activeTab,
+      destination: destination.trim() || undefined,
+      checkIn: checkIn || undefined,
+      checkOut: checkOut || undefined,
+      guests,
+    });
+    if (destination.trim()) {
+      addRecentSearch({ label: destination.trim(), service: activeTab });
+    }
+
     const p = dateParams();
     const qs = p.toString();
     // Picked a specific suggestion → go straight to it.
@@ -326,6 +386,7 @@ export function Hero() {
               <span className="flex w-full flex-col">
                 <span className="text-xs font-semibold text-forest">{cfg.destLabel}</span>
                 <SiteSearch
+                  service={activeTab}
                   value={destination}
                   onChange={handleDestChange}
                   onPick={setPickedHref}
@@ -344,24 +405,47 @@ export function Hero() {
                   <input
                     type="date"
                     value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
+                    min={today}
+                    onChange={(e) => {
+                      setCheckIn(e.target.value);
+                      setFieldError(null);
+                      // Keep the range coherent as they type.
+                      if (checkOut && e.target.value && checkOut <= e.target.value) {
+                        setCheckOut("");
+                      }
+                    }}
                     className="w-full bg-transparent text-sm text-foreground focus:outline-none"
                   />
                 </span>
               </label>
             )}
             {cfg.dates === "range" && (
-              <label className="flex flex-1 items-center gap-3 rounded-lg px-4 py-3 transition-colors hover:bg-muted focus-within:bg-muted focus-within:ring-2 focus-within:ring-forest-600/40">
+              <label
+                className={cn(
+                  "flex flex-1 items-center gap-3 rounded-lg px-4 py-3 transition-colors hover:bg-muted focus-within:bg-muted focus-within:ring-2 focus-within:ring-forest-600/40",
+                  fieldError?.field === "dates" && "ring-2 ring-red-400"
+                )}
+              >
                 <Calendar className="h-5 w-5 shrink-0 text-forest-600" />
                 <span className="flex w-full flex-col">
                   <span className="text-xs font-semibold text-forest">Check-out</span>
                   <input
                     type="date"
                     value={checkOut}
-                    min={checkIn || undefined}
-                    onChange={(e) => setCheckOut(e.target.value)}
+                    min={checkIn || today}
+                    onChange={(e) => {
+                      setCheckOut(e.target.value);
+                      setFieldError(null);
+                    }}
+                    aria-invalid={fieldError?.field === "dates"}
                     className="w-full bg-transparent text-sm text-foreground focus:outline-none"
                   />
+                  {/* Validation sits beside the field it belongs to. */}
+                  {fieldError?.field === "dates" && (
+                    <span role="alert" className="mt-0.5 text-[11px] font-semibold text-red-600">
+                      {fieldError.message}
+                    </span>
+                  )}
                 </span>
               </label>
             )}
@@ -400,6 +484,19 @@ export function Hero() {
               Search
             </Button>
           </div>
+
+          {/* Reset — only offered once there's something to clear. */}
+          {hasInput && (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={resetSearch}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-forest"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Clear search
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
     </section>

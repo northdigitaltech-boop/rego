@@ -39,10 +39,13 @@ import { SoloCompatibility } from "@/components/solo/compatibility";
 import {
   getSoloById,
   computeTrustScore,
+  VERIFY_STEPS,
   daysUntilDeparture,
   type SoloPreviousTrip,
 } from "@/lib/solo";
 import { photo } from "@/lib/utils";
+import { ReportBlock } from "@/components/safety/report-block";
+import { Rating } from "@/components/ui/rating";
 
 export const revalidate = 60;
 
@@ -142,6 +145,14 @@ export default async function TravelerProfilePage({
                       <span className="font-semibold text-muted-foreground">, {t.age}</span>
                     ) : null}
                   </h1>
+                  {/* Report / block — quiet, but always reachable. */}
+                  <ReportBlock
+                    className="ml-auto"
+                    targetType="solo"
+                    targetId={t.id}
+                    targetEmail={t.owner_email}
+                    targetName={t.full_name}
+                  />
                   {t.verified && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-semibold text-forest-600">
                       <BadgeCheck className="h-3.5 w-3.5 text-gold" /> Verified
@@ -160,10 +171,14 @@ export default async function TravelerProfilePage({
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-1 font-semibold text-forest">
-                    <Star className="h-4 w-4 fill-gold text-gold" /> {Number(t.rating).toFixed(1)}
-                    <span className="font-normal text-muted-foreground">({t.reviews})</span>
-                  </span>
+                  <Rating
+                    value={t.rating}
+                    reviews={t.reviews}
+                    showCount
+                    starClass="h-4 w-4"
+                    emptyLabel="No reviews yet"
+                    className="font-semibold text-forest"
+                  />
                   {t.nationality && (
                     <span className="inline-flex items-center gap-1">
                       <MapPin className="h-4 w-4" /> {t.nationality}
@@ -353,9 +368,13 @@ export default async function TravelerProfilePage({
                 <div className="flex items-center gap-4">
                   <TrustRing value={trust} />
                   <div>
-                    <p className="font-display text-lg font-bold text-forest">Trust score</p>
+                    <p className="font-display text-lg font-bold text-forest">
+                      Verification progress
+                    </p>
+                    {/* Never phrase this as a safety guarantee. It counts checks
+                        that were completed — nothing more. */}
                     <p className="text-sm text-muted-foreground">
-                      Based on completed verifications. Higher is safer.
+                      {trust}% of Rego&apos;s {VERIFY_STEPS} identity checks are complete.
                     </p>
                   </div>
                 </div>
@@ -365,6 +384,21 @@ export default async function TravelerProfilePage({
                   <VerifyRow icon={Mail} label="Email" ok={t.email_verified} />
                   <VerifyRow icon={ScanFace} label="Face" ok={t.face_verified} />
                   <VerifyRow icon={LifeBuoy} label="Emergency contact" ok={t.emergency_verified} />
+                </div>
+
+                <div className="mt-5 space-y-2 rounded-2xl border border-border bg-muted/40 p-4">
+                  <p className="text-xs font-semibold text-forest">
+                    How this is calculated
+                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Each completed check adds an equal share. It measures documents
+                    we have seen — it says nothing about how someone will behave.
+                  </p>
+                  <p className="text-xs font-semibold leading-relaxed text-gold-700">
+                    Verification lowers risk. It does not remove it. Meet in public
+                    for the first time, tell someone where you are going, and trust
+                    your instincts over any badge on this page.
+                  </p>
                 </div>
               </div>
             </section>

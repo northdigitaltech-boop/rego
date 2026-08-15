@@ -117,6 +117,90 @@ export interface RoadAlertSubRow {
   created_at: string;
 }
 
+/* ---------------- Freshness ----------------
+ * People act on this information while driving. An update from four days
+ * ago presented as current is worse than no update, so every road status
+ * carries its own age and stops claiming authority once it goes stale. */
+
+/** After this many hours an update is shown as possibly out of date. */
+export const ROAD_STALE_HOURS = 24;
+/** After this, it is treated as historical and demoted in the UI. */
+export const ROAD_EXPIRED_HOURS = 72;
+
+export interface RoadFreshness {
+  hours: number;
+  /** "2h ago", "3 days ago" */
+  label: string;
+  stale: boolean;
+  expired: boolean;
+}
+
+export function roadFreshness(updatedAt: string | null): RoadFreshness {
+  if (!updatedAt) {
+    return { hours: Infinity, label: "Unknown", stale: true, expired: true };
+  }
+  const t = new Date(updatedAt).getTime();
+  if (Number.isNaN(t)) {
+    return { hours: Infinity, label: "Unknown", stale: true, expired: true };
+  }
+
+  const mins = Math.max(0, Math.floor((Date.now() - t) / 60000));
+  const hours = mins / 60;
+
+  let label: string;
+  if (mins < 2) label = "Just now";
+  else if (mins < 60) label = `${mins}m ago`;
+  else if (hours < 24) label = `${Math.floor(hours)}h ago`;
+  else {
+    const d = Math.floor(hours / 24);
+    label = `${d} day${d === 1 ? "" : "s"} ago`;
+  }
+
+  return {
+    hours,
+    label,
+    stale: hours >= ROAD_STALE_HOURS,
+    expired: hours >= ROAD_EXPIRED_HOURS,
+  };
+}
+
+/**
+ * Catches self-contradicting updates before they are published — the
+ * "Open + Landslide + expected opening tomorrow" problem. Returns plain
+ * warnings for the admin, it does not block saving.
+ */
+export function validateRoadUpdate(u: {
+  status: string;
+  reason?: string | null;
+  expected_opening_time?: string | null;
+  alternative_route?: string | null;
+}): string[] {
+  const warnings: string[] = [];
+  const reason = (u.reason ?? "").toLowerCase();
+  const blockingReason =
+    /landslide|avalanche|flood|snow|blocked|accident|closed|washed/.test(reason);
+
+  if (u.status === "open" && blockingReason) {
+    warnings.push(
+      `Status is "Open" but the reason mentions a blockage. Travellers can't tell whether the road is usable — pick "Partially Open" or "Blocked", or clear the reason.`
+    );
+  }
+  if (u.status === "open" && u.expected_opening_time) {
+    warnings.push(
+      `Status is "Open" but an expected opening time is set. Remove the opening time, or change the status.`
+    );
+  }
+  if (u.status === "blocked" && !u.expected_opening_time) {
+    warnings.push(
+      `Road is blocked with no expected opening time. Even "unknown — check back tomorrow" helps people plan.`
+    );
+  }
+  if (u.status === "blocked" && !u.alternative_route) {
+    warnings.push(`No alternative route given for a blocked road.`);
+  }
+  return warnings;
+}
+
 /* ---------------- Presentation helpers ---------------- */
 
 export function statusTone(status: string): {

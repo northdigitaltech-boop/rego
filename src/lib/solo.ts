@@ -225,6 +225,15 @@ export async function touchSoloLastActive(id: string) {
 
 /* ---------------- Trust score (display-only) ----------------
  * % based on how many of the 5 verification badges are set. */
+/** How many identity checks make up the score. Shown to users verbatim. */
+export const VERIFY_STEPS = 5;
+
+/**
+ * Share of identity checks completed, 0–100.
+ *
+ * This is a completeness measure, NOT a safety rating — never present it as
+ * one. Someone with every check passed can still behave badly.
+ */
 export function computeTrustScore(t: {
   id_verified: boolean;
   phone_verified: boolean;

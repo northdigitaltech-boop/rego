@@ -34,6 +34,8 @@ interface AuthContextValue {
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   updateProfile: (updates: { name?: string; avatar?: string }) => Promise<void>;
   login: (email: string, password: string, captchaToken?: string) => Promise<void>;
+  /** Google OAuth. Redirects away, so it never resolves on success. */
+  loginWithGoogle: (redirectTo?: string) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
 }
@@ -239,6 +241,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  /**
+   * Sign in with Google. A Google account is already verified, so these users
+   * skip the confirm-email step entirely — which removes the single biggest
+   * drop-off point in the signup flow.
+   */
+  const loginWithGoogle = React.useCallback(async (redirectTo?: string) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const next = redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : "";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/signin${next}`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) throw new Error(error.message);
+  }, []);
+
   // Email confirmation is handled by Supabase, so these are no-ops kept for API compatibility.
   const verifyCode = React.useCallback(async (_email: string, _code: string) => {}, []);
   const resendCode = React.useCallback(async (_email: string) => {}, []);
@@ -322,6 +342,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         updateProfile,
         login,
+        loginWithGoogle,
         loginAsGuest,
         logout,
       }}
