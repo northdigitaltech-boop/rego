@@ -64,6 +64,14 @@ export function friendlyAuthError(raw: string): FriendlyError {
     };
   }
 
+  // Provider not switched on in Supabase → don't show the raw API error.
+  if (/provider is not enabled|unsupported provider/.test(m)) {
+    return {
+      message:
+        "Google sign-in isn't available right now. Please use your email and password below.",
+    };
+  }
+
   if (/captcha/.test(m)) {
     return {
       message:

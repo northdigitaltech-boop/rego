@@ -14,6 +14,12 @@ export interface User {
   role: AccountRole;
   businessCategory?: CategorySlug;
   avatar?: string;
+  /**
+   * False when the account was created without ever picking a role — which
+   * is every Google sign-up, because Google only tells us name and email.
+   * Those users are asked once, on first visit, before they see the app.
+   */
+  roleChosen: boolean;
 }
 
 interface AuthContextValue {
@@ -36,6 +42,8 @@ interface AuthContextValue {
   login: (email: string, password: string, captchaToken?: string) => Promise<void>;
   /** Google OAuth. Redirects away, so it never resolves on success. */
   loginWithGoogle: (redirectTo?: string) => Promise<void>;
+  /** Record the role an OAuth user picks on their first visit. */
+  chooseRole: (role: AccountRole, businessCategory?: CategorySlug) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
 }
@@ -140,6 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: mapRole(role),
       businessCategory: (biz as CategorySlug) || undefined,
       avatar: avatar || undefined,
+      // Email signup always writes `role` into user metadata; OAuth never
+      // does. Its absence is what tells us to ask.
+      roleChosen: Boolean(meta.role),
     });
   }, []);
 
@@ -259,6 +270,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message);
   }, []);
 
+  /**
+   * Finish setting up an account that arrived via Google. Writes to auth
+   * metadata (so `roleChosen` becomes true) and to the profiles row that the
+   * signup trigger created with the default 'customer' role.
+   */
+  const chooseRole = React.useCallback(
+    async (role: AccountRole, businessCategory?: CategorySlug) => {
+      const { data: sess } = await supabase.auth.getSession();
+      const su = sess.session?.user;
+      if (!su) throw new Error("Please sign in again.");
+
+      const { error } = await supabase.auth.updateUser({
+        data: { role, business_category: businessCategory ?? null },
+      });
+      if (error) throw new Error(error.message);
+
+      await supabase
+        .from("profiles")
+        .update({
+          role: role === "traveler" ? "customer" : role,
+          business_category: businessCategory ?? null,
+        })
+        .eq("id", su.id);
+
+      const { data: fresh } = await supabase.auth.getUser();
+      await hydrate((fresh.user as SupaUser) ?? null);
+    },
+    [hydrate]
+  );
+
   // Email confirmation is handled by Supabase, so these are no-ops kept for API compatibility.
   const verifyCode = React.useCallback(async (_email: string, _code: string) => {}, []);
   const resendCode = React.useCallback(async (_email: string) => {}, []);
@@ -311,7 +352,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const loginAsGuest = React.useCallback(() => {
-    const g: User = { name: "Guest Traveler", email: "guest@rego.com", role: "traveler" };
+    const g: User = {
+      name: "Guest Traveler",
+      email: "guest@rego.com",
+      role: "traveler",
+      roleChosen: true,
+    };
     try {
       localStorage.setItem(GUEST_KEY, JSON.stringify(g));
     } catch {
@@ -343,6 +389,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateProfile,
         login,
         loginWithGoogle,
+        chooseRole,
         loginAsGuest,
         logout,
       }}
