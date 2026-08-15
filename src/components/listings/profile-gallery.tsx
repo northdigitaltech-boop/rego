@@ -8,6 +8,12 @@ import { photo } from "@/lib/utils";
 import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /**
+ * How many photos the hero collage shows: 1 large + a 2×2 grid of 4.
+ * The Gallery section below skips this many so nothing is shown twice.
+ */
+export const HERO_PHOTO_COUNT = 5;
+
+/**
  * Premium property-style gallery: large main image on the left, a 2×2 grid of
  * up to 4 smaller images on the right, a "View all photos" overlay on the last
  * tile, and a full-screen lightbox. Uses the listing's own images.
@@ -109,11 +115,19 @@ export function GalleryGrid({
   title,
   className = "mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4",
   itemClassName = "h-36",
+  skip = 0,
 }: {
   images: string[];
   title: string;
   className?: string;
   itemClassName?: string;
+  /**
+   * Hide the first N photos from the grid — used on profile pages where
+   * ProfileGallery already shows them in the hero collage, so this section
+   * doesn't repeat them. The lightbox still browses the FULL set, so
+   * "photo 6 of 14" stays truthful.
+   */
+  skip?: number;
 }) {
   const imgs = React.useMemo(
     () => Array.from(new Set((images || []).filter(Boolean))).map((u) => photo(u, 700)),
@@ -122,32 +136,36 @@ export function GalleryGrid({
   const [open, setOpen] = React.useState(false);
   const [idx, setIdx] = React.useState(0);
 
-  if (imgs.length === 0) return null;
+  const shown = imgs.slice(skip);
+  if (shown.length === 0) return null;
 
   return (
     <>
       <div className={className}>
-        {imgs.map((src, i) => (
-          <button
-            key={src + i}
-            type="button"
-            onClick={() => {
-              setIdx(i);
-              setOpen(true);
-            }}
-            aria-label={`View photo ${i + 1} of ${title}`}
-            className={`group relative overflow-hidden rounded-2xl shadow-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2 ${itemClassName}`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={src}
-              alt={`${title} photo ${i + 1}`}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </button>
-        ))}
+        {shown.map((src, i) => {
+          const realIndex = i + skip;
+          return (
+            <button
+              key={src + realIndex}
+              type="button"
+              onClick={() => {
+                setIdx(realIndex);
+                setOpen(true);
+              }}
+              aria-label={`View photo ${realIndex + 1} of ${title}`}
+              className={`group relative overflow-hidden rounded-2xl shadow-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2 ${itemClassName}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt={`${title} photo ${realIndex + 1}`}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </button>
+          );
+        })}
       </div>
       <AnimatePresence>
         {open && <Lightbox images={imgs} index={idx} setIndex={setIdx} onClose={() => setOpen(false)} title={title} />}

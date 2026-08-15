@@ -20,7 +20,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ListingDetailHeader } from "@/components/listings/listing-detail-header";
-import { ProfileGallery, GalleryGrid } from "@/components/listings/profile-gallery";
+import {
+  ProfileGallery,
+  GalleryGrid,
+  HERO_PHOTO_COUNT,
+} from "@/components/listings/profile-gallery";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
 import { PaymentPanel } from "@/components/payments/payment-panel";
 import { paymentConfigFrom, type PaymentConfig } from "@/lib/payments";
@@ -622,11 +626,26 @@ export function HotelProfile({
 
         {/* Secondary content — appears AFTER the booking box on mobile */}
         <div className="min-w-0 order-3 lg:col-start-1 lg:row-start-2">
-          {/* Gallery */}
-          <section ref={sectionRefs.gallery} className="scroll-mt-32">
-            <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-            <GalleryGrid images={gallery} title={listing.title} className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" itemClassName="h-36 sm:h-44" />
-          </section>
+          {/* Gallery — the first 5 already appear in the hero collage above,
+              so this section holds only what's left. Hidden entirely when
+              there's nothing more to show. */}
+          {gallery.length > HERO_PHOTO_COUNT && (
+            <section ref={sectionRefs.gallery} className="scroll-mt-32">
+              <h2 className="font-display text-xl font-bold text-forest">
+                More photos
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  {gallery.length - HERO_PHOTO_COUNT} more
+                </span>
+              </h2>
+              <GalleryGrid
+                images={gallery}
+                title={listing.title}
+                skip={HERO_PHOTO_COUNT}
+                className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3"
+                itemClassName="h-36 sm:h-44"
+              />
+            </section>
+          )}
 
           {/* Reviews */}
           <section ref={sectionRefs.reviews} className="mt-12 scroll-mt-32">

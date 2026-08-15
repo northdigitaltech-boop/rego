@@ -68,6 +68,7 @@ import {
   ProviderJobApplications,
 } from "@/components/dashboard/provider-jobs";
 import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
+import { galleryError } from "@/lib/gallery-rules";
 
 const splitList = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
@@ -318,6 +319,12 @@ function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant:
     e.preventDefault();
     setError("");
     if (!f.name.trim()) { setError("Please enter your restaurant name."); return; }
+    // Every listing needs a real gallery — see lib/gallery-rules.ts.
+    const galleryMsg = galleryError(f.gallery);
+    if (galleryMsg) {
+      setError(galleryMsg);
+      return;
+    }
     setSaving(true);
     const payload = {
       name: f.name.trim(),

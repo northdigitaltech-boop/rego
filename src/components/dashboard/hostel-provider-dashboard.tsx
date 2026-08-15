@@ -68,6 +68,7 @@ import {
   ProviderJobApplications,
 } from "@/components/dashboard/provider-jobs";
 import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
+import { galleryError } from "@/lib/gallery-rules";
 
 const AMENITY_OPTIONS = [
   "Free Wi-Fi",
@@ -447,6 +448,12 @@ export function HostelProviderDashboard({
       0
     );
 
+    // Every listing needs a real gallery — see lib/gallery-rules.ts.
+    const galleryMsg = galleryError(form.gallery);
+    if (galleryMsg) {
+      setError(galleryMsg);
+      return;
+    }
     setSaving(true);
     const payload = {
       title: form.title.trim(),

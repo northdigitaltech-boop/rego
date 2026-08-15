@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { UploadCloud, Loader2, X, Camera } from "lucide-react";
+import { UploadCloud, Loader2, X, Camera, Image as ImageIcon } from "lucide-react";
 
 import { uploadToCloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
+import { GALLERY_MIN, GALLERY_MAX, galleryCountLabel } from "@/lib/gallery-rules";
+import { cn } from "@/lib/utils";
 
 export function AvatarUpload({
   value,
@@ -63,22 +65,47 @@ export function AvatarUpload({
 export function MultiImageUpload({
   value,
   onChange,
+  min = GALLERY_MIN,
+  max = GALLERY_MAX,
 }: {
   value: string[];
   onChange: (urls: string[]) => void;
+  min?: number;
+  max?: number;
 }) {
   const [uploading, setUploading] = React.useState(false);
+  const [note, setNote] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const count = value.length;
+  const full = count >= max;
+  const short = count < min;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    setNote("");
+
+    // Only take what still fits, and say so rather than silently dropping.
+    const room = Math.max(0, max - value.length);
+    const picked = Array.from(files);
+    if (room === 0) {
+      setNote(`You've reached the ${max}-photo limit.`);
+      return;
+    }
+    const toUpload = picked.slice(0, room);
+    if (picked.length > room) {
+      setNote(
+        `Only ${room} more photo${room === 1 ? "" : "s"} would fit — the rest were skipped.`
+      );
+    }
+
     setUploading(true);
     const urls: string[] = [];
-    for (const f of Array.from(files)) {
+    for (const f of toUpload) {
       try {
         urls.push(await uploadToCloudinary(f));
       } catch {
-        /* ignore */
+        /* ignore a single bad file — keep the rest */
       }
     }
     setUploading(false);
@@ -105,27 +132,63 @@ export function MultiImageUpload({
             </button>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading || !isCloudinaryConfigured}
-          className="grid h-20 w-24 place-items-center rounded-lg border-2 border-dashed border-border text-muted-foreground hover:border-forest/40 disabled:opacity-70"
-        >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-forest-600" />
-          ) : (
-            <UploadCloud className="h-5 w-5 text-forest-600" />
-          )}
-        </button>
+        {!full && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading || !isCloudinaryConfigured}
+            className={cn(
+              "grid h-20 w-24 place-items-center rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-forest/40 disabled:opacity-70",
+              short ? "border-gold/60 bg-gold/5" : "border-border"
+            )}
+            aria-label="Add photos"
+          >
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-forest-600" />
+            ) : (
+              <UploadCloud className="h-5 w-5 text-forest-600" />
+            )}
+          </button>
+        )}
       </div>
+
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
         multiple
         className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          // Allow re-picking the same file after a removal.
+          e.target.value = "";
+        }}
       />
+
+      {/* Live counter + requirement. Gold while short of the minimum so the
+          gap is obvious before they hit Save, not after. */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold",
+            short
+              ? "bg-gold/15 text-gold-700"
+              : "bg-forest-50 text-forest-700"
+          )}
+        >
+          <ImageIcon className="h-3 w-3" />
+          {galleryCountLabel(count)}
+        </span>
+        <span className="text-muted-foreground">
+          {short
+            ? `Add at least ${min} photos — listings with more photos get more bookings.`
+            : full
+              ? `Maximum reached. Remove one to add another.`
+              : `You can add up to ${max}.`}
+        </span>
+      </div>
+
+      {note && <p className="mt-1 text-xs font-medium text-gold-700">{note}</p>}
       {!isCloudinaryConfigured && (
         <p className="mt-1 text-xs text-muted-foreground">
           Add Cloudinary keys to <code>.env.local</code> to enable uploads.

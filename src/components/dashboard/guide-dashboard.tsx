@@ -77,6 +77,7 @@ import {
   ProviderJobApplications,
 } from "@/components/dashboard/provider-jobs";
 import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
+import { galleryError } from "@/lib/gallery-rules";
 
 const splitList = (s: string) =>
   s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
@@ -473,6 +474,12 @@ function GuideForm({
     setError("");
     if (!f.name.trim() || !Number(f.price_per_day)) {
       setError("Please enter your name and a valid price per day.");
+      return;
+    }
+    // Every listing needs a real gallery — see lib/gallery-rules.ts.
+    const galleryMsg = galleryError(f.gallery);
+    if (galleryMsg) {
+      setError(galleryMsg);
       return;
     }
     setSaving(true);

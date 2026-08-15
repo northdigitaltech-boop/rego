@@ -42,6 +42,7 @@ import {
 } from "@/lib/restaurant-bookings";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { cn, formatPrice } from "@/lib/utils";
+import { galleryError } from "@/lib/gallery-rules";
 
 const num = (v: string) => {
   const n = Number(v);
@@ -175,6 +176,12 @@ function ProfileForm({ user, restaurant, propertyType, propertyId, propertyName,
     e.preventDefault();
     setError("");
     if (!f.name.trim()) { setError("Please enter a restaurant name."); return; }
+    // Every listing needs a real gallery — see lib/gallery-rules.ts.
+    const galleryMsg = galleryError(f.gallery);
+    if (galleryMsg) {
+      setError(galleryMsg);
+      return;
+    }
     setSaving(true);
     const payload = {
       property_type: propertyType,

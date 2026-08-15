@@ -21,7 +21,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ListingDetailHeader } from "@/components/listings/listing-detail-header";
-import { ProfileGallery, GalleryGrid } from "@/components/listings/profile-gallery";
+import {
+  ProfileGallery,
+  GalleryGrid,
+  HERO_PHOTO_COUNT,
+} from "@/components/listings/profile-gallery";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
 import { PaymentPanel } from "@/components/payments/payment-panel";
 import { paymentConfigFrom } from "@/lib/payments";
@@ -538,11 +542,25 @@ export function HomestayProfile({
             </section>
           )}
 
-          {/* Gallery */}
-          <section className="mt-12">
-            <h2 className="font-display text-xl font-bold text-forest">Gallery</h2>
-            <GalleryGrid images={gallery} title={homestay.title} className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" itemClassName="h-36 sm:h-44" />
-          </section>
+          {/* Gallery — the first {HERO_PHOTO_COUNT} are already in the hero
+              collage above, so only the remainder is shown here. */}
+          {gallery.length > HERO_PHOTO_COUNT && (
+            <section className="mt-12">
+              <h2 className="font-display text-xl font-bold text-forest">
+                More photos
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  {gallery.length - HERO_PHOTO_COUNT} more
+                </span>
+              </h2>
+              <GalleryGrid
+                images={gallery}
+                title={homestay.title}
+                skip={HERO_PHOTO_COUNT}
+                className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3"
+                itemClassName="h-36 sm:h-44"
+              />
+            </section>
+          )}
 
           {/* Reviews */}
           <ReviewsSection
