@@ -10,6 +10,7 @@ import {
   feedRestaurants,
 } from "@/lib/home-feed";
 import { type Listing } from "@/lib/data";
+import { sendMail, isSmtpConfigured } from "@/lib/mailer";
 
 // Daily cron (see vercel.json). Emails users ~7 days after they registered —
 // once each — with a friendly reminder + top recommendations, and drops the
@@ -115,8 +116,24 @@ async function handle(req: Request) {
   }));
   await sb.from("notifications").insert(notifRows);
 
-  // Emails (batch of 100), only if Resend is configured.
-  if (apiKey) {
+  // Emails — SMTP first (Hostinger/Gmail), Resend batch as a fallback.
+  if (isSmtpConfigured) {
+    // Sequential: shared SMTP hosts drop parallel bursts.
+    for (const r of recipients) {
+      const res = await sendMail({
+        to: r.email,
+        subject: REMINDER_SUBJECT,
+        html: buildNotifyEmail({
+          name: r.name,
+          heading: REMINDER_SUBJECT,
+          message: REMINDER_MESSAGE,
+          items,
+          base,
+        }),
+      });
+      if (res.ok) emailed += 1;
+    }
+  } else if (apiKey) {
     for (let i = 0; i < recipients.length; i += 100) {
       const chunk = recipients.slice(i, i + 100);
       const payload = chunk.map((r) => ({

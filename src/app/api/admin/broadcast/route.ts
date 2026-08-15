@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { buildNotifyEmail, type RecItem } from "@/lib/notify-email";
+import { sendMail, isSmtpConfigured } from "@/lib/mailer";
 
 // Admin-only endpoint to send a reminder / recommendation to every registered
 // user — by email (Resend) and/or as an in-site notification (notifications
@@ -102,9 +103,14 @@ export async function POST(req: Request) {
   if (!wantEmail && !wantInApp) {
     return NextResponse.json({ ok: false, error: "Choose at least email or in-site." }, { status: 400 });
   }
-  if (wantEmail && !apiKey) {
+  // Either transport is fine — SMTP (Hostinger/Gmail) or Resend.
+  if (wantEmail && !isSmtpConfigured && !apiKey) {
     return NextResponse.json(
-      { ok: false, error: "Email is not configured (missing RESEND_API_KEY). Uncheck email or add the key." },
+      {
+        ok: false,
+        error:
+          "Email is not configured. Add SMTP_HOST / SMTP_USER / SMTP_PASSWORD (or RESEND_API_KEY) to your server environment, or uncheck email.",
+      },
       { status: 500 }
     );
   }
@@ -172,7 +178,21 @@ export async function POST(req: Request) {
   }
 
   // 2) Email via Resend batch endpoint (up to 100 messages per call).
-  if (wantEmail && apiKey) {
+  if (wantEmail && isSmtpConfigured) {
+    /* SMTP has no batch endpoint — send one at a time. Deliberately
+       sequential: Hostinger and Gmail both drop connections when a burst
+       arrives in parallel, which loses messages silently. A broadcast is
+       not time-critical, so slow and complete beats fast and lossy. */
+    for (const r of recipients) {
+      const res = await sendMail({
+        to: r.email,
+        subject: safeSubject,
+        html: buildNotifyEmail({ name: r.name, heading, message, items, base }),
+      });
+      if (res.ok) sent += 1;
+      else console.error("[broadcast] smtp error for", r.email, res.error);
+    }
+  } else if (wantEmail && apiKey) {
     for (let i = 0; i < recipients.length; i += 100) {
       const chunk = recipients.slice(i, i + 100);
       const payload = chunk.map((r) => ({

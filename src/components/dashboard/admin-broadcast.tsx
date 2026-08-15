@@ -248,8 +248,10 @@ export function AdminBroadcast() {
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Requires <code>RESEND_API_KEY</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> in your server
-          environment. Emails are sent from your verified sender address.
+          Requires <code>SUPABASE_SERVICE_ROLE_KEY</code> plus mail credentials —
+          either <code>SMTP_HOST</code>/<code>SMTP_USER</code>/<code>SMTP_PASSWORD</code>{" "}
+          or <code>RESEND_API_KEY</code> — in your server environment. Emails are
+          sent from <code>EMAIL_FROM</code>.
         </p>
       </div>
     </div>
