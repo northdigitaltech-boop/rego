@@ -2,12 +2,26 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Star, Heart } from "lucide-react";
+import {
+  Star, Heart, Clock, Users, CalendarDays, Car, Fuel, Gauge, Luggage,
+} from "lucide-react";
 
-import { type Listing } from "@/lib/data";
+import { type Listing, type ListingFact } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { cn, formatPrice, photo } from "@/lib/utils";
+
+/** Icon names on ListingFact map to real icons here (they can't cross the
+ *  server boundary as components). */
+const FACT_ICONS: Record<ListingFact["icon"], typeof Clock> = {
+  clock: Clock,
+  users: Users,
+  calendar: CalendarDays,
+  car: Car,
+  fuel: Fuel,
+  gauge: Gauge,
+  luggage: Luggage,
+};
 
 export function ListingCard({
   listing,
@@ -111,6 +125,26 @@ export function ListingCard({
             </span>
           )}
         </div>
+
+        {/* At-a-glance facts — duration, group size, seats. Lets people
+            compare two cards without opening either. Wraps rather than
+            truncating, so it works down to the narrowest phone. */}
+        {listing.facts && listing.facts.length > 0 && (
+          <ul className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {listing.facts.slice(0, 3).map((f, i) => {
+              const Icon = FACT_ICONS[f.icon] ?? Clock;
+              return (
+                <li
+                  key={i}
+                  className="flex items-center gap-1 text-xs font-medium text-forest/80"
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-forest-600" />
+                  {f.label}
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
         <p className="mt-1 text-sm text-muted-foreground">{listing.location}</p>
 

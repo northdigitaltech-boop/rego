@@ -290,6 +290,17 @@ export const locations = [
 /* Listings                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * A short at-a-glance detail on a listing card — duration, group size, seats.
+ *
+ * The icon is a NAME, not a component: these objects cross the server/client
+ * boundary and React can't serialise a function.
+ */
+export interface ListingFact {
+  icon: "clock" | "users" | "calendar" | "car" | "fuel" | "gauge" | "luggage";
+  label: string;
+}
+
 export interface Listing {
   id: string;
   title: string;
@@ -303,6 +314,8 @@ export interface Listing {
   image: string;
   provider?: string;
   featured?: boolean;
+  /** Up to 3 comparison details shown under the rating. */
+  facts?: ListingFact[];
 }
 
 // NOTE: Rego shows ONLY real, approved listings from the database.

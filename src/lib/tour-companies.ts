@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isUuid } from "@/lib/hotels";
-import { type Listing } from "@/lib/data";
+import { type Listing, type ListingFact } from "@/lib/data";
 import { updateOrQueue } from "@/lib/pending-edits";
 
 /* ============================================================
@@ -164,7 +164,32 @@ const COMPANY_PUBLIC =
  * Listing mappers (for customer category cards)
  * ============================================================ */
 
+/** "2–8 People", "Up to 8 People", "Min 2 People" — whichever we can say. */
+export function groupSizeLabel(
+  min: number | null,
+  max: number | null
+): string | null {
+  const lo = min && min > 0 ? min : null;
+  const hi = max && max > 0 ? max : null;
+  if (lo && hi) return lo === hi ? `${lo} People` : `${lo}–${hi} People`;
+  if (hi) return `Up to ${hi} People`;
+  if (lo) return `Min ${lo} People`;
+  return null;
+}
+
 export function packageToListing(p: TourPackageRow): Listing {
+  // Three details that let someone compare two packages without opening
+  // either: how long, how many people, and (on the card) the rating.
+  const facts: ListingFact[] = [];
+  if (p.duration?.trim()) {
+    facts.push({ icon: "clock", label: p.duration.trim() });
+  }
+  const group = groupSizeLabel(p.min_persons, p.max_persons);
+  if (group) facts.push({ icon: "users", label: group });
+  if (p.difficulty_level?.trim()) {
+    facts.push({ icon: "gauge", label: p.difficulty_level.trim() });
+  }
+
   return {
     id: p.id,
     title: p.title,
@@ -177,6 +202,7 @@ export function packageToListing(p: TourPackageRow): Listing {
     reviews: p.reviews,
     image: p.image || "https://picsum.photos/seed/tour/900/600",
     provider: p.company_name || undefined,
+    facts: facts.length ? facts : undefined,
   };
 }
 
