@@ -174,6 +174,11 @@ export default async function CategoryPage({
         rating: Number(s.rating),
         reviews: s.reviews,
         image: s.image || "",
+        transmission: s.transmission,
+        ac: s.ac,
+        fuelType: s.fuel_type,
+        luggage: s.luggage_capacity || s.luggage,
+        driverIncluded: s.driver_included,
       })),
       ...tourVehicles.map((t) => ({
         id: t.id,
@@ -190,6 +195,11 @@ export default async function CategoryPage({
         rating: Number(t.rating),
         reviews: t.reviews,
         image: t.image || "",
+        transmission: t.transmission,
+        ac: t.ac,
+        fuelType: t.fuel_type,
+        luggage: t.luggage_capacity,
+        driverIncluded: t.driver_included,
       })),
       ...rentals.map((r) => ({
         id: r.id,
@@ -206,6 +216,12 @@ export default async function CategoryPage({
         rating: Number(r.rating),
         reviews: r.reviews,
         image: r.image || "",
+        transmission: r.transmission,
+        ac: r.ac,
+        fuelType: r.fuel_type,
+        luggage: r.luggage_capacity,
+        // Self-drive rentals: say so explicitly rather than leaving it blank.
+        driverIncluded: false,
       })),
     ].sort((a, b) => Number(b.featured) - Number(a.featured));
     if (items.length > 0) dbTransport = items;

@@ -13,6 +13,11 @@ import {
   Car,
   Search,
   X,
+  Cog,
+  Snowflake,
+  Fuel,
+  Luggage,
+  UserRound,
 } from "lucide-react";
 
 import { useWishlist } from "@/lib/wishlist";
@@ -20,6 +25,31 @@ import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar"
 import { type Listing } from "@/lib/data";
 import { cn, formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
+
+/** One small spec badge. Kept tiny so five fit on a phone-width card. */
+function Spec({
+  icon: Icon,
+  label,
+  tone = "muted",
+}: {
+  icon: typeof Users;
+  label: string;
+  tone?: "muted" | "forest";
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        tone === "forest"
+          ? "bg-forest-600 text-white"
+          : "bg-muted text-forest/80"
+      )}
+    >
+      <Icon className="h-3 w-3 shrink-0" />
+      {label}
+    </span>
+  );
+}
 
 export interface TransportCardItem {
   id: string;
@@ -36,6 +66,12 @@ export interface TransportCardItem {
   rating: number;
   reviews: number;
   image: string;
+  /* Specs shown as badges — all optional, a blank one simply isn't shown. */
+  transmission?: string | null;
+  ac?: boolean;
+  fuelType?: string | null;
+  luggage?: string | null;
+  driverIncluded?: boolean;
 }
 
 type Filter = "all" | "service" | "rental";
@@ -223,24 +259,35 @@ function TransportCard({ item, index }: { item: TransportCardItem; index: number
             {item.title}
           </h3>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="font-medium text-forest-600">{item.vehicleType}</span>
-          {item.seats != null && (
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" /> {item.seats} seats
-            </span>
-          )}
-        </div>
+        <p className="mt-1 text-xs font-medium text-forest-600">{item.vehicleType}</p>
 
         {item.provider && (
           <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-forest-600">
             by {item.provider}
-            {item.verified && <BadgeCheck className="h-3.5 w-3.5 text-forest-600" />}
           </p>
         )}
 
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <Rating value={item.rating} reviews={item.reviews} showCount className="text-xs" />
+        {/* Spec badges — the details people actually choose between.
+            Every one is conditional, so a half-filled listing degrades to
+            fewer badges rather than to "Automatic: unknown". */}
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <Rating
+            value={item.rating}
+            reviews={item.reviews}
+            showCount
+            className="rounded-full bg-forest-50 px-2 py-0.5 text-xs"
+          />
+          {item.verified && (
+            <Spec icon={BadgeCheck} label="Verified Owner" tone="forest" />
+          )}
+          {item.seats != null && item.seats > 0 && (
+            <Spec icon={Users} label={`${item.seats} Seats`} />
+          )}
+          {item.transmission && <Spec icon={Cog} label={item.transmission} />}
+          {item.ac && <Spec icon={Snowflake} label="Air Conditioned" />}
+          {item.fuelType && <Spec icon={Fuel} label={item.fuelType} />}
+          {item.luggage && <Spec icon={Luggage} label={item.luggage} />}
+          {item.driverIncluded && <Spec icon={UserRound} label="Driver included" />}
         </div>
 
         <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground">

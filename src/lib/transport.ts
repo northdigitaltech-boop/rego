@@ -62,6 +62,9 @@ export interface TransportServiceRow {
   ac: boolean;
   fuel_type: string | null;
   luggage: string | null;
+  /** phase67 */
+  transmission: string | null;
+  luggage_capacity: string | null;
   available_dates: string[] | null;
   blocked_dates: string[] | null;
   image: string | null;
@@ -89,6 +92,11 @@ export interface RentalVehicleRow {
   model_year: string | null;
   vehicle_number: string | null;
   seats: number | null;
+  /** phase67 */
+  transmission: string | null;
+  ac: boolean;
+  fuel_type: string | null;
+  luggage_capacity: string | null;
   rental_type: string | null; // Self Drive | With Driver Optional | Private Rental
   price_per_hour: number | null;
   price_per_day: number;

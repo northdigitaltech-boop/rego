@@ -103,6 +103,9 @@ export interface TransportRow {
   images: string[] | null;
   ac: boolean;
   fuel_type: string | null;
+  /** phase67 */
+  transmission: string | null;
+  luggage_capacity: string | null;
   availability_status: string | null;
   rating: number;
   reviews: number;
