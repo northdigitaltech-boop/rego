@@ -73,6 +73,7 @@ import {
 } from "@/components/dashboard/provider-jobs";
 import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
 import { galleryError } from "@/lib/gallery-rules";
+import { notifyListingSubmitted } from "@/lib/notify-events";
 
 const AMENITY_OPTIONS = [
   "Free Wi-Fi",
@@ -357,6 +358,18 @@ export function HotelProviderDashboard({
       setError(dbError.message);
       return;
     }
+
+    // Automatic: tell the Rego team a new listing is waiting for review.
+    // Only on create — edits go through the pending-edits queue instead.
+    if (!editingId) {
+      notifyListingSubmitted({
+        title: payload.title,
+        category: payload.category_label || "Hotel",
+        ownerEmail: user.email,
+        location: payload.location,
+      });
+    }
+
     resetForm();
     await refresh();
     // New hotel → jump straight into its Rooms manager to add room types.

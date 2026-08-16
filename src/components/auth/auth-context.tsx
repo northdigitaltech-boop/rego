@@ -5,6 +5,7 @@ import * as React from "react";
 import { supabase } from "@/lib/supabase";
 import { type CategorySlug } from "@/lib/data";
 import { checkSignupEmail } from "@/lib/email-validation";
+import { notifyWelcome } from "@/lib/notify-events";
 
 export type AccountRole = "traveler" | "partner" | "admin";
 
@@ -202,6 +203,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       if (error) throw new Error(error.message);
+
+      // Welcome mail + in-app greeting, sent automatically. Fire-and-forget:
+      // a failed welcome must never block the registration itself.
+      notifyWelcome({
+        email: e,
+        name: name.trim(),
+        isPartner: role === "partner",
+      });
 
       // When "Confirm email" is ON in Supabase, signUp returns a user but NO
       // session — the address must be verified first. Tell the user to check
