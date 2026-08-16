@@ -34,6 +34,19 @@ export async function getReviews(hotelId: string): Promise<ReviewRow[]> {
  * homepage "What Travelers Say" band. Returns [] when there are none yet,
  * so the section simply hides instead of showing invented testimonials.
  */
+/**
+ * Shortest review worth putting on the homepage.
+ *
+ * A testimonial has to persuade a stranger. "very good" doesn't — it makes
+ * the section look thin and unconvincing. Reviews below this length still
+ * appear on the listing they belong to; they just don't get showcased.
+ */
+export const FEATURED_MIN_CHARS = 60;
+
+/** Fewer than this and the homepage section stays hidden — one lonely card
+ *  in a four-column grid reads as "nobody uses this". */
+export const FEATURED_MIN_COUNT = 3;
+
 export async function getFeaturedReviews(limit = 4): Promise<ReviewRow[]> {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase
@@ -42,9 +55,16 @@ export async function getFeaturedReviews(limit = 4): Promise<ReviewRow[]> {
     .gte("rating", 4)
     .not("text", "is", null)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    // Over-fetch, because most reviews won't clear the length bar.
+    .limit(Math.max(limit * 6, 30));
   if (error) return [];
-  return ((data as ReviewRow[]) ?? []).filter((r) => (r.text ?? "").trim().length > 0);
+
+  const good = ((data as ReviewRow[]) ?? []).filter(
+    (r) => (r.text ?? "").trim().length >= FEATURED_MIN_CHARS
+  );
+
+  // All-or-nothing: show a proper row of testimonials, or none at all.
+  return good.length >= FEATURED_MIN_COUNT ? good.slice(0, limit) : [];
 }
 
 export async function addReview(input: {
