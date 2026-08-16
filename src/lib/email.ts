@@ -1,3 +1,5 @@
+import { emailLayout } from "@/lib/email-layout";
+
 /** Send email via the /api/email route. Returns true if it was delivered. */
 export async function sendEmail(
   to: string,
@@ -18,20 +20,13 @@ export async function sendEmail(
   }
 }
 
+/** Every booking / verification email goes through the branded layout. */
 function shell(title: string, body: string) {
-  return `
-  <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;border:1px solid #e6efe9;border-radius:12px;overflow:hidden">
-    <div style="background:#0F4C3A;padding:18px 24px;color:#fff">
-      <span style="font-size:20px;font-weight:800">Rego</span>
-    </div>
-    <div style="padding:24px;color:#0F4C3A">
-      <h2 style="margin:0 0 12px;font-size:18px">${title}</h2>
-      ${body}
-    </div>
-    <div style="padding:14px 24px;background:#f3f8f5;color:#6b7c75;font-size:12px">
-      Rego — Book. Explore. Experience. · Gilgit Baltistan
-    </div>
-  </div>`;
+  return emailLayout(
+    `<h1 style="margin:0 0 14px;font-size:20px;line-height:1.35;color:#0F4C3A">${title}</h1>
+     ${body}`,
+    { preheader: title }
+  );
 }
 
 function row(label: string, value: string) {

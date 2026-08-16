@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BIMI logo — SVG Tiny Portable/Secure (SVG Tiny PS).
+
+  STRICT RULES, or mail clients silently reject it:
+    * baseProfile="tiny-ps" and version="1.2" are REQUIRED
+    * a <title> element is REQUIRED
+    * SQUARE viewBox, and a solid (non-transparent) background
+    * NO <image>, <script>, <a>, <foreignObject>, external refs or animation
+    * NO raster data — a traced PNG is not acceptable, it must be real vector
+    * file under 32 KB
+
+  Replace the placeholder group below with the actual vector paths from your
+  logo's source artwork (.ai / .eps / .svg). Everything else can stay.
+
+  Validate before publishing: https://bimigroup.org/svg-validator/
+-->
+<svg version="1.2" baseProfile="tiny-ps"
+     xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 512 512" width="512" height="512">
+  <title>Rego</title>
+
+  <!-- Solid background is mandatory: transparency is not allowed. -->
+  <rect width="512" height="512" fill="#0F4C3A"/>
+
+  <!-- ===== REPLACE FROM HERE ===== -->
+  <!-- Placeholder mark so the file is valid while you source the vector.
+       Swap this group for your real logo paths. -->
+  <g fill="#FFFFFF">
+    <text x="256" y="300" font-family="Arial, Helvetica, sans-serif"
+          font-size="150" font-weight="bold" text-anchor="middle">R</text>
+  </g>
+  <!-- ===== REPLACE TO HERE ===== -->
+</svg>

@@ -1,6 +1,8 @@
 // Shared server-side HTML builder for outbound Rego emails (broadcasts and the
 // signup-reminder cron). No browser APIs — safe to import in route handlers.
 
+import { emailLayout, emailButton } from "@/lib/email-layout";
+
 export interface RecItem {
   title: string;
   location?: string | null;
@@ -53,24 +55,17 @@ export function buildNotifyEmail(opts: {
   items?: RecItem[];
   base: string;
 }): string {
-  const greeting = opts.name ? `<p>Hi ${esc(opts.name)},</p>` : "";
+  const greeting = opts.name ? `<p style="margin:0 0 10px">Hi ${esc(opts.name)},</p>` : "";
   const body = esc(opts.message).replace(/\n/g, "<br/>");
-  return `
-  <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e6efe9;border-radius:12px;overflow:hidden">
-    <div style="background:#0F4C3A;padding:18px 24px;color:#fff">
-      <span style="font-size:20px;font-weight:800">Rego</span>
-    </div>
-    <div style="padding:24px;color:#0F4C3A">
-      <h2 style="margin:0 0 12px;font-size:18px">${esc(opts.heading)}</h2>
-      ${greeting}
-      <p style="color:#334">${body}</p>
-      ${itemsHtml(opts.items ?? [], opts.base)}
-      <p style="margin-top:20px">
-        <a href="${opts.base}" style="background:#E0A82E;color:#0F4C3A;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:8px;display:inline-block">Explore Rego</a>
-      </p>
-    </div>
-    <div style="padding:14px 24px;background:#f3f8f5;color:#6b7c75;font-size:12px">
-      Rego — Book. Explore. Experience. · Gilgit Baltistan
-    </div>
-  </div>`;
+
+  return emailLayout(
+    `<h1 style="margin:0 0 14px;font-size:20px;line-height:1.35;color:#0F4C3A">${esc(
+      opts.heading
+    )}</h1>
+     ${greeting}
+     <p style="margin:0 0 6px">${body}</p>
+     ${itemsHtml(opts.items ?? [], opts.base)}
+     ${emailButton("Explore Rego", opts.base)}`,
+    { preheader: opts.heading, transactional: false }
+  );
 }
