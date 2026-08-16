@@ -35,10 +35,14 @@ function transporter(): Transporter {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASSWORD,
     },
-    // Gmail throttles hard on burst; keep one connection and queue.
-    pool: true,
-    maxConnections: 1,
-    maxMessages: 50,
+    /* Pooling is deliberately left OFF (nodemailer's default). On Vercel the
+       function is frozen the moment it returns, so a pooled socket waiting to
+       flush is killed and the message is lost. One connection per send is
+       slower but reliable. */
+    // Fail fast instead of hanging until the function times out.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
   return cached;
 }
