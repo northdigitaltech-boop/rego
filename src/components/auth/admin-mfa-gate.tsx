@@ -11,6 +11,7 @@ import {
   getMfaStatus, enrollTotp, verifyTotp, primaryFactorId,
   type MfaStatus, type EnrollResult,
 } from "@/lib/mfa";
+import { reportSecurity } from "@/lib/security-report";
 
 /**
  * Wraps the admin area. Admins must pass two-step verification before the
@@ -299,6 +300,8 @@ function ChallengeStep({
     }
     const r = await verifyTotp(factorId, code);
     setBusy(false);
+    // A failed admin MFA attempt is one of the highest-value signals there is.
+    reportSecurity(r.ok ? "mfa_success" : "mfa_failed", { detail: "admin_gate" });
     if (!r.ok) {
       setError(r.error ?? "Could not verify.");
       setCode("");

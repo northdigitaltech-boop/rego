@@ -37,6 +37,7 @@ import { checkSignupEmail } from "@/lib/email-validation";
 import { sendEmail, verificationCodeEmail } from "@/lib/email";
 import { cn } from "@/lib/utils";
 import { friendlyAuthError } from "@/lib/auth-errors";
+import { reportSecurity } from "@/lib/security-report";
 
 type Mode = "signin" | "signup";
 
@@ -196,6 +197,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
       } else {
         await login(email, password, turnstileToken ?? undefined);
       }
+      // Security telemetry — never blocks the redirect.
+      reportSecurity("login_success", {
+        email: email.trim().toLowerCase(),
+      });
       goAfterAuth();
     } catch (err) {
       // Turnstile tokens are single-use — issue a fresh one for the next try.
@@ -209,6 +214,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
       } else {
         // Translate Supabase's terse wording into something actionable.
         setError(friendlyAuthError(msg).message);
+        reportSecurity("login_failed", {
+          email: email.trim().toLowerCase(),
+          // The classified reason, never the raw credential or provider text.
+          detail: isSignup ? "signup" : "signin",
+        });
       }
     } finally {
       setBusy(false);
