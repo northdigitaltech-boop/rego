@@ -38,9 +38,24 @@ export const siteConfig = {
   contactPhoneDisplay: "+92 316 1290604",
   /** WhatsApp number — digits only, no "+" and no spaces. */
   whatsapp: "923161290604",
+  /** Shown publicly — footer, contact page, structured data. */
   contactEmail: "info@rego.services",
   address: "Skardu, Gilgit Baltistan, Pakistan",
 } as const;
+
+/**
+ * Where contact-form messages are actually delivered.
+ *
+ * Deliberately separate from `contactEmail`. If the public address is a
+ * FORWARDER (e.g. info@ → your Gmail), sending to it means the message is
+ * relayed onward — and relayed mail is frequently blocked by spam filters,
+ * especially when the sender and recipient are the same address.
+ *
+ * Point this at a real mailbox and the forward never happens.
+ * Set NEXT_PUBLIC_CONTACT_INBOX in Vercel to override.
+ */
+export const contactInbox =
+  process.env.NEXT_PUBLIC_CONTACT_INBOX || siteConfig.contactEmail;
 
 /** Ready-made links so components don't rebuild these by hand. */
 export const contactLinks = {

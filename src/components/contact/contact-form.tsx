@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { sendEmail } from "@/lib/email";
-import { siteConfig } from "@/lib/site";
+import { siteConfig, contactInbox } from "@/lib/site";
 
 /** Escape user input before putting it in the HTML email body. */
 function esc(s: string): string {
@@ -61,11 +61,7 @@ export function ContactForm() {
       </div>`;
 
     // Goes to the address shown on this page, so there's one inbox to watch.
-    const ok = await sendEmail(
-      siteConfig.contactEmail,
-      `[Rego contact] ${line}`,
-      html
-    );
+    const ok = await sendEmail(contactInbox, `[Rego contact] ${line}`, html);
     setBusy(false);
 
     if (!ok) {
