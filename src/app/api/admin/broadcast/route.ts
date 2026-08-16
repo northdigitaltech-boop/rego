@@ -78,6 +78,12 @@ export async function POST(req: Request) {
     message?: string;
     includeAdmins?: boolean;
     testTo?: string;
+    /** all | travelers | partners | category | custom */
+    audience?: string;
+    /** business_category slug, when audience === "category" */
+    category?: string;
+    /** explicit addresses, when audience === "custom" */
+    emails?: string[];
     items?: RecItem[];
     sendEmail?: boolean;
     sendInApp?: boolean;
@@ -94,6 +100,14 @@ export async function POST(req: Request) {
   // Default to sending both channels unless the caller opts out.
   const wantEmail = body.sendEmail !== false;
   const wantInApp = body.sendInApp !== false;
+  const audience = (body.audience ?? "all").trim();
+  const category = (body.category ?? "").trim();
+  if (audience === "category" && !category) {
+    return NextResponse.json(
+      { ok: false, error: "Choose a partner category." },
+      { status: 400 }
+    );
+  }
   if (!subject || subject.length > 200) {
     return NextResponse.json({ ok: false, error: "Subject is required." }, { status: 400 });
   }
@@ -127,19 +141,55 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Invalid test email." }, { status: 400 });
     }
     recipients = [{ email: testTo, name: "" }];
+  } else if (audience === "custom") {
+    /* Hand-picked addresses — used for proposals and one-to-one outreach.
+       These are typed by an admin, so they may not be registered users;
+       we send anyway but skip in-app notifications for unknown accounts. */
+    const seen = new Set<string>();
+    recipients = (body.emails ?? [])
+      .map((e) => (e ?? "").trim())
+      .filter((e) => {
+        const k = e.toLowerCase();
+        if (!e || !EMAIL_RE.test(e) || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, 200)
+      .map((email) => ({ email, name: "" }));
+
+    if (recipients.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: "Add at least one valid email address." },
+        { status: 400 }
+      );
+    }
   } else {
     const { data: profiles, error: pErr } = await sb
       .from("profiles")
-      .select("email,full_name,role");
+      .select("email,full_name,role,business_category");
     if (pErr) {
       return NextResponse.json({ ok: false, error: "Could not load recipients." }, { status: 500 });
     }
     const seen = new Set<string>();
-    recipients = ((profiles as { email: string | null; full_name: string | null; role: string | null }[]) ?? [])
+    recipients = ((profiles as {
+      email: string | null;
+      full_name: string | null;
+      role: string | null;
+      business_category: string | null;
+    }[]) ?? [])
       .filter((p) => {
         const e = (p.email ?? "").trim().toLowerCase();
         if (!e || !EMAIL_RE.test(e) || seen.has(e)) return false;
         if (!body.includeAdmins && p.role === "admin") return false;
+
+        // Audience filter.
+        if (audience === "travelers" && p.role === "partner") return false;
+        if (audience === "partners" && p.role !== "partner") return false;
+        if (audience === "category") {
+          if (p.role !== "partner") return false;
+          if ((p.business_category ?? "") !== category) return false;
+        }
+
         seen.add(e);
         return true;
       })
@@ -220,6 +270,8 @@ export async function POST(req: Request) {
     sent,
     inApp,
     total: recipients.length,
+    audience,
+    category: audience === "category" ? category : undefined,
     test: !!testTo,
   });
 }

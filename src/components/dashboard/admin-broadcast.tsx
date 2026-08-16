@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Send, Sparkles, Megaphone, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, Sparkles, Megaphone, CheckCircle2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { categories } from "@/lib/data";
 
 interface RecItem {
   title: string;
@@ -14,6 +15,41 @@ interface RecItem {
   unit?: string;
   image?: string;
   href?: string;
+}
+
+/* ---------------- audience ---------------- */
+
+type Audience = "all" | "travelers" | "partners" | "category" | "custom";
+
+interface AudienceCounts {
+  all: number;
+  travelers: number;
+  partners: number;
+  byCategory: Record<string, number>;
+}
+
+const AUDIENCES: { id: Audience; label: string; hint: string }[] = [
+  { id: "all", label: "Everyone", hint: "All registered accounts" },
+  { id: "travelers", label: "Travellers", hint: "People who book, not partners" },
+  { id: "partners", label: "All partners", hint: "Every business account" },
+  { id: "category", label: "One service", hint: "e.g. only hotel partners" },
+  { id: "custom", label: "Specific people", hint: "Proposals, one-to-one" },
+];
+
+/* Same partner categories offered at signup, so the audience list matches
+   what business_category can actually contain. */
+const partnerCategories = [
+  ...categories.filter((c) => c.slug !== "more" && c.slug !== "tours"),
+  { slug: "roadside", name: "Roadside Assistance" } as (typeof categories)[number],
+  { slug: "coworking", name: "Co-working Space" } as (typeof categories)[number],
+];
+
+/** Split a pasted list on commas, semicolons, spaces or new lines. */
+function parseEmails(raw: string): string[] {
+  return raw
+    .split(/[\s,;]+/)
+    .map((e) => e.trim())
+    .filter(Boolean);
 }
 
 const TEMPLATES: { label: string; subject: string; message: string }[] = [
@@ -44,6 +80,49 @@ export function AdminBroadcast() {
   const [sendEmail, setSendEmail] = React.useState(true);
   const [sendInApp, setSendInApp] = React.useState(true);
   const [testEmail, setTestEmail] = React.useState("");
+  /* Who receives this. "custom" is for proposals / one-to-one outreach. */
+  const [audience, setAudience] = React.useState<Audience>("all");
+  const [category, setCategory] = React.useState("");
+  const [customEmails, setCustomEmails] = React.useState("");
+  const [counts, setCounts] = React.useState<AudienceCounts | null>(null);
+
+  /* Load recipient counts once, so the composer can show the blast radius
+     before anything is sent. Counts only — no addresses cross the wire. */
+  React.useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      try {
+        const r = await fetch("/api/admin/audience", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const j = await r.json();
+        if (j?.ok) setCounts(j as AudienceCounts);
+      } catch {
+        /* count is a nicety — never block sending on it */
+      }
+    })();
+  }, []);
+
+  const reach = React.useMemo(() => {
+    if (audience === "custom") return parseEmails(customEmails).length;
+    if (!counts) return null;
+    if (audience === "all") return counts.all;
+    if (audience === "travelers") return counts.travelers;
+    if (audience === "partners") return counts.partners;
+    return category ? counts.byCategory?.[category] ?? 0 : 0;
+  }, [audience, counts, category, customEmails]);
+
+  const reachLabel = React.useMemo(() => {
+    if (audience === "category" && !category) return "Choose a category above.";
+    if (reach === null) return "Counting recipients…";
+    if (reach === 0)
+      return audience === "custom"
+        ? "Add at least one email address."
+        : "No one matches this audience yet.";
+    return `This will reach ${reach} ${reach === 1 ? "person" : "people"}.`;
+  }, [audience, category, reach]);
   const [busy, setBusy] = React.useState<"" | "test" | "all">("");
   const [note, setNote] = React.useState<{ ok: boolean; text: string } | null>(null);
 
@@ -66,7 +145,12 @@ export function AdminBroadcast() {
       setNote({ ok: false, text: "Pick at least one channel: email or in-site." });
       return;
     }
-    if (mode === "all" && !window.confirm("Send this to ALL registered users? This cannot be undone.")) {
+    if (
+      mode === "all" &&
+      !window.confirm(
+        `${reachLabel} This cannot be undone. Send now?`
+      )
+    ) {
       return;
     }
     setBusy(mode);
@@ -108,6 +192,9 @@ export function AdminBroadcast() {
           heading: subject.trim(),
           message: message.trim(),
           includeAdmins,
+          audience,
+          category: audience === "category" ? category : undefined,
+          emails: audience === "custom" ? parseEmails(customEmails) : undefined,
           items,
           sendEmail,
           sendInApp,
@@ -191,6 +278,84 @@ export function AdminBroadcast() {
             <input type="checkbox" checked={sendInApp} onChange={(e) => setSendInApp(e.target.checked)} />
             <Megaphone className="h-4 w-4 text-forest-600" /> Show as in-site notification (bell)
           </label>
+        </div>
+
+        {/* ---------------- Audience ---------------- */}
+        <div className="mt-4 rounded-2xl border border-border bg-muted/30 p-4">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-forest">
+            <Users className="h-4 w-4 text-forest-600" /> Send to
+          </p>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {AUDIENCES.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAudience(a.id)}
+                aria-pressed={audience === a.id}
+                className={cn(
+                  "rounded-xl border px-3 py-2 text-left transition-colors",
+                  audience === a.id
+                    ? "border-forest-600 bg-forest-50"
+                    : "border-border bg-card hover:border-forest/40"
+                )}
+              >
+                <span className="block text-sm font-semibold text-forest">
+                  {a.label}
+                </span>
+                <span className="block text-[11px] text-muted-foreground">
+                  {a.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {audience === "category" && (
+            <label className="mt-3 block">
+              <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+                Which service?
+              </span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="auth-input"
+              >
+                <option value="">Choose a category…</option>
+                {partnerCategories.map((c) => {
+                  const n = counts?.byCategory?.[c.slug] ?? 0;
+                  return (
+                    <option key={c.slug} value={c.slug}>
+                      {c.name} ({n})
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          )}
+
+          {audience === "custom" && (
+            <label className="mt-3 block">
+              <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+                Email addresses — separate with commas or new lines
+              </span>
+              <textarea
+                rows={3}
+                value={customEmails}
+                onChange={(e) => setCustomEmails(e.target.value)}
+                placeholder={"owner@hotel.com\npartner@transport.pk"}
+                className="auth-input resize-none font-mono text-xs"
+              />
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                They don&apos;t need a Rego account — useful for proposals and
+                partnership offers.
+              </span>
+            </label>
+          )}
+
+          {/* Live count so you know the blast radius before sending. */}
+          <p className="mt-3 text-xs font-semibold text-forest-700">
+            {reachLabel}
+          </p>
         </div>
 
         <div className="mt-3 space-y-2">
