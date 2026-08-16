@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { answerQuery, buildSystemPrompt } from "@/lib/rego-ai";
+import { enforceIpBlock } from "@/lib/ip-block";
 import {
   classifyQuery,
   answerFromDatabase,
@@ -62,6 +63,10 @@ function allowedHost(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
+  // Containment: refuse before doing any work.
+  const blocked = await enforceIpBlock(req);
+  if (blocked) return blocked;
+
   if (!allowedHost(req)) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }

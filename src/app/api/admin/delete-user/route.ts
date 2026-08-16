@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
+import { enforceIpBlock } from "@/lib/ip-block";
 
 // Admin-only endpoint to PERMANENTLY delete a user account so the email is
 // freed up and the person can register again (e.g. they picked the wrong
@@ -53,6 +54,10 @@ function sameOrigin(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
+  // Containment: refuse before doing any work.
+  const blocked = await enforceIpBlock(req);
+  if (blocked) return blocked;
+
   if (!sameOrigin(req)) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }

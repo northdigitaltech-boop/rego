@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { sendMail, isSmtpConfigured } from "@/lib/mailer";
+import { enforceIpBlock } from "@/lib/ip-block";
 
 // Server-side email sender via Resend. The API key stays on the server
 // (no NEXT_PUBLIC prefix), so it is never exposed to the browser.
@@ -30,6 +31,10 @@ function allowedHost(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
+  // Containment: refuse before doing any work.
+  const blocked = await enforceIpBlock(req);
+  if (blocked) return blocked;
+
   // 1) Same-origin only.
   if (!allowedHost(req)) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });

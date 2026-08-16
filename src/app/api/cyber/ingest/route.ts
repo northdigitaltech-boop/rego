@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { logSecurityEvent, scoreEvent } from "@/lib/security-log";
+import { enforceIpBlock } from "@/lib/ip-block";
 
 /* ============================================================
  * Client-reported security events (authentication only).
@@ -50,6 +51,10 @@ function sameOrigin(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
+  // Containment: refuse before doing any work.
+  const blocked = await enforceIpBlock(req);
+  if (blocked) return blocked;
+
   if (!sameOrigin(req)) {
     return NextResponse.json({ ok: false }, { status: 403 });
   }
