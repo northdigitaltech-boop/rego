@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { logSecurityEvent } from "@/lib/security-log";
+
 /* ============================================================
  * Authorisation for every /api/cyber/* route.
  *
@@ -100,6 +102,28 @@ export async function guardCyber(req: Request): Promise<GuardResult> {
 
   // Both conditions, one message.
   if (role !== "admin" || !list.includes(email)) {
+    /* The security portal monitors attempts on itself. Someone with a valid
+       session probing /cyber is a signal worth keeping, and it's high
+       severity precisely because they already got past authentication. */
+    logSecurityEvent({
+      event_type: "authz_violation",
+      category: "authz",
+      severity: "high",
+      risk_score: 55,
+      actor_email: email,
+      actor_role: role || "unknown",
+      ip_address: requestIp(req),
+      user_agent: req.headers.get("user-agent"),
+      endpoint: new URL(req.url).pathname,
+      http_method: req.method,
+      status: "blocked",
+      description: "Access to the security center denied",
+      metadata: {
+        source: "server",
+        // Which check failed — useful to an analyst, never shown to the caller.
+        reason: role !== "admin" ? "not_admin" : "not_allowlisted",
+      },
+    });
     return { ok: false, status: 403, error: "Not authorised." };
   }
 

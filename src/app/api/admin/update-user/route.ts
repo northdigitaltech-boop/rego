@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLog } from "@/lib/rate-limit-guard";
 
 // Admin-only endpoint to update a client's password / email / phone.
 // Uses the SERVICE ROLE key (server-only, never in the browser). Every call is:
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-  const rl = rateLimit(`adminupd:${clientIp(req)}`, 20, 60_000);
+  const rl = limitAndLog(req, `adminupd:${clientIp(req)}`, 20, 60_000, { endpoint: "/api/admin/update-user", category: "admin" });
   if (!rl.ok) {
     return NextResponse.json({ ok: false, error: "Too many requests." }, {
       status: 429,

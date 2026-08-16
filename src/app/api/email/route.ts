@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLog } from "@/lib/rate-limit-guard";
 import { sendMail, isSmtpConfigured } from "@/lib/mailer";
 
 // Server-side email sender via Resend. The API key stays on the server
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
   }
 
   // 2) Rate limit: 5 emails per IP per minute.
-  const rl = rateLimit(`email:${clientIp(req)}`, 5, 60_000);
+  const rl = limitAndLog(req, `email:${clientIp(req)}`, 5, 60_000, { endpoint: "/api/email", category: "api" });
   if (!rl.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many requests. Please try again shortly." },

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLog } from "@/lib/rate-limit-guard";
 
 // Admin-only endpoint to PERMANENTLY delete a user account so the email is
 // freed up and the person can register again (e.g. they picked the wrong
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-  const rl = rateLimit(`admindel:${clientIp(req)}`, 10, 60_000);
+  const rl = limitAndLog(req, `admindel:${clientIp(req)}`, 10, 60_000, { endpoint: "/api/admin/delete-user", category: "admin" });
   if (!rl.ok) {
     return NextResponse.json({ ok: false, error: "Too many requests." }, {
       status: 429,

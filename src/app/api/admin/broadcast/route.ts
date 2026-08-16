@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLog } from "@/lib/rate-limit-guard";
 import { buildNotifyEmail, type RecItem } from "@/lib/notify-email";
 import { sendMail, isSmtpConfigured } from "@/lib/mailer";
 
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
   }
   const apiKey = process.env.RESEND_API_KEY;
   // Broadcasts are heavy — allow only a few per minute.
-  const rl = rateLimit(`broadcast:${clientIp(req)}`, 3, 60_000);
+  const rl = limitAndLog(req, `broadcast:${clientIp(req)}`, 3, 60_000, { endpoint: "/api/admin/broadcast", category: "admin" });
   if (!rl.ok) {
     return NextResponse.json({ ok: false, error: "Too many broadcasts. Please wait a moment." }, {
       status: 429,
