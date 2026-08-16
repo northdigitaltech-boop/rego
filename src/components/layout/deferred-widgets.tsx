@@ -13,6 +13,9 @@ const HIDE_ON = [
   "/reset-password",
   "/verify",
   "/auth",
+  // The security console is an internal tool — a traveller-facing AI chat
+  // and 24/7 help-line button have no place in it.
+  "/cyber",
 ];
 
 // Floating widgets aren't needed for first paint, so keep their JS out of the
