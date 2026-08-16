@@ -9,6 +9,7 @@ import {
 import { type Listing, type ListingFact } from "@/lib/data";
 import { useWishlist } from "@/lib/wishlist";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { ListingBadges } from "@/components/ui/listing-badges";
 import { cn, formatPrice, photo } from "@/lib/utils";
 
 /** Icon names on ListingFact map to real icons here (they can't cross the
@@ -95,6 +96,15 @@ export function ListingCard({
             by {listing.provider}
           </p>
         )}
+
+        {/* Earned badges only. Featured already shows on the image,
+            so it is not repeated here. */}
+        <ListingBadges
+          className="mt-1.5"
+          rating={listing.rating}
+          reviews={listing.reviews}
+          createdAt={listing.createdAt}
+        />
 
         <div className="mt-1.5 flex items-center gap-1.5">
           {listing.reviews > 0 && listing.rating > 0 ? (

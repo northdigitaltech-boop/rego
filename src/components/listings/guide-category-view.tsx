@@ -22,6 +22,7 @@ import { type Listing } from "@/lib/data";
 import { type TourGuideRow } from "@/lib/tour-companies";
 import { cn, formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
+import { ListingBadges } from "@/components/ui/listing-badges";
 
 const WHATSAPP_FALLBACK = "923001234567";
 
@@ -253,6 +254,17 @@ function GuideCard({ guide, index, typeLabel }: { guide: TourGuideRow; index: nu
             <Briefcase className="h-3.5 w-3.5" /> {guide.company_name}
           </p>
         )}
+
+        {/* Earned badges only — renders nothing when none apply. The
+            Featured overlay on the image already covers that case, so
+            it is excluded here to avoid showing the same badge twice. */}
+        <ListingBadges
+          className="mt-1.5"
+          rating={guide.rating}
+          reviews={guide.reviews}
+          createdAt={guide.created_at}
+          experienceYears={guide.experience_years}
+        />
 
         <div className="mt-1.5 flex items-center gap-1.5">
           <Rating value={guide.rating} reviews={guide.reviews} showCount className="text-xs" />

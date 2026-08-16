@@ -316,6 +316,10 @@ export interface Listing {
   featured?: boolean;
   /** Up to 3 comparison details shown under the rating. */
   facts?: ListingFact[];
+  /** ISO date the listing was created. Drives the "New" badge; optional
+      because not every source populates it yet — absent means no badge,
+      never a wrong one. */
+  createdAt?: string;
 }
 
 // NOTE: Rego shows ONLY real, approved listings from the database.
