@@ -4,6 +4,7 @@ import { Montserrat, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { DeferredWidgets } from "@/components/layout/deferred-widgets";
+import { InstallCapture } from "@/components/pwa/install-capture";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
@@ -136,6 +137,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
       </head>
+      {/* Captures beforeinstallprompt before hydration — Chrome fires it
+          earlier than React mounts, and a missed event means no button. */}
+      <InstallCapture />
       <body
         suppressHydrationWarning
         className={`${montserrat.variable} ${dancingScript.variable} font-sans`}

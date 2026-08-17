@@ -99,13 +99,26 @@ export function InstallPrompt() {
     const plat = detectPlatform();
     setPlatform(plat);
 
-    /* Chrome fires this when the app genuinely qualifies for install.
-       Capturing it lets us offer a real button instead of instructions. */
+    /* The event is captured before hydration by InstallCapture, because
+       Chrome usually fires it before React mounts. Read whatever was
+       stashed, THEN keep listening in case it fires later. */
+    const stashed = (window as unknown as {
+      __regoInstallEvent?: BeforeInstallPromptEvent | null;
+    }).__regoInstallEvent;
+    if (stashed) setDeferred(stashed);
+
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
     };
+    const onCaptured = () => {
+      const ev = (window as unknown as {
+        __regoInstallEvent?: BeforeInstallPromptEvent | null;
+      }).__regoInstallEvent;
+      if (ev) setDeferred(ev);
+    };
     window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("rego-installable", onCaptured);
 
     const onInstalled = () => {
       try { localStorage.setItem(DISMISS_KEY, "installed"); } catch { /* ignore */ }
@@ -121,6 +134,7 @@ export function InstallPrompt() {
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("rego-installable", onCaptured);
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
@@ -272,6 +286,9 @@ export function InstallPrompt() {
                   {platform === "android" ? "Add to your phone" : "Install on your phone"}
                 </p>
                 {platform === "android" ? (
+                  /* Chrome did not offer a programmatic prompt — usually
+                     because the page is not yet on HTTPS, or the app is
+                     already installed. Manual steps still work. */
                   <ol className="space-y-2.5">
                     <Step n={1} icon={<MoreVertical className="h-4 w-4" />}>
                       Open the browser <strong>menu</strong> (three dots)
