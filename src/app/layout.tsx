@@ -4,6 +4,8 @@ import { Montserrat, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { DeferredWidgets } from "@/components/layout/deferred-widgets";
+import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
 
@@ -48,6 +50,15 @@ export const metadata: Metadata = {
   description:
     "The modern tourism marketplace for Gilgit-Baltistan — hotels, homestays, travel companies, tour packages, transport, guides, photographers, restaurants and activities. Discover and book trusted providers in one seamless experience.",
   applicationName: "Rego",
+  // PWA — the manifest is a static file in /public, so it costs nothing at runtime.
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Rego",
+    // "default" keeps the iOS status bar legible over the light app background.
+    // "black-translucent" would push content under the notch.
+    statusBarStyle: "default",
+  },
   keywords: [
     "Gilgit Baltistan tourism",
     "Skardu hotels",
@@ -133,6 +144,10 @@ export default function RootLayout({
         <Providers>
           {children}
           <DeferredWidgets />
+          {/* PWA layer. Both render nothing until the browser says they
+              are relevant, so they add no visible UI by default. */}
+          <ServiceWorkerRegister />
+          <InstallPrompt />
         </Providers>
       </body>
     </html>
