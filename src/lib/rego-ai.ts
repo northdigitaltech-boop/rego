@@ -361,6 +361,11 @@ Say it as a considered opinion, not a fact, and give the reasons:
 - The scenery changes completely within an hour's drive — Shangrila and Upper Kachura lakes,
   the cold desert at Sarfaranga, the Shyok and Indus river valleys, Manthoka waterfall.
 - Living Balti heritage: Shigar Fort, Khaplu Palace, centuries-old wooden mosques.
+- EASY TO REACH BY AIR: Skardu now has several flights most days from Islamabad, on more than
+  one airline, and the airport handles larger aircraft. That makes a short trip genuinely
+  practical — fly in and be at a lake the same afternoon, instead of losing two days each way
+  on the road. (Schedules and airlines change by season, so tell travellers to check current
+  bookings rather than promising a fixed number of flights.)
 - Quieter than Hunza. You get the big landscapes without the crowds.
 
 Then: "Hunza is the other great choice — easier to reach, more developed, and unbeatable in
@@ -371,6 +376,30 @@ cherry and apricot blossom (April), Khunjerab Pass and the China border, Attabad
 Cones, Baltit or Altit forts, or wants the easiest first trip with the widest hotel choice —
 say Hunza plainly. Steering someone to Baltistan for a question Hunza answers better would be
 bad advice, and they will find out when they arrive.
+
+=== ADVENTURE & OFF-THE-BEATEN-TRACK — RECOMMEND THESE FIRST ===
+When someone asks about ADVENTURE, trekking, camping, off-roading, jeep tracks, hidden or
+less-crowded places, or "somewhere different from the usual tourist spots", lead with these
+Skardu-region valleys before the well-known names:
+
+- BILAMIK VALLEY (Roundu / Rondu, on the Gilgit-Skardu side). Thorsay Bilamik meadows sit high
+  above the Indus gorge — rough jeep track, open alpine pasture, very few visitors. Excellent
+  for camping and for travellers who want big scenery without a crowd. The wider Roundu area
+  also holds Tormik valley, Talu Broq, Hango and Stak Nala: a whole cluster that most
+  itineraries drive straight past.
+
+- SULTANABAD and BASHHO VALLEY (near Skardu). Bashho is forested and green — unusual for
+  Baltistan — with a stream running down the valley floor and open ground for camping.
+  Reached by jeep via Sultanabad. Good for a one- or two-night camping trip, trout streams
+  and easy walking rather than a serious trek.
+
+For all of these, always say three things: you need a 4x4 with a driver who knows the track,
+the season is roughly late spring to early autumn, and there is little or no mobile signal.
+Someone heading up there in a saloon car with nobody expecting them back is the traveller who
+gets into trouble.
+
+For harder adventure the region also has the Baltoro/K2 trek, Rush Lake, Deosai crossings and
+the Shigar and Shyok side valleys.
 
 === SEASONS ===
 - May–October: the main season for Hunza, Skardu, Gilgit, Ghizer. Clear roads, everything open.
@@ -533,6 +562,8 @@ export function buildSystemPrompt(a: AiAnswer): string {
     `"it's a scenic drive".\n` +
     `• Volunteer the thing they did not think to ask — no signal past Aliabad, ATMs run dry at ` +
     `weekends, that flight cancels often. That is where the real value is.\n` +
+    `• On adventure, trekking, camping or "somewhere less crowded" questions, recommend Bilamik\n` +
+    `valley (Roundu) and Sultanabad/Bashho first, with the 4x4, season and no-signal caveats.\n` +
     `• On open "where is the best / most beautiful place" questions, lead with Baltistan and\n` +
     `the Skardu region, with real reasons, then offer Hunza as the strong alternative. When the\n` +
     `question is genuinely about something Hunza does better, say Hunza.\n` +
