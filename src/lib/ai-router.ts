@@ -193,6 +193,109 @@ export interface ChatContext {
   location?: string | null;
   /** Service they were last browsing ("show me a cheaper one"). */
   intent?: SearchIntent | null;
+
+  /* ---- added for contextual follow-up suggestions ---- */
+
+  /** Categories already shown, so we stop offering them again. */
+  explored?: SearchIntent[];
+  /** They said they already have somewhere to stay. */
+  hasAccommodation?: boolean;
+  /** They said they have their own car / are driving themselves. */
+  hasOwnVehicle?: boolean;
+  /** They already have a guide, or explicitly don't want one. */
+  hasGuide?: boolean;
+  /** Price leaning, when they actually stated one. */
+  budgetHint?: "cheap" | "premium" | null;
+  /** Trip length in days, when they gave it. */
+  durationDays?: number | null;
+  /** Travelling alone, with family, or in a group. */
+  partyKind?: "solo" | "family" | "group" | null;
+}
+
+/* ============================================================
+ * Negative signals.
+ *
+ * "Hotel book kar liya", "I have my own car" — these are the
+ * lines that separate an assistant which listens from one that
+ * keeps pushing the same three buttons. Offering car rental to
+ * someone who just said they're driving is the single most
+ * obvious way to look like a robot.
+ *
+ * Deliberately narrow. A false positive here silently hides a
+ * category the traveller might have wanted, which is worse than
+ * showing one extra chip — so each phrase has to be unambiguous.
+ * ============================================================ */
+
+const HAVE_ACCOMMODATION = [
+  "already booked", "already book", "have booked", "booked my hotel",
+  "booked a hotel", "got a hotel", "have a hotel", "staying at", "staying with",
+  "my hotel is", "hotel is booked", "accommodation is sorted", "place to stay sorted",
+  // Roman Urdu
+  "hotel book kar liya", "hotel book kr lia", "hotel mil gaya", "rehne ka intezam",
+  "hotel ho gaya", "hotel ka intezam", "rukne ki jaga mil",
+];
+
+const HAVE_VEHICLE = [
+  "my own car", "own car", "own vehicle", "i have a car", "i have car",
+  "have my own", "driving myself", "self drive", "self-drive", "bringing my car",
+  "by my own car", "i'll drive", "i will drive",
+  // Roman Urdu
+  "apni gari", "apni car", "khud drive", "gari hai", "meri gari",
+];
+
+const HAVE_GUIDE = [
+  "already have a guide", "have a guide", "got a guide", "guide arranged",
+  "don't need a guide", "dont need a guide", "no guide needed",
+  "guide mil gaya", "guide ka intezam", "guide nahi chahiye",
+];
+
+const SOLO_WORDS = ["solo", "alone", "by myself", "akela", "akele"];
+const FAMILY_WORDS = ["family", "wife", "husband", "kids", "children", "parents", "ghar wale", "bachay", "bache"];
+const GROUP_WORDS = ["friends", "group", "colleagues", "dosto", "doston", "friends ke sath"];
+
+const PREMIUM_WORDS = ["luxury", "premium", "5 star", "five star", "best hotel", "high end", "mehnga", "acha wala"];
+
+/** Trip length: "5 days", "3 din", "a week". */
+function detectDuration(q: string): number | null {
+  if (/\b(a |one )?week\b|\bhafta\b|\bhafte\b/.test(q)) return 7;
+  const m = q.match(/(\d{1,2})\s*(days?|din|roz|nights?|raat)/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n > 0 && n <= 60 ? n : null;
+}
+
+/**
+ * Read standing facts out of the conversation.
+ *
+ * Only sets a field when the user actually said it — an unset field
+ * stays undefined rather than being guessed at, so a suggestion is
+ * never suppressed on the strength of an assumption.
+ */
+export function readSignals(text: string, into: ChatContext = {}): ChatContext {
+  const q = text.toLowerCase();
+  const ctx: ChatContext = { ...into };
+
+  if (includesAny(q, HAVE_ACCOMMODATION)) ctx.hasAccommodation = true;
+  if (includesAny(q, HAVE_VEHICLE)) ctx.hasOwnVehicle = true;
+  if (includesAny(q, HAVE_GUIDE)) ctx.hasGuide = true;
+
+  if (!ctx.budgetHint) {
+    if (includesAny(q, CHEAP_WORDS)) ctx.budgetHint = "cheap";
+    else if (includesAny(q, PREMIUM_WORDS)) ctx.budgetHint = "premium";
+  }
+
+  if (ctx.durationDays == null) {
+    const d = detectDuration(q);
+    if (d) ctx.durationDays = d;
+  }
+
+  if (!ctx.partyKind) {
+    if (includesAny(q, FAMILY_WORDS)) ctx.partyKind = "family";
+    else if (includesAny(q, GROUP_WORDS)) ctx.partyKind = "group";
+    else if (includesAny(q, SOLO_WORDS)) ctx.partyKind = "solo";
+  }
+
+  return ctx;
 }
 
 /**

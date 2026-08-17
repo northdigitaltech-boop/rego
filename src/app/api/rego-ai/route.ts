@@ -8,8 +8,11 @@ import {
   classifyQuery,
   answerFromDatabase,
   answerWeather,
+  readSignals,
   type ChatContext,
+  type SearchIntent,
 } from "@/lib/ai-router";
+import { suggestFollowUps, validateSuggestions } from "@/lib/ai-suggestions";
 
 /* ============================================================
  * Rego AI endpoint.
@@ -40,14 +43,29 @@ export interface ChatTurn {
  * the user talked about, so "what about there?" / "a cheaper one" still work.
  */
 function deriveContext(turns: ChatTurn[]): ChatContext {
-  const ctx: ChatContext = { location: null, intent: null };
+  const ctx: ChatContext = { location: null, intent: null, explored: [] };
+  const explored: SearchIntent[] = [];
+
+  /* Oldest-first for the standing facts, so a later correction wins:
+     "I need a hotel" … "actually I booked one already". */
+  for (const t of turns) {
+    if (t.role !== "user") continue;
+    Object.assign(ctx, readSignals(t.content, ctx));
+  }
+
+  // Newest-first for location/intent — the most recent mention is the live one.
   for (let i = turns.length - 1; i >= 0; i--) {
     if (turns[i].role !== "user") continue;
     const d = classifyQuery(turns[i].content);
     if (!ctx.location && d.filters.location) ctx.location = d.filters.location;
     if (!ctx.intent && d.intent) ctx.intent = d.intent;
-    if (ctx.location && ctx.intent) break;
+    // Every category the traveller has already been shown, so we stop
+    // offering it back to them.
+    if (d.intent && d.confidence >= 0.6 && !explored.includes(d.intent)) {
+      explored.push(d.intent);
+    }
   }
+  ctx.explored = explored;
   return ctx;
 }
 
@@ -108,6 +126,34 @@ export async function POST(req: Request) {
   // What the conversation has established so far (last location / service).
   const ctx = deriveContext(turns);
 
+  /* Fold this turn's own signals in — "I have my own car" must take effect on
+     the very reply that contains it, not only on the next one. */
+  Object.assign(ctx, readSignals(message, ctx));
+
+  /**
+   * Build the follow-up chips for a reply.
+   *
+   * Computed here rather than asked of the model: every chip maps to a real
+   * Rego category or page by construction, so a suggestion can never be a
+   * hallucination. validateSuggestions is belt-and-braces before it leaves
+   * the server.
+   */
+  const chips = (opts: {
+    answeredIntent?: SearchIntent | null;
+    location?: string | null;
+    resultCount?: number;
+    refused?: boolean;
+  }) =>
+    validateSuggestions(
+      suggestFollowUps({
+        ctx,
+        answeredIntent: opts.answeredIntent ?? null,
+        location: opts.location ?? ctx.location ?? null,
+        resultCount: opts.resultCount,
+        refused: opts.refused,
+      })
+    );
+
   // 1) Retrieval — always grounded in real Rego listings.
   const answer = answerQuery(message);
 
@@ -120,6 +166,7 @@ export async function POST(req: Request) {
       results: [],
       feature: null,
       llm: false,
+      suggestions: chips({ refused: true }),
     });
   }
 
@@ -151,6 +198,7 @@ export async function POST(req: Request) {
           description: "Live verified road conditions across GB before you travel.",
         },
         llm: false,
+        suggestions: chips({ location: decision.filters.location }),
       });
     }
     // Weather API unavailable → let the LLM (if configured) answer generally.
@@ -165,6 +213,7 @@ export async function POST(req: Request) {
         results: [],
         feature: null,
         llm: false,
+        suggestions: chips({}),
       });
     }
     if (!answer.feature) {
@@ -181,6 +230,11 @@ export async function POST(req: Request) {
           viewAllHref: db.viewAllHref,
           feature: null,
           llm: false,
+          suggestions: chips({
+            answeredIntent: decision.intent ?? null,
+            location: decision.filters.location,
+            resultCount: db.results.length,
+          }),
         });
       }
     }
@@ -194,6 +248,7 @@ export async function POST(req: Request) {
         viewAllHref: answer.viewAllHref,
         feature: answer.feature ?? null,
         llm: false,
+        suggestions: chips({ resultCount: answer.results.length }),
       });
     }
     // Otherwise: an empty search — let the model help rather than dead-end.
@@ -232,6 +287,11 @@ export async function POST(req: Request) {
     viewAllHref: answer.viewAllHref,
     feature: answer.feature ?? null,
     llm,
+    suggestions: chips({
+      answeredIntent: decision.intent ?? null,
+      location: decision.filters.location,
+      resultCount: answer.results.length,
+    }),
   });
 }
 

@@ -3,19 +3,26 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, Send, MapPin, Star, ArrowRight, Compass, Mic } from "lucide-react";
+import {
+  Sparkles, Send, MapPin, Star, ArrowRight, Compass, Mic,
+  Building2, Home, BedDouble, Car, Map, Package, Camera, Utensils,
+  CalendarDays, Route, Wallet,
+} from "lucide-react";
 
 import { answerQuery, AI_SUGGESTIONS, type AiAnswer } from "@/lib/rego-ai";
 import { type Listing } from "@/lib/data";
 import { photo, formatPrice, cn } from "@/lib/utils";
 import { AiThinkingSteps } from "@/components/home/ai-thinking-steps";
 import { MIN_VISIBLE_MS, REQUEST_TIMEOUT_MS } from "@/lib/ai-progress";
+import { type Suggestion } from "@/lib/ai-suggestions";
 
 interface Msg {
   id: number;
   role: "user" | "ai";
   text: string;
   answer?: AiAnswer;
+  /** Contextual next steps from the server. Computed there, never by the model. */
+  suggestions?: Suggestion[];
 }
 
 export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
@@ -64,13 +71,13 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
        topping the elapsed time up to MIN_VISIBLE_MS, so a 150ms reply
        doesn't flash the progress list and vanish. A slow reply is never
        delayed further. */
-    const push = (answer: AiAnswer) => {
+    const push = (answer: AiAnswer, suggestions: Suggestion[] = []) => {
       const elapsed = Date.now() - startedAt;
       const wait = Math.max(0, MIN_VISIBLE_MS - elapsed);
       window.setTimeout(() => {
         setMessages((m) => [
           ...m,
-          { id: ++idRef.current, role: "ai", text: answer.reply, answer },
+          { id: ++idRef.current, role: "ai", text: answer.reply, answer, suggestions },
         ]);
         setThinking(false);
         setPendingQ("");
@@ -96,13 +103,18 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
         });
         const data = await res.json();
         if (data?.ok) {
-          push({
-            reply: data.reply,
-            bullets: data.bullets ?? [],
-            results: data.results ?? [],
-            viewAllHref: data.viewAllHref,
-            feature: data.feature ?? undefined,
-          });
+          push(
+            {
+              reply: data.reply,
+              bullets: data.bullets ?? [],
+              results: data.results ?? [],
+              viewAllHref: data.viewAllHref,
+              feature: data.feature ?? undefined,
+            },
+            /* The offline fallback below has no suggestions — better an empty
+               row than chips whose queries the local brain cannot answer. */
+            Array.isArray(data.suggestions) ? data.suggestions : []
+          );
           return;
         }
         throw new Error("bad response");
@@ -193,7 +205,7 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         )}
 
-        {messages.map((m) =>
+        {messages.map((m, i) =>
           m.role === "user" ? (
             <div key={m.id} className="flex w-full min-w-0 justify-end">
               <div className="max-w-[85%] break-words rounded-2xl rounded-br-sm bg-forest-600 px-4 py-2.5 text-sm text-white">
@@ -256,6 +268,28 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
                     View all matching listings <ArrowRight className="h-4 w-4" />
                   </Link>
                 )}
+
+                {/* Next steps. Only on the newest reply — leaving chips on
+                    every old message turns the thread into a wall of buttons
+                    and makes it unclear which one is live. Hidden while a
+                    reply is in flight so nothing can be double-sent. */}
+                {i === messages.length - 1 &&
+                  !thinking &&
+                  (m.suggestions?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {m.suggestions!.map((sg) => (
+                        <button
+                          key={sg.title + sg.query}
+                          type="button"
+                          onClick={() => ask(sg.query)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-forest transition-all hover:-translate-y-0.5 hover:border-forest-600 hover:bg-forest-50"
+                        >
+                          <SuggestionIcon name={sg.icon} />
+                          {sg.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
           )
@@ -366,3 +400,30 @@ function ResultCard({ listing: l, onNavigate }: { listing: Listing; onNavigate?:
 
 /* The bouncing-dots indicator was replaced by AiThinkingSteps, which shows
    what the assistant is actually doing rather than that it is busy. */
+
+
+/* ============================================================
+ * Suggestion icons.
+ *
+ * The data layer carries an icon NAME, not an emoji or a
+ * component — so the API stays serialisable and the visual
+ * choice lives with the UI. An unknown name falls back to the
+ * compass rather than rendering nothing.
+ * ============================================================ */
+function SuggestionIcon({ name }: { name: string }) {
+  const cls = "h-3.5 w-3.5 text-forest-600";
+  switch (name) {
+    case "hotel": return <Building2 className={cls} />;
+    case "home": return <Home className={cls} />;
+    case "bed": return <BedDouble className={cls} />;
+    case "car": return <Car className={cls} />;
+    case "map": return <Map className={cls} />;
+    case "package": return <Package className={cls} />;
+    case "camera": return <Camera className={cls} />;
+    case "utensils": return <Utensils className={cls} />;
+    case "calendar": return <CalendarDays className={cls} />;
+    case "route": return <Route className={cls} />;
+    case "wallet": return <Wallet className={cls} />;
+    default: return <Compass className={cls} />;
+  }
+}
