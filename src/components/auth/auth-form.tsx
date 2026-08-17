@@ -310,7 +310,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
           <div>
             <p className="font-script text-3xl text-gold">Your complete</p>
-            <h2 className="font-display text-3xl font-extrabold leading-tight text-white">
+            <h2 className="mt-2 font-display text-3xl font-extrabold leading-[1.15] tracking-[0.01em] text-white">
               GILGIT BALTISTAN TOURISM MARKETPLACE
             </h2>
             <ul className="mt-8 space-y-3">

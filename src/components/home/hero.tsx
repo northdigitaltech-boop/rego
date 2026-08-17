@@ -267,13 +267,16 @@ export function Hero() {
             <Star className="h-6 w-6 shrink-0 fill-gold text-gold sm:h-7 sm:w-7" />
           </p>
           {/* Sized down from 5xl/7xl — the previous headline was two words,
-              this one is four, and at the old size it swallowed the hero. */}
-          <h1 className="mt-1 font-display text-4xl font-extrabold leading-[0.98] tracking-tight sm:text-6xl">
+              this one is four, and at the old size it swallowed the hero.
+              leading and tracking are loosened rather than tight: a long
+              all-caps line set tight reads as a solid block, and the words
+              stop being separable at a glance. */}
+          <h1 className="mt-3 font-display text-4xl font-extrabold leading-[1.12] tracking-[0.01em] sm:text-6xl sm:leading-[1.08]">
             <span className="text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
               GILGIT BALTISTAN TOURISM MARKETPLACE
             </span>
           </h1>
-          <p className="mt-5 max-w-lg text-base text-white/85 sm:text-lg">
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-white/85 sm:text-lg">
             Hotels, tours, transport, guides and homestays across Gilgit-Baltistan
             — booked in one place.
           </p>
