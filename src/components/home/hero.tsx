@@ -11,8 +11,7 @@ import {
   CheckCircle2,
   MoreHorizontal,
   RotateCcw,
-  PlaneTakeoff,
-} from "lucide-react";
+  PlaneTakeoff, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SiteSearch } from "@/components/ui/site-search";
@@ -260,17 +259,23 @@ export function Hero() {
           transition={{ duration: reduce ? 0 : 0.7, ease: "easeOut" }}
           className="max-w-2xl"
         >
-          <p className="font-script text-3xl text-gold sm:text-4xl">
-            Explore The Beauty of
+          <p className="flex items-center gap-2 font-script text-3xl text-gold sm:text-4xl">
+            Your complete
+            {/* A gold star icon rather than the ⭐ emoji: emoji render
+                differently on every platform and go blurry at this size,
+                while this matches the gold stars used for ratings. */}
+            <Star className="h-6 w-6 shrink-0 fill-gold text-gold sm:h-7 sm:w-7" />
           </p>
-          <h1 className="mt-1 font-display text-5xl font-extrabold leading-[0.95] tracking-tight sm:text-7xl">
+          {/* Sized down from 5xl/7xl — the previous headline was two words,
+              this one is four, and at the old size it swallowed the hero. */}
+          <h1 className="mt-1 font-display text-4xl font-extrabold leading-[0.98] tracking-tight sm:text-6xl">
             <span className="text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
-              GILGIT BALTISTAN
+              GILGIT BALTISTAN TOURISM MARKETPLACE
             </span>
           </h1>
           <p className="mt-5 max-w-lg text-base text-white/85 sm:text-lg">
-            Book hotels, tours, transport, guides, homestays and more – all in one
-            place.
+            Hotels, tours, transport, guides and homestays across Gilgit-Baltistan
+            — booked in one place.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-x-7 gap-y-3">

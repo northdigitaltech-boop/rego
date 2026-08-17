@@ -309,9 +309,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </Link>
 
           <div>
-            <p className="font-script text-3xl text-gold">Explore The Beauty of</p>
-            <h2 className="font-display text-4xl font-extrabold leading-tight text-white">
-              GILGIT BALTISTAN
+            <p className="font-script text-3xl text-gold">Your complete</p>
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white">
+              GILGIT BALTISTAN TOURISM MARKETPLACE
             </h2>
             <ul className="mt-8 space-y-3">
               {benefits.map((b) => (
