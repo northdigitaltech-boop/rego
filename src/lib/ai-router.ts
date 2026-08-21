@@ -118,6 +118,13 @@ const REASONING_SIGNALS = [
   "should i", "what should", "explain", "why", "history", "culture", "cultural",
   "weather", "wether", "eather", "climate", "temperature", "mausam", "barish", "snowfall",
   "best time", "advice", "elderly", "children", "family trip",
+  /* Timing questions. "season" was absent, so "konsa season" fell through
+     to a listing search. These are informational — they need the model. */
+  "season", "seasons", "mahina", "mahine", "month", "months", "kab jana",
+  "kab jaye", "kab jaana", "jane ka", "janny k", "janay ka", "jane ke liye",
+  "open hota", "khulta", "band hota", "kab open", "kab khul",
+  "theek hai", "theek ha", "behtar", "behter", "sahi waqt", "acha waqt",
+  "what to pack", "kya pack", "kya le jaye", "kya lekar",
   "day trip", "days trip", "budget of", "according to", "customise", "customize",
   "mashwara", "batao", "کیسے", "کون سا بہتر", "موسم",
 ];
@@ -126,6 +133,12 @@ const REASONING_SIGNALS = [
 const INTERROGATIVES = [
   "how", "why", "should", "would", "which", "what", "when", "is it", "are you",
   "can i", "can we", "do you", "kya", "kaisa", "kesa", "kab",
+  /* Roman Urdu question words that were missing entirely. Without these a
+     line like "konsa season theek hai" reads as a listing search, and the
+     traveller gets a hotel list instead of an answer. */
+  "konsa", "kaunsa", "kaun sa", "kon sa", "konsi", "kaunsi", "kon si",
+  "kitna", "kitne", "kitni", "kahan", "kahaan", "kidhar", "kaise", "kese", "ksy",
+  "kyun", "kyu", "kiya", "batao", "bataye", "bataen", "chahiye", "chahye",
 ];
 
 /** Command verbs that clearly ask for a listing search. */

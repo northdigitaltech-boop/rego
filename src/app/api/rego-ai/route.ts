@@ -22,7 +22,11 @@ import { suggestFollowUps, validateSuggestions } from "@/lib/ai-suggestions";
  * rule-based reply — so the assistant always works.
  *
  * To enable the LLM, add to .env.local (server-only, no NEXT_PUBLIC_):
- *   REGO_AI_PROVIDER = openai | anthropic | gemini
+ *   REGO_AI_PROVIDER = groq | grok | openai | anthropic | gemini | openrouter
+ *
+ *   NOTE: "groq" and "grok" are DIFFERENT providers.
+ *     groq → Groq Cloud (api.groq.com)  → GROQ_API_KEY
+ *     grok → xAI's Grok (api.x.ai)      → XAI_API_KEY (or GROK_API_KEY)
  *   OPENAI_API_KEY=...        (for openai)
  *   ANTHROPIC_API_KEY=...     (for anthropic)
  *   GEMINI_API_KEY=...        (for gemini)
@@ -230,6 +234,9 @@ export async function POST(req: Request) {
           viewAllHref: db.viewAllHref,
           feature: null,
           llm: false,
+          // Which branch answered. Lets you see in the browser Network tab
+          // whether the model was consulted at all, without reading logs.
+          path: "database",
           suggestions: chips({
             answeredIntent: decision.intent ?? null,
             location: decision.filters.location,
@@ -248,6 +255,7 @@ export async function POST(req: Request) {
         viewAllHref: answer.viewAllHref,
         feature: answer.feature ?? null,
         llm: false,
+        path: "feature",
         suggestions: chips({ resultCount: answer.results.length }),
       });
     }
@@ -268,6 +276,17 @@ export async function POST(req: Request) {
   ) {
     try {
       const generated = await generate(message, buildSystemPrompt(answer), turns);
+      if (!generated) {
+        /* The model was asked and gave nothing — wrong key, retired model,
+           or an unset provider. Without this line the user just sees a
+           weak reply and there is no way to tell why. */
+        console.error(
+          "[rego-ai] no generation — provider:",
+          process.env.REGO_AI_PROVIDER || "(unset)",
+          "model:",
+          process.env.REGO_AI_MODEL || "(default)"
+        );
+      }
       if (generated) {
         reply = generated;
         bullets = []; // the prose covers the itinerary; avoid duplicate lists
@@ -287,6 +306,7 @@ export async function POST(req: Request) {
     viewAllHref: answer.viewAllHref,
     feature: answer.feature ?? null,
     llm,
+    path: llm ? "llm" : "rules",
     suggestions: chips({
       answeredIntent: decision.intent ?? null,
       location: decision.filters.location,
@@ -303,7 +323,37 @@ async function generate(
   turns: ChatTurn[] = []
 ): Promise<string | null> {
   const provider = (process.env.REGO_AI_PROVIDER || "").toLowerCase();
-  if (provider === "groq") {
+
+  /* xAI's Grok. Note the one-letter difference from Groq above — they are
+     different companies with near-identical names, and setting the wrong
+     one silently produces no answer at all. Both spellings are accepted
+     here and routed by which API key is actually present, so a typo in
+     REGO_AI_PROVIDER cannot leave the assistant mute. */
+  if (provider === "grok" || provider === "xai") {
+    if (process.env.XAI_API_KEY || process.env.GROK_API_KEY) {
+      // Model names change; try the configured one, then known fallbacks.
+      const models = Array.from(
+        new Set([
+          process.env.REGO_AI_MODEL || "grok-2-latest",
+          "grok-2-latest",
+          "grok-beta",
+        ])
+      );
+      for (const model of models) {
+        const out = await chatCompletions(userMsg, system, turns, {
+          url: "https://api.x.ai/v1/chat/completions",
+          key: process.env.XAI_API_KEY || process.env.GROK_API_KEY,
+          model,
+        });
+        if (out) return out;
+      }
+    }
+    /* Fall through to Groq if only a GROQ_API_KEY exists — someone who
+       wrote "grok" but holds a Groq key still gets a working assistant. */
+    if (!process.env.GROQ_API_KEY) return null;
+  }
+
+  if (provider === "groq" || provider === "grok" || provider === "xai") {
     // Try the configured model first, then fall back through commonly available
     // Groq models (Groq periodically decommissions older ones).
     const models = Array.from(
