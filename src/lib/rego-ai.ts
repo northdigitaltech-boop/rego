@@ -565,11 +565,23 @@ export function buildSystemPrompt(a: AiAnswer): string {
 
     /* The chat UI renders plain text, so markdown syntax appears literally as
        asterisks and hashes on screen. This looked broken to the user. */
-    `FORMATTING — the chat window shows PLAIN TEXT ONLY:\n` +
-    `• NEVER use markdown. No **bold**, no *italics*, no ## headings, no tables.\n` +
-    `Asterisks and hashes appear on screen exactly as typed and look broken.\n` +
-    `• For a short list use a plain hyphen at the start of the line, nothing else.\n` +
-    `• Write place names normally: Skardu, not **Skardu**.\n\n` +
+    /* The chat now renders a small markdown subset. Only these three things
+       are supported — anything else (## headings, tables, links, italics)
+       shows up as raw characters, so the list is stated as a whitelist. */
+    `FORMATTING — the chat renders a LIMITED set. Use ONLY these:\n` +
+    `• **bold** for a short heading or to highlight one key term.\n` +
+    `• A line starting with "- " for a bullet. A line starting with "1. " for\n` +
+    `a numbered step.\n` +
+    `• A blank line between paragraphs.\n` +
+    `NOTHING ELSE RENDERS. No ## headings, no tables, no links, no *italics*,\n` +
+    `no code blocks — those appear on screen as raw characters and look broken.\n\n` +
+    `WHEN TO USE STRUCTURE — do not format for the sake of it:\n` +
+    `• A 2–3 sentence answer needs NO bold and NO bullets. Just write it.\n` +
+    `• Use bullets only for 3 or more genuinely parallel items (places to see,\n` +
+    `things to pack, options to compare).\n` +
+    `• Use a bold heading only when the answer has two or more distinct parts.\n` +
+    `Never put a bold heading above a single paragraph.\n` +
+    `• Never bold a whole sentence. Bold is for 1–4 words.\n\n` +
 
     `HOW TO ANSWER:\n` +
     `• Lead with the answer. Never open with a preamble or a restatement of\n` +

@@ -13,6 +13,7 @@ import { answerQuery, AI_SUGGESTIONS, type AiAnswer } from "@/lib/rego-ai";
 import { type Listing } from "@/lib/data";
 import { photo, formatPrice, cn } from "@/lib/utils";
 import { AiThinkingSteps } from "@/components/home/ai-thinking-steps";
+import { ChatMarkdown } from "@/components/home/chat-markdown";
 import { MIN_VISIBLE_MS, REQUEST_TIMEOUT_MS } from "@/lib/ai-progress";
 import { type Suggestion } from "@/lib/ai-suggestions";
 
@@ -219,7 +220,9 @@ export function RegoAiChat({ onNavigate }: { onNavigate?: () => void }) {
               </span>
               <div className="min-w-0 flex-1 space-y-3">
                 <div className="break-words rounded-2xl rounded-tl-sm border border-border/70 bg-card px-4 py-3 text-sm text-forest shadow-sm">
-                  {m.text}
+                  {/* Bold and bullets are rendered, not printed as asterisks.
+                      User messages stay plain — no reason to format those. */}
+                  <ChatMarkdown text={m.text} />
                 </div>
 
                 {m.answer && m.answer.bullets.length > 0 && (
