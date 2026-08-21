@@ -428,7 +428,7 @@ async function chatCompletions(
     body: JSON.stringify({
       model: opts.model,
       temperature: 0.4,
-      max_tokens: 1400,
+      max_tokens: 500,
       messages: [
         { role: "system", content: system },
         // Prior turns give the model the thread, so follow-ups resolve.
@@ -461,7 +461,7 @@ async function anthropic(
     },
     body: JSON.stringify({
       model: process.env.REGO_AI_MODEL || "claude-3-5-haiku-latest",
-      max_tokens: 1400,
+      max_tokens: 500,
       system,
       messages: [...turns, { role: "user", content: userMsg }],
     }),
@@ -497,7 +497,7 @@ async function gemini(
           })),
           { role: "user", parts: [{ text: userMsg }] },
         ],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 1400 },
+        generationConfig: { temperature: 0.4, maxOutputTokens: 500 },
       }),
     }
   );
