@@ -371,11 +371,18 @@ async function generate(
   if (provider === "groq" || provider === "grok" || provider === "xai") {
     // Try the configured model first, then fall back through commonly available
     // Groq models (Groq periodically decommissions older ones).
+    /* Groq shut down llama-3.3-70b-versatile and llama-3.1-8b-instant on
+       16 Aug 2026, which is what silently broke this. Both are gone; these
+       are Groq's own recommended replacements.
+
+       The list is a FALLBACK CHAIN, tried in order, so one more retirement
+       degrades the assistant instead of killing it. When a model here dies,
+       add the successor to the top rather than replacing the list. */
     const models = Array.from(
       new Set([
-        process.env.REGO_AI_MODEL || "llama-3.3-70b-versatile",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
+        process.env.REGO_AI_MODEL || "openai/gpt-oss-120b",
+        "openai/gpt-oss-120b", // replaces llama-3.3-70b-versatile
+        "openai/gpt-oss-20b",  // replaces llama-3.1-8b-instant, faster/cheaper
       ])
     );
     for (const model of models) {
