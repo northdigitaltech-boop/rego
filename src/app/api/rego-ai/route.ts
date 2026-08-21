@@ -267,6 +267,11 @@ export async function POST(req: Request) {
   let reply = answer.reply;
   let bullets = answer.bullets;
   let llm = false;
+  /* True when the question NEEDED the model — a season, packing, altitude or
+     planning question. If generation then fails, answering with a listing
+     line pretends we understood when we did not, and the traveller has no
+     idea anything went wrong. Better to say so. */
+  let neededModel = false;
   // Reasoning, unclassified queries, AND searches that found nothing — the
   // model can suggest alternatives where a template reply would dead-end.
   if (
@@ -274,6 +279,7 @@ export async function POST(req: Request) {
     decision.kind === "other" ||
     decision.kind === "search"
   ) {
+    neededModel = decision.kind === "reasoning" || decision.kind === "other";
     try {
       const generated = await generate(message, buildSystemPrompt(answer), turns);
       if (!generated) {
@@ -294,7 +300,16 @@ export async function POST(req: Request) {
       }
     } catch (e) {
       console.error("[rego-ai] generation failed:", e);
-      // fall back to rule-based reply silently
+    }
+
+    /* The model was required and did not answer. Say that plainly instead of
+       returning a listing summary that reads like a non-sequitur — which is
+       exactly how a broken API key looks to a traveller. */
+    if (!llm && neededModel && answer.results.length === 0) {
+      reply =
+        "Sorry — I couldn't work that one out just now. Please try again in a moment, " +
+        "or browse the sections below.";
+      bullets = [];
     }
   }
 
