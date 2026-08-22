@@ -58,11 +58,18 @@ async function lookup(ip: string): Promise<number | null> {
     const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
     });
-    const { data, error } = await sb
-      .from("ip_reputation")
-      .select("block_status,blocked_until")
-      .eq("ip", ip)
-      .maybeSingle();
+    /* Hard timeout. Without it a slow Supabase response holds the whole
+       request open until the function times out — which looks to the user
+       like the feature is broken, not like a security check is slow. */
+    const { data, error } = await Promise.race([
+      sb.from("ip_reputation")
+        .select("block_status,blocked_until")
+        .eq("ip", ip)
+        .maybeSingle(),
+      new Promise<{ data: null; error: unknown }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: "timeout" }), 1500)
+      ),
+    ]);
 
     if (error || !data) return null;
     const row = data as { block_status: string; blocked_until: string | null };

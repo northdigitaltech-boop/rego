@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { sendMail, isSmtpConfigured } from "@/lib/mailer";
-import { enforceIpBlock } from "@/lib/ip-block";
 
 // Server-side email sender via Resend. The API key stays on the server
 // (no NEXT_PUBLIC prefix), so it is never exposed to the browser.
@@ -31,9 +30,14 @@ function allowedHost(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
-  // Containment: refuse before doing any work.
-  const blocked = await enforceIpBlock(req);
-  if (blocked) return blocked;
+  /* NO IP BLOCK ON THIS ROUTE — deliberately.
+     Adding one here (Cyber Phase 5) stopped mail going out. Email is how
+     travellers verify accounts, how owners hear about bookings and how
+     applicants hear back. It is worth far more than the marginal security
+     of blocking one address on one endpoint, and the failure was silent:
+     the UI said "sent", nothing arrived, and there was no error to read.
+     Blocking stays on the admin and AI routes, where a false block costs
+     nothing. */
 
   // 1) Same-origin only.
   if (!allowedHost(req)) {

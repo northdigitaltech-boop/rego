@@ -11,7 +11,6 @@
  * what containment actually covers.
  * ============================================================ */
 export const ENFORCED_ROUTES = [
-  "/api/email",
   "/api/rego-ai",
   "/api/admin/broadcast",
   "/api/admin/delete-user",
