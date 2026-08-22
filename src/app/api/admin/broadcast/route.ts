@@ -5,7 +5,6 @@ import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { buildNotifyEmail, type RecItem } from "@/lib/notify-email";
 import { sendMail, isSmtpConfigured } from "@/lib/mailer";
-import { enforceIpBlock } from "@/lib/ip-block";
 
 // Admin-only endpoint to send a reminder / recommendation to every registered
 // user — by email (Resend) and/or as an in-site notification (notifications
@@ -35,9 +34,10 @@ function sameOrigin(req: Request): boolean {
 }
 
 export async function POST(req: Request) {
-  // Containment: refuse before doing any work.
-  const blocked = await enforceIpBlock(req);
-  if (blocked) return blocked;
+  /* NO IP BLOCK HERE — same reason as /api/email. This route sends mail,
+     and a block on it fails silently: the admin sees "sent", nothing
+     arrives, and there is no error to read. That is exactly how this broke
+     once already. Any route that delivers email stays unblocked. */
 
   if (!sameOrigin(req)) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
