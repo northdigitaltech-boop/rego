@@ -8,6 +8,8 @@ import { subscribeToMessages } from "@/lib/realtime";
 import { usePoll } from "@/lib/use-poll";
 import { bookingRef, type BookingRow } from "@/lib/bookings";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { getAvatarsByEmail } from "@/lib/avatars";
 
 export function MessagesInbox({
   bookings,
@@ -21,6 +23,9 @@ export function MessagesInbox({
   onOpen: (b: BookingRow) => void;
 }) {
   const [meta, setMeta] = React.useState<MsgMeta[]>([]);
+  /* Profile pictures for the people in this list. One query for the whole
+     inbox rather than one per row. */
+  const [avatars, setAvatars] = React.useState<Record<string, string>>({});
   const idsKey = bookings.map((b) => b.id).join(",");
 
   const load = React.useCallback(async () => {
@@ -65,6 +70,19 @@ export function MessagesInbox({
   }
 
   // Sort: bookings with most recent message first
+  React.useEffect(() => {
+    const emails = bookings.map((b) => otherLabelFor(b)).filter(Boolean);
+    if (emails.length === 0) return;
+    let alive = true;
+    getAvatarsByEmail(emails).then((map) => {
+      if (alive) setAvatars(map);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings]);
+
   const sorted = [...bookings].sort((a, b) => {
     const ta = lastByBooking.get(a.id)?.created_at ?? "";
     const tb = lastByBooking.get(b.id)?.created_at ?? "";
@@ -96,8 +114,16 @@ export function MessagesInbox({
             onClick={() => onOpen(b)}
             className="flex w-full items-center gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-0 hover:bg-muted/50"
           >
-            <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest-50 text-forest-600">
-              <MessageSquare className="h-5 w-5" />
+            {/* Per-person avatar rather than the same speech bubble on every
+                row — a list of ten people used to look like ten copies of
+                one icon. Falls back to initials because profiles have no
+                photo column yet; pass src when they do. */}
+            <span className="relative shrink-0">
+              <UserAvatar
+                email={otherLabelFor(b)}
+                src={avatars[otherLabelFor(b).trim().toLowerCase()]}
+                size={44}
+              />
               {isUnread && (
                 <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
               )}
