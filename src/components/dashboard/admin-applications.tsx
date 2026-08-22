@@ -32,6 +32,10 @@ const STATUS_TONE: Record<string, string> = {
   rejected: "bg-red-50 text-red-600",
   hired: "bg-green-50 text-green-700",
 };
+import { StatusEmailDialog, type PendingChange } from "@/components/dashboard/status-email-dialog";
+import { toHtml, type AppStatus } from "@/lib/application-emails";
+import { sendEmail } from "@/lib/email";
+
 
 export function AdminApplications() {
   const [rows, setRows] = React.useState<JobApplicationRow[]>([]);
@@ -56,6 +60,37 @@ export function AdminApplications() {
     await fn();
     await refresh();
     setBusyId(null);
+  };
+
+  /* Status changes go through a confirmation dialog so the admin reads the
+     email before it reaches the applicant. Nothing is ever sent silently. */
+  const [pending, setPending] = React.useState<PendingChange | null>(null);
+
+  const confirmStatus = async ({
+    send,
+    subject,
+    body,
+  }: { send: boolean; subject: string; body: string }) => {
+    if (!pending) return;
+    setBusyId(pending.applicationId);
+    try {
+      await setApplicationStatus(pending.applicationId, pending.status);
+      if (send && pending.applicantEmail) {
+        /* Fire-and-check: a failed email must not roll back the status the
+           admin already decided on. They can resend from their mail client. */
+        const ok = await sendEmail(pending.applicantEmail, subject, toHtml(body));
+        if (!ok) {
+          window.alert(
+            "Status updated, but the email could not be sent. Please email " +
+              pending.applicantEmail + " directly."
+          );
+        }
+      }
+    } finally {
+      setPending(null);
+      await refresh();
+      setBusyId(null);
+    }
   };
 
   const counts = React.useMemo(() => {
@@ -212,12 +247,16 @@ export function AdminApplications() {
                       )}
                       {r.cv_url && (
                         <a
-                          href={r.cv_url}
+                          href={cvDownloadUrl(r.cv_url)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          /* download hints the browser to save rather than
+                             navigate; Cloudinary's fl_attachment does the
+                             real work for cross-origin files. */
+                          download
                           className="inline-flex items-center gap-2 font-semibold text-forest-600 hover:text-gold"
                         >
-                          <FileText className="h-4 w-4" /> View CV
+                          <FileText className="h-4 w-4" /> Download CV
                         </a>
                       )}
                     </div>
@@ -310,7 +349,15 @@ export function AdminApplications() {
                         <button
                           key={s.value}
                           disabled={rowBusy}
-                          onClick={() => act(r.id, () => setApplicationStatus(r.id, s.value))}
+                          onClick={() =>
+                            setPending({
+                              applicationId: r.id,
+                              status: s.value as AppStatus,
+                              applicantName: r.full_name ?? "",
+                              applicantEmail: r.email ?? "",
+                              role: r.job_title ?? "",
+                            })
+                          }
                           className={cn(
                             "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
                             r.status === s.value
@@ -341,6 +388,27 @@ export function AdminApplications() {
           })}
         </div>
       )}
+    
+      <StatusEmailDialog
+        pending={pending}
+        onCancel={() => setPending(null)}
+        onConfirm={confirmStatus}
+      />
     </div>
   );
+}
+
+/* ============================================================
+ * Cloudinary serves an uploaded CV inline, and a browser that
+ * cannot preview the type just shows a blank tab — which reads
+ * as "the download is broken".
+ *
+ * fl_attachment tells Cloudinary to send it as a file download
+ * instead. Only applied to Cloudinary URLs; a pasted third-party
+ * link is left exactly as the applicant gave it.
+ * ============================================================ */
+function cvDownloadUrl(url: string): string {
+  if (!url.includes("res.cloudinary.com")) return url;
+  if (url.includes("fl_attachment")) return url;
+  return url.replace("/upload/", "/upload/fl_attachment/");
 }
