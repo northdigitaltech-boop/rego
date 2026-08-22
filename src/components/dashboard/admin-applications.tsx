@@ -34,7 +34,7 @@ const STATUS_TONE: Record<string, string> = {
 };
 import { StatusEmailDialog, type PendingChange } from "@/components/dashboard/status-email-dialog";
 import { toHtml, type AppStatus } from "@/lib/application-emails";
-import { sendEmail } from "@/lib/email";
+import { sendEmailDetailed } from "@/lib/email";
 
 
 export function AdminApplications() {
@@ -78,11 +78,13 @@ export function AdminApplications() {
       if (send && pending.applicantEmail) {
         /* Fire-and-check: a failed email must not roll back the status the
            admin already decided on. They can resend from their mail client. */
-        const ok = await sendEmail(pending.applicantEmail, subject, toHtml(body));
-        if (!ok) {
+        const r = await sendEmailDetailed(pending.applicantEmail, subject, toHtml(body));
+        if (!r.ok) {
+          /* Say what actually went wrong. "Could not be sent" tells the admin
+             nothing and turns every failure into a support conversation. */
           window.alert(
-            "Status updated, but the email could not be sent. Please email " +
-              pending.applicantEmail + " directly."
+            `Status updated, but the email was not sent.\n\n${r.error}\n\n` +
+              `Please email ${pending.applicantEmail} directly.`
           );
         }
       }

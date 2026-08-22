@@ -1,5 +1,47 @@
 import { emailLayout } from "@/lib/email-layout";
 
+/**
+ * Send an email and report WHY it failed.
+ *
+ * sendEmail() below swallows the reason, which is right for fire-and-forget
+ * notifications but wrong when a human is standing there waiting — they end
+ * up guessing, or asking someone to read server logs. Use this wherever the
+ * result is shown to a person.
+ */
+export async function sendEmailDetailed(
+  to: string,
+  subject: string,
+  html: string
+): Promise<{ ok: boolean; error?: string }> {
+  if (!to) return { ok: false, error: "No recipient address on this application." };
+  try {
+    const res = await fetch("/api/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to, subject, html }),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+      skipped?: boolean;
+    };
+    if (json.ok) return { ok: true };
+
+    if (json.skipped) {
+      return { ok: false, error: "Email is not configured on the server (no SMTP credentials)." };
+    }
+    if (res.status === 429) {
+      return { ok: false, error: "Too many emails in the last minute — wait 60 seconds and try again." };
+    }
+    if (res.status === 403) {
+      return { ok: false, error: "The email service refused the request (403)." };
+    }
+    return { ok: false, error: json.error || `Mail server returned ${res.status}.` };
+  } catch {
+    return { ok: false, error: "Could not reach the email service. Check your connection." };
+  }
+}
+
 /** Send email via the /api/email route. Returns true if it was delivered. */
 export async function sendEmail(
   to: string,
