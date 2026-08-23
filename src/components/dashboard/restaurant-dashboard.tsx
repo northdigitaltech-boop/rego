@@ -61,6 +61,8 @@ import {
 import { RestaurantDetail } from "@/components/listings/restaurant-detail";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { cn, formatPrice } from "@/lib/utils";
 import {
   ProviderPostJob,
@@ -283,6 +285,8 @@ export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut
 
 function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant: RestaurantRow | null; onSaved: () => void }) {
   const editing = !!restaurant;
+  // Owns its own state, so no existing field, reset or type changes.
+  const area = useAreaSelection("restaurants");
   const [f, setF] = React.useState({
     name: restaurant?.name ?? "",
     owner_name: restaurant?.owner_name ?? user.name,
@@ -327,6 +331,8 @@ function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant:
     }
     setSaving(true);
     const payload = {
+      // Adds no key when nothing is chosen.
+      ...area.payload,
       name: f.name.trim(),
       owner_name: f.owner_name.trim() || null,
       logo: f.logo.trim() || null,
@@ -354,7 +360,7 @@ function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant:
     };
     const { error: dbError } = editing ? await updateRestaurant(restaurant!.id, payload) : await createRestaurant(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     setSaved(true);
     onSaved();
   };
@@ -401,6 +407,7 @@ function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant:
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="City / district"><input value={f.city} onChange={(e) => set({ city: e.target.value })} className="auth-input" placeholder="Skardu" /></Field>
+        {area.picker}
         <Field label="Base location"><input value={f.location} onChange={(e) => set({ location: e.target.value })} className="auth-input" /></Field>
         <Field label="Map link"><input value={f.map_link} onChange={(e) => set({ map_link: e.target.value })} className="auth-input" placeholder="https://maps…" /></Field>
       </div>
@@ -536,7 +543,7 @@ function MenuForm({ restaurant, user, item, onDone, onCancel }: { restaurant: Re
     };
     const { error: dbError } = editing ? await updateMenuItem(item!.id, payload) : await createMenuItem(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 

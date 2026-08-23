@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   Loader2,
   Plus,
@@ -211,6 +213,8 @@ function ActivityForm({
     activity && isIndoorActivity(activity.category) ? "indoor" : "outdoor";
   const [kind, setKind] = React.useState<"outdoor" | "indoor">(initialKind);
 
+  // Owns its own state, so no existing field or reset changes.
+  const area = useAreaSelection("activities");
   const [f, setF] = React.useState({
     title: activity?.title ?? "",
     category:
@@ -255,6 +259,8 @@ function ActivityForm({
     if (!f.title.trim()) { setError("Activity title is required."); return; }
     setSaving(true);
     const payload = {
+      // Adds no key when nothing is chosen.
+      ...area.payload,
       owner_email: user.email,
       owner_type: ownerType,
       business_name: f.business_name.trim() || businessName || user.name,
@@ -286,7 +292,11 @@ function ActivityForm({
     };
     const { error: err } = activity ? await updateActivity(activity.id, payload) : await createActivity({ ...payload, status: "pending" });
     setSaving(false);
-    if (err) { setError("Could not save. Please try again."); return; }
+    if (err) {
+      // An area refusal is not a transient failure — say so.
+      setError(friendlyAreaError(err.message) ?? "Could not save. Please try again.");
+      return;
+    }
     onSaved();
   };
 
@@ -336,6 +346,7 @@ function ActivityForm({
             <L label="Business / operator name"><input className="auth-input" value={f.business_name} onChange={(e) => set("business_name", e.target.value)} /></L>
             <L label="Location"><input className="auth-input" value={f.location} onChange={(e) => set("location", e.target.value)} placeholder="Skardu, Hunza…" /></L>
             <L label="City"><input className="auth-input" value={f.city} onChange={(e) => set("city", e.target.value)} /></L>
+            {area.picker}
             <L label="Meeting point"><input className="auth-input" value={f.meeting_point} onChange={(e) => set("meeting_point", e.target.value)} /></L>
             <L label="Duration"><input className="auth-input" value={f.duration} onChange={(e) => set("duration", e.target.value)} placeholder="Full day, 3 days…" /></L>
             <L label="Difficulty"><select className="auth-input capitalize" value={f.difficulty} onChange={(e) => set("difficulty", e.target.value)}>{DIFFICULTIES.map((d) => <option key={d} value={d} className="capitalize">{d}</option>)}</select></L>

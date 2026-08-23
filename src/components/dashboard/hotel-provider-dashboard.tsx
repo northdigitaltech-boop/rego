@@ -42,6 +42,8 @@ import { AccountSecurity } from "@/components/account/account-security";
 import { OwnerCrm } from "@/components/crm/owner-crm";
 import { PropertyRestaurantManager } from "@/components/dashboard/property-restaurant-manager";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
+import { AreaPicker } from "@/components/dashboard/area-picker";
+import { friendlyAreaError } from "@/lib/area-rules";
 import { useAuth, type User } from "@/components/auth/auth-context";
 import {
   getHotelsByOwner,
@@ -123,6 +125,10 @@ const empty = {
   title: "",
   category_label: "Hotel",
   location: "Skardu",
+  /* Structured area, alongside the free-text location above — never
+     replacing it. Empty until the market module is switched on, and the
+     database trigger treats empty as "allow" by default. */
+  location_id: "",
   address: "",
   price: "",
   unit: "night",
@@ -286,6 +292,7 @@ export function HotelProviderDashboard({
       title: h.title,
       category_label: h.category_label,
       location: h.location,
+      location_id: (h as { location_id?: string | null }).location_id ?? "",
       address: h.address ?? "",
       price: String(h.price),
       unit: h.unit,
@@ -329,6 +336,9 @@ export function HotelProviderDashboard({
       title: form.title.trim(),
       category_label: form.category_label.trim() || "Hotel",
       location: form.location,
+      // Omitted entirely when empty, so a listing created before the market
+      // module was switched on is written exactly as it is today.
+      ...(form.location_id ? { location_id: form.location_id } : {}),
       address: form.address.trim() || null,
       price: priceNum,
       unit: form.unit.trim() || "night",
@@ -355,7 +365,9 @@ export function HotelProviderDashboard({
 
     setSaving(false);
     if (dbError) {
-      setError(dbError.message);
+      /* An area rule refusal is a business decision, not a fault. Showing the
+         raw Postgres text makes a deliberate policy look like a crash. */
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
 
@@ -563,6 +575,13 @@ export function HotelProviderDashboard({
                       </option>
                     ))}
                   </select>
+                  {/* Renders nothing until the market module is switched on. */}
+                  <AreaPicker
+                    serviceSlug="hotels"
+                    value={form.location_id || null}
+                    onChange={(id) => setForm({ ...form, location_id: id ?? "" })}
+                    className="mt-3"
+                  />
                 </Field>
                 <Field label="Price (PKR)" required>
                   <input

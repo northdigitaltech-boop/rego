@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import {
   LayoutDashboard,
@@ -443,6 +445,8 @@ function ProviderForm({
   onSaved: () => void;
 }) {
   const editing = !!provider;
+  // Owns its own state, so no existing field or reset changes.
+  const area = useAreaSelection("transport");
   const [f, setF] = React.useState({
     name: provider?.name ?? "",
     owner_name: provider?.owner_name ?? user.name,
@@ -479,6 +483,8 @@ function ProviderForm({
     }
     setSaving(true);
     const payload = {
+      // Adds no key when nothing is chosen.
+      ...area.payload,
       name: f.name.trim(),
       owner_name: f.owner_name.trim() || null,
       email: f.email.trim() || null,
@@ -506,7 +512,7 @@ function ProviderForm({
       : await createProvider(payload);
     setSaving(false);
     if (dbError) {
-      setError(dbError.message);
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
     setSaved(true);
@@ -571,6 +577,7 @@ function ProviderForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Address"><input value={f.address} onChange={(e) => set({ address: e.target.value })} className="auth-input" /></Field>
         <Field label="Base location"><input value={f.location} onChange={(e) => set({ location: e.target.value })} className="auth-input" placeholder="e.g. Gilgit" /></Field>
+        {area.picker}
       </div>
       <Field label="Service areas (comma separated)"><input value={f.service_areas} onChange={(e) => set({ service_areas: e.target.value })} className="auth-input" placeholder="Skardu, Hunza, Gilgit" /></Field>
       <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
@@ -763,7 +770,7 @@ function ServiceForm({
       ? await updateService(item!.id, payload)
       : await createService(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 
@@ -1002,7 +1009,7 @@ function RentalForm({
       ? await updateRental(item!.id, payload)
       : await createRental(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 
@@ -1112,7 +1119,7 @@ function AvailabilityEditor({
       itemId, itemType, dates, reason, ownerEmail,
     });
     setBusy(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     setFrom(""); setTo("");
     await load();
   };

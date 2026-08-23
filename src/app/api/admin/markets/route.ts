@@ -1,0 +1,438 @@
+import { NextResponse } from "next/server";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createHash } from "crypto";
+
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLog } from "@/lib/rate-limit-guard";
+import { enforceIpBlock } from "@/lib/ip-block";
+
+/* ============================================================
+ * Market & Area Management — the only write path.
+ *
+ * These settings decide whether an area may take bookings and
+ * whether its pages may be indexed. That makes this endpoint
+ * worth attacking, so every request is:
+ *
+ *   • checked against the IP block list
+ *   • same-origin
+ *   • rate limited
+ *   • authenticated, then verified admin by reading profiles
+ *     server-side — never by trusting a claim in the request
+ *   • validated field by field against a whitelist
+ *   • written to market_audit_logs with before AND after values
+ *
+ * The frontend hides controls from non-admins. That is a
+ * convenience, not a control: this route assumes the caller
+ * built the request by hand.
+ *
+ * Requires SUPABASE_SERVICE_ROLE_KEY (server-only, never
+ * NEXT_PUBLIC — this repo is public).
+ * ============================================================ */
+
+export const dynamic = "force-dynamic";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+
+/** Columns a caller may set on locations. Anything else is rejected. */
+const LOCATION_FLAGS = new Set([
+  "is_active",
+  "is_public",
+  "onboarding_enabled",
+  "listings_enabled",
+  "booking_enabled",
+  "manual_approval_required",
+  "coming_soon",
+  "is_featured",
+  "seo_enabled",
+]);
+
+/** The subset that also exists per service. */
+const SERVICE_FLAGS = new Set([
+  "listings_enabled",
+  "booking_enabled",
+  "onboarding_enabled",
+  "manual_approval_required",
+  "coming_soon",
+  "seo_enabled",
+]);
+
+/** Free-text fields that may be edited. Slug is NOT here — see below. */
+const EDITABLE_FIELDS = new Set([
+  "name",
+  "display_order",
+  "latitude",
+  "longitude",
+  "coming_soon_message",
+]);
+
+/* Slug is deliberately absent from EDITABLE_FIELDS.
+   A location slug becomes part of a public URL. Changing one without
+   writing a 301 into seo_redirects would drop a page out of the index
+   silently. Slug editing belongs with the redirects tab, where the
+   redirect can be created in the same transaction. */
+
+const MAX_BULK = 200;
+
+function adminClient(): SupabaseClient {
+  return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+}
+
+function sameOrigin(req: Request): boolean {
+  const host = req.headers.get("host");
+  const origin = req.headers.get("origin") || req.headers.get("referer");
+  if (!host || !origin) return false;
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+/** Hashed, never stored raw — an audit trail should not become a log of IPs. */
+function hashIp(ip: string): string {
+  return createHash("sha256").update(ip).digest("hex").slice(0, 16);
+}
+
+function bad(error: string, status = 400) {
+  return NextResponse.json({ ok: false, error }, { status });
+}
+
+export async function POST(req: Request) {
+  const blocked = await enforceIpBlock(req);
+  if (blocked) return blocked;
+
+  if (!sameOrigin(req)) return bad("Forbidden", 403);
+
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    return bad("Market management is not configured on this server.", 500);
+  }
+
+  /* NOTE ON THIS LIMIT: rateLimit() is in-memory and therefore PER VERCEL
+     INSTANCE. It slows a single runaway client; it is not a hard cap across
+     the fleet. A shared store is needed before this can be called real
+     rate limiting. Recorded here so nobody reads this line as a guarantee. */
+  const ip = clientIp(req);
+  const limited = limitAndLog(req, `market-admin:${ip}`, 40, 60_000, {
+    endpoint: "/api/admin/markets",
+    category: "admin",
+  });
+  if (!limited.ok) return bad("Too many changes in a short time. Wait a minute.", 429);
+
+  /* ---- authenticate ---- */
+  const authz = req.headers.get("authorization") ?? "";
+  const token = authz.startsWith("Bearer ") ? authz.slice(7) : "";
+  if (!token) return bad("Sign in required.", 401);
+
+  const sb = adminClient();
+  const { data: caller, error: authErr } = await sb.auth.getUser(token);
+  if (authErr || !caller?.user) return bad("Session expired. Sign in again.", 401);
+
+  /* ---- authorise: read the role from the database, not the request ---- */
+  const { data: profile } = await sb
+    .from("profiles")
+    .select("role, email")
+    .eq("id", caller.user.id)
+    .maybeSingle();
+
+  const role = (profile as { role?: string } | null)?.role;
+  if (role !== "admin") return bad("Admins only.", 403);
+
+  const actorEmail =
+    (profile as { email?: string } | null)?.email ?? caller.user.email ?? null;
+
+  /* ---- parse ---- */
+  let body: Record<string, unknown>;
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return bad("Malformed request.");
+  }
+
+  const action = String(body.action ?? "");
+  const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
+
+  /** Append-only audit write. Never blocks the change it records. */
+  const audit = async (entry: {
+    action: string;
+    entityType: string;
+    entityId?: string | null;
+    entityLabel?: string | null;
+    before?: unknown;
+    after?: unknown;
+  }) => {
+    try {
+      await sb.from("market_audit_logs").insert({
+        actor_id: caller.user.id,
+        actor_email: actorEmail,
+        action: entry.action,
+        entity_type: entry.entityType,
+        entity_id: entry.entityId ?? null,
+        entity_label: entry.entityLabel ?? null,
+        before_value: entry.before ?? null,
+        after_value: entry.after ?? null,
+        request_id: requestId,
+        ip_hash: ip ? hashIp(ip) : null,
+      });
+    } catch {
+      /* An audit failure must not roll back a change the admin already
+         saw succeed. It is logged as a gap, not surfaced as an error. */
+    }
+  };
+
+  switch (action) {
+    /* ---------------------------------------------------------------- */
+    case "set_location_flag": {
+      const locationId = String(body.locationId ?? "");
+      const flag = String(body.flag ?? "");
+      const value = body.value;
+
+      if (!locationId) return bad("Missing location.");
+      if (!LOCATION_FLAGS.has(flag)) return bad("Unknown setting.");
+      if (value !== null && typeof value !== "boolean") {
+        return bad("Value must be true, false, or null to inherit.");
+      }
+
+      /* select("*") rather than a string-concatenated column list: a dynamic
+         select defeats the generated types, and the row is one record. */
+      const { data: beforeRow } = await sb
+        .from("locations")
+        .select("*")
+        .eq("id", locationId)
+        .maybeSingle();
+
+      if (!beforeRow) return bad("Location not found.", 404);
+      const before = beforeRow as Record<string, unknown>;
+
+      const { error } = await sb
+        .from("locations")
+        .update({ [flag]: value, updated_by: caller.user.id, updated_at: new Date().toISOString() })
+        .eq("id", locationId);
+
+      if (error) return bad(error.message, 500);
+
+      await audit({
+        action: value === null ? "location.reset_to_inherited" : "location.set_flag",
+        entityType: "location",
+        entityId: locationId,
+        entityLabel: (before.name as string | undefined) ?? null,
+        before: { [flag]: before[flag] },
+        after: { [flag]: value },
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "set_service_flag": {
+      const locationId = String(body.locationId ?? "");
+      const serviceSlug = String(body.serviceSlug ?? "");
+      const flag = String(body.flag ?? "");
+      const value = body.value;
+
+      if (!locationId || !serviceSlug) return bad("Missing location or service.");
+      if (!SERVICE_FLAGS.has(flag)) return bad("Unknown setting for a service.");
+      if (value !== null && typeof value !== "boolean") {
+        return bad("Value must be true, false, or null to inherit.");
+      }
+
+      // Reject unknown services rather than silently creating a row for a
+      // typo'd slug that would then be invisible in the UI.
+      const { data: svc } = await sb
+        .from("service_categories")
+        .select("slug")
+        .eq("slug", serviceSlug)
+        .maybeSingle();
+      if (!svc) return bad("Unknown service.");
+
+      const { data: existing } = await sb
+        .from("location_service_settings")
+        .select("*")
+        .eq("location_id", locationId)
+        .eq("service_slug", serviceSlug)
+        .maybeSingle();
+
+      const beforeVal = existing
+        ? (existing as Record<string, unknown>)[flag]
+        : null;
+
+      const { error } = await sb.from("location_service_settings").upsert(
+        {
+          location_id: locationId,
+          service_slug: serviceSlug,
+          [flag]: value,
+          updated_by: caller.user.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "location_id,service_slug" }
+      );
+
+      if (error) return bad(error.message, 500);
+
+      await audit({
+        action: value === null ? "service.reset_to_inherited" : "service.set_flag",
+        entityType: "location_service",
+        entityId: locationId,
+        entityLabel: `${serviceSlug}`,
+        before: { [flag]: beforeVal },
+        after: { [flag]: value },
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "apply_to_children": {
+      const locationId = String(body.locationId ?? "");
+      const flag = String(body.flag ?? "");
+      const value = body.value;
+
+      if (!locationId) return bad("Missing location.");
+      if (!LOCATION_FLAGS.has(flag)) return bad("Unknown setting.");
+      if (value !== null && typeof value !== "boolean") return bad("Bad value.");
+
+      const { data: root } = await sb
+        .from("locations")
+        .select("id, name")
+        .eq("id", locationId)
+        .maybeSingle();
+      if (!root) return bad("Location not found.", 404);
+
+      // `ancestors` is maintained by the phase72 trigger, so a containment
+      // test finds the whole subtree in one query rather than recursing.
+      const { data: kids } = await sb
+        .from("locations")
+        .select("id")
+        .contains("ancestors", [locationId]);
+
+      const ids = ((kids as { id: string }[]) ?? []).map((k) => k.id);
+
+      if (ids.length > MAX_BULK) {
+        return bad(
+          `That would change ${ids.length} areas. Apply to a smaller branch instead.`,
+        );
+      }
+
+      const { error } = await sb
+        .from("locations")
+        .update({ [flag]: value, updated_by: caller.user.id, updated_at: new Date().toISOString() })
+        .in("id", [locationId, ...ids]);
+
+      if (error) return bad(error.message, 500);
+
+      await audit({
+        action: "location.apply_to_children",
+        entityType: "location",
+        entityId: locationId,
+        entityLabel: (root as { name?: string }).name ?? null,
+        before: { note: "see individual rows" },
+        after: { [flag]: value, affected: ids.length + 1 },
+      });
+
+      return NextResponse.json({ ok: true, affected: ids.length + 1 });
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "bulk_set_flag": {
+      const raw = body.locationIds;
+      const flag = String(body.flag ?? "");
+      const value = body.value;
+
+      if (!Array.isArray(raw) || raw.length === 0) return bad("Nothing selected.");
+      if (raw.length > MAX_BULK) return bad(`Select at most ${MAX_BULK} areas.`);
+      if (!LOCATION_FLAGS.has(flag)) return bad("Unknown setting.");
+      if (value !== null && typeof value !== "boolean") return bad("Bad value.");
+
+      const ids = raw.map(String);
+
+      const { data: before } = await sb
+        .from("locations")
+        .select("id, name, " + flag)
+        .in("id", ids);
+
+      const { error } = await sb
+        .from("locations")
+        .update({ [flag]: value, updated_by: caller.user.id, updated_at: new Date().toISOString() })
+        .in("id", ids);
+
+      if (error) return bad(error.message, 500);
+
+      await audit({
+        action: "location.bulk_set_flag",
+        entityType: "location",
+        entityId: null,
+        entityLabel: `${ids.length} areas`,
+        before: { rows: before },
+        after: { [flag]: value },
+      });
+
+      return NextResponse.json({ ok: true, affected: ids.length });
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "update_location": {
+      const locationId = String(body.locationId ?? "");
+      const patch = (body.patch ?? {}) as Record<string, unknown>;
+
+      if (!locationId) return bad("Missing location.");
+
+      const clean: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(patch)) {
+        if (!EDITABLE_FIELDS.has(k)) {
+          return bad(`"${k}" cannot be edited here.`);
+        }
+        if (k === "display_order") {
+          const n = Number(v);
+          if (!Number.isInteger(n) || n < 0 || n > 9999) return bad("Bad display order.");
+          clean[k] = n;
+        } else if (k === "latitude" || k === "longitude") {
+          if (v === null || v === "") { clean[k] = null; continue; }
+          const n = Number(v);
+          const limit = k === "latitude" ? 90 : 180;
+          if (!Number.isFinite(n) || Math.abs(n) > limit) return bad(`Bad ${k}.`);
+          clean[k] = n;
+        } else {
+          const s = String(v ?? "").trim();
+          if (k === "name" && s.length === 0) return bad("Name cannot be empty.");
+          if (s.length > 500) return bad(`"${k}" is too long.`);
+          clean[k] = s || null;
+        }
+      }
+
+      if (Object.keys(clean).length === 0) return bad("Nothing to change.");
+
+      const { data: before } = await sb
+        .from("locations")
+        .select("*")
+        .eq("id", locationId)
+        .maybeSingle();
+      if (!before) return bad("Location not found.", 404);
+
+      const { error } = await sb
+        .from("locations")
+        .update({ ...clean, updated_by: caller.user.id, updated_at: new Date().toISOString() })
+        .eq("id", locationId);
+
+      if (error) return bad(error.message, 500);
+
+      const beforeSubset: Record<string, unknown> = {};
+      for (const k of Object.keys(clean)) {
+        beforeSubset[k] = (before as Record<string, unknown>)[k];
+      }
+
+      await audit({
+        action: "location.update",
+        entityType: "location",
+        entityId: locationId,
+        entityLabel: (before as { name?: string }).name ?? null,
+        before: beforeSubset,
+        after: clean,
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    default:
+      return bad("Unknown action.");
+  }
+}

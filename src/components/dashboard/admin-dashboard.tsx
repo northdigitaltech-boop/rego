@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  Globe,
   Info,
   BarChart3,
   KeyRound,
@@ -85,6 +86,7 @@ import {
 import { setHotelFeatured } from "@/lib/hotels";
 import { setRankingBadge, RANKING_OPTIONS } from "@/lib/ranking";
 import { getAdminOverviewStats, type AdminOverviewStats } from "@/lib/platform-stats";
+import { MarketAreas } from "@/components/dashboard/market-areas";
 import { AdminAnalytics } from "@/components/dashboard/admin-analytics";
 import { AdminClientPasswords } from "@/components/dashboard/admin-client-passwords";
 import { AdminRoadside } from "@/components/dashboard/admin-roadside";
@@ -485,7 +487,15 @@ type Tab =
   | "notify"
   | "subscription"
   | "expeditions"
+  | "markets"
   | "users";
+
+/* Market & Area Management is behind a flag while Phases 4-6 are unfinished.
+   The tab reads and writes real settings, but nothing on the public site or
+   in the provider forms consumes them yet — so leaving it visible by default
+   would invite an admin to disable an area and reasonably expect that to stop
+   bookings. It does not, yet. Set NEXT_PUBLIC_MARKET_ADMIN=1 to show it. */
+const MARKET_ADMIN_ENABLED = process.env.NEXT_PUBLIC_MARKET_ADMIN === "1";
 
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -518,6 +528,9 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "notify", label: "Send Notification", icon: Megaphone },
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
+  ...(MARKET_ADMIN_ENABLED
+    ? [{ id: "markets" as Tab, label: "Market & Area Management", icon: Globe }]
+    : []),
   { id: "users", label: "Users", icon: Users },
 ];
 
@@ -980,6 +993,7 @@ export function AdminDashboard() {
           {tab === "destinations" && (
             <DestinationsAdmin rows={destRows} onChange={refresh} />
           )}
+          {tab === "markets" && <MarketAreas />}
           {tab === "manage" && <AdminListingsManager />}
           {tab === "about" && <AdminAbout />}
           {tab === "contact" && <AdminContact />}

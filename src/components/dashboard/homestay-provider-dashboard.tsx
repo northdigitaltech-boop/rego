@@ -39,6 +39,8 @@ import { OwnerCrm } from "@/components/crm/owner-crm";
 import { PropertyRestaurantManager } from "@/components/dashboard/property-restaurant-manager";
 import { useUnread } from "@/lib/use-unread";
 import { type BookingRow } from "@/lib/bookings";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { friendlyAreaError } from "@/lib/area-rules";
 import { useAuth, type User } from "@/components/auth/auth-context";
 import {
   getHomestaysByOwner,
@@ -205,6 +207,8 @@ export function HomestayProviderDashboard({
   const [loading, setLoading] = React.useState(true);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [form, setForm] = React.useState({ ...empty });
+  // Owns its own state so no existing form field or reset has to change.
+  const area = useAreaSelection("homestays");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
   const [bookings, setBookings] = React.useState<HomestayBookingRow[]>([]);
@@ -459,6 +463,8 @@ export function HomestayProviderDashboard({
       title: form.title.trim(),
       category_label: form.category_label.trim() || "Homestay",
       location: form.location,
+      // Adds no key at all when nothing is selected.
+      ...area.payload,
       address: form.address.trim() || null,
       map_link: form.map_link.trim() || null,
       price: startingPrice,
@@ -494,7 +500,7 @@ export function HomestayProviderDashboard({
 
     if (dbError) {
       setSaving(false);
-      setError(dbError.message);
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
 
@@ -627,6 +633,7 @@ export function HomestayProviderDashboard({
             <HomestayForm
               form={form}
               setForm={setForm}
+              areaPicker={area.picker}
               editingId={editingId}
               saving={saving}
               error={error}
@@ -898,6 +905,7 @@ function MyHomestays({
 function HomestayForm({
   form,
   setForm,
+  areaPicker,
   editingId,
   saving,
   error,
@@ -909,6 +917,8 @@ function HomestayForm({
 }: {
   form: typeof empty;
   setForm: React.Dispatch<React.SetStateAction<typeof empty>>;
+  /** Structured area selector. Null until the market module is on. */
+  areaPicker: React.ReactNode;
   editingId: string | null;
   saving: boolean;
   error: string;
@@ -973,6 +983,8 @@ function HomestayForm({
               </option>
             ))}
           </select>
+          {/* Renders nothing until the market module is switched on. */}
+          {areaPicker}
         </Field>
         <Field label="Location map link (Google Maps)">
           <input

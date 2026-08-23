@@ -79,6 +79,8 @@ import {
 import { MediaDetail } from "@/components/listings/media-detail";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { cn, formatPrice } from "@/lib/utils";
 import {
   ProviderPostJob,
@@ -444,6 +446,8 @@ function ProviderForm({
   onSaved: () => void;
 }) {
   const editing = !!provider;
+  // Owns its own state, so no existing field, reset or type changes.
+  const area = useAreaSelection("photographers");
   const [f, setF] = React.useState({
     name: provider?.name ?? user.name,
     logo: provider?.logo ?? "",
@@ -485,6 +489,8 @@ function ProviderForm({
     }
     setSaving(true);
     const payload = {
+      // Adds no key when nothing is chosen.
+      ...area.payload,
       company_id: null,
       company_name: null,
       name: f.name.trim(),
@@ -519,7 +525,7 @@ function ProviderForm({
       : await createMediaProvider(payload);
     setSaving(false);
     if (dbError) {
-      setError(dbError.message);
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
     setSaved(true);
@@ -574,6 +580,7 @@ function ProviderForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="City / district"><input value={f.city} onChange={(e) => set({ city: e.target.value })} className="auth-input" placeholder="Skardu" /></Field>
+        {area.picker}
         <Field label="Base location"><input value={f.location} onChange={(e) => set({ location: e.target.value })} className="auth-input" /></Field>
         <Field label="Areas covered (comma separated)"><input value={f.areas} onChange={(e) => set({ areas: e.target.value })} className="auth-input" placeholder="Skardu, Hunza" /></Field>
       </div>
@@ -737,7 +744,7 @@ function ServiceForm({
       ? await updateMediaService(item!.id, payload)
       : await createMediaService(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 
@@ -924,7 +931,7 @@ function AvailabilityEditor({ providerId, ownerEmail }: { providerId: string; ow
     const dates = enumerateDates(from, to || from);
     const { error: dbError } = await blockMediaDates({ providerId, dates, reason, ownerEmail });
     setBusy(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     setFrom(""); setTo("");
     await load();
   };

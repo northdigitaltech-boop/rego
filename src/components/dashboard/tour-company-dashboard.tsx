@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import Link from "next/link";
 import {
@@ -473,6 +475,8 @@ function CompanyForm({
   onSaved: () => void;
 }) {
   const editing = !!company;
+  // Owns its own state, so no existing field or reset changes.
+  const area = useAreaSelection("travel-companies");
   const [f, setF] = React.useState({
     name: company?.name ?? "",
     owner_name: company?.owner_name ?? user.name,
@@ -522,6 +526,8 @@ function CompanyForm({
     }
     setSaving(true);
     const payload = {
+      // Adds no key when nothing is chosen.
+      ...area.payload,
       name: f.name.trim(),
       owner_name: f.owner_name.trim() || null,
       email: f.email.trim() || null,
@@ -556,7 +562,7 @@ function CompanyForm({
       : await createCompany(payload);
     setSaving(false);
     if (dbError) {
-      setError(dbError.message);
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
     setSaved(true);
@@ -622,6 +628,7 @@ function CompanyForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Office address"><input value={f.office_address} onChange={(e) => set({ office_address: e.target.value })} className="auth-input" /></Field>
         <Field label="Base location"><input value={f.location} onChange={(e) => set({ location: e.target.value })} className="auth-input" placeholder="e.g. Gilgit" /></Field>
+        {area.picker}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Service areas (comma separated)"><input value={f.service_areas} onChange={(e) => set({ service_areas: e.target.value })} className="auth-input" placeholder="Skardu, Hunza, Gilgit" /></Field>
@@ -823,7 +830,7 @@ function PackageForm({
       : await createPackage(payload);
     setSaving(false);
     if (dbError) {
-      setError(dbError.message);
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
     onDone();
@@ -1017,7 +1024,7 @@ function TransportForm({
       ? await updateTransport(item!.id, payload)
       : await createTransport(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 
@@ -1199,7 +1206,7 @@ function GuideForm({
       ? await updateGuide(item!.id, payload)
       : await createGuide(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 

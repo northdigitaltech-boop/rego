@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import {
   UserRound,
@@ -244,6 +246,8 @@ function ProfileForm({
   space: CoworkingSpaceRow | null;
   onSaved: () => void;
 }) {
+  // Owns its own state, so no existing field or reset changes.
+  const area = useAreaSelection("coworking");
   const [name, setName] = React.useState(space?.name ?? user.name);
   const [ownerName, setOwnerName] = React.useState(space?.owner_name ?? "");
   const [phone, setPhone] = React.useState(space?.phone ?? "");
@@ -281,6 +285,8 @@ function ProfileForm({
     try {
       const payload = {
         name: name.trim(),
+        // Adds no key when nothing is chosen.
+        ...area.payload,
         owner_name: ownerName.trim() || null,
         phone: phone.trim() || null,
         whatsapp: whatsapp.trim() || null,
@@ -310,8 +316,12 @@ function ProfileForm({
       }
       setSaved(true);
       onSaved();
-    } catch {
-      setError("Could not save your space. Please try again.");
+    } catch (e) {
+      /* Keep the generic message for real failures, but never hide an area
+         rule refusal behind "try again" — retrying will not help, and the
+         provider needs to know their area is closed. */
+      const msg = friendlyAreaError((e as { message?: string })?.message);
+      setError(msg ?? "Could not save your space. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -346,6 +356,7 @@ function ProfileForm({
         <Field label="WhatsApp"><input className="auth-input" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} /></Field>
         <Field label="Email"><input className="auth-input" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <Field label="City"><input className="auth-input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Gilgit, Skardu…" /></Field>
+        {area.picker}
         <Field label="Address"><input className="auth-input" value={address} onChange={(e) => setAddress(e.target.value)} /></Field>
         <Field label="WiFi speed"><input className="auth-input" value={wifi} onChange={(e) => setWifi(e.target.value)} placeholder="e.g. 30 Mbps fibre" /></Field>
         <Field label="Opening hours"><input className="auth-input" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. 9 AM – 9 PM" /></Field>

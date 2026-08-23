@@ -70,6 +70,8 @@ import {
 import { GuideProfile } from "@/components/listings/guide-profile";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { cn, formatPrice } from "@/lib/utils";
 import {
   ProviderPostJob,
@@ -435,6 +437,8 @@ function GuideForm({
   onSaved: () => void;
 }) {
   const editing = !!guide;
+  // Owns its own state, so no existing field, reset or type changes.
+  const area = useAreaSelection("guides");
   const [f, setF] = React.useState({
     name: guide?.name ?? user.name,
     image: guide?.image ?? "",
@@ -484,6 +488,8 @@ function GuideForm({
     }
     setSaving(true);
     const payload = {
+      // Adds no key when nothing is chosen.
+      ...area.payload,
       company_id: null,
       company_name: null,
       name: f.name.trim(),
@@ -522,7 +528,7 @@ function GuideForm({
       : await createGuide(payload);
     setSaving(false);
     if (dbError) {
-      setError(dbError.message);
+      setError(friendlyAreaError(dbError.message) ?? dbError.message);
       return;
     }
     setSaved(true);
@@ -580,6 +586,7 @@ function GuideForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Address"><input value={f.address} onChange={(e) => set({ address: e.target.value })} className="auth-input" /></Field>
         <Field label="City / district"><input value={f.city} onChange={(e) => set({ city: e.target.value })} className="auth-input" placeholder="Skardu" /></Field>
+        {area.picker}
         <Field label="Emergency contact"><input value={f.emergency_contact} onChange={(e) => set({ emergency_contact: e.target.value })} className="auth-input" /></Field>
       </div>
 
@@ -737,7 +744,7 @@ function ServiceForm({
       ? await updateGuideService(item!.id, payload)
       : await createGuideService(payload);
     setSaving(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     onDone();
   };
 
@@ -789,7 +796,7 @@ function AvailabilityEditor({ guideId, ownerEmail }: { guideId: string; ownerEma
     const dates = enumerateDates(from, to || from);
     const { error: dbError } = await blockGuideDates({ guideId, dates, reason, ownerEmail });
     setBusy(false);
-    if (dbError) { setError(dbError.message); return; }
+    if (dbError) { setError(friendlyAreaError(dbError.message) ?? dbError.message); return; }
     setFrom(""); setTo("");
     await load();
   };

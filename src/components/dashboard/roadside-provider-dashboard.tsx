@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { friendlyAreaError } from "@/lib/area-rules";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import {
   LayoutDashboard,
@@ -345,6 +347,8 @@ function ProfileForm({
   services: RoadsideServiceRow[];
   onSaved: () => void;
 }) {
+  // Owns its own state, so no existing field or reset changes.
+  const area = useAreaSelection("roadside");
   const [businessName, setBusinessName] = React.useState(provider?.business_name ?? user.name);
   const [ownerName, setOwnerName] = React.useState(provider?.owner_name ?? "");
   const [phone, setPhone] = React.useState(provider?.phone ?? "");
@@ -396,6 +400,8 @@ function ProfileForm({
     try {
       const payload = {
         business_name: businessName.trim(),
+        // Adds no key when nothing is chosen.
+        ...area.payload,
         owner_name: ownerName.trim() || null,
         phone: phone.trim() || null,
         whatsapp: whatsapp.trim() || null,
@@ -439,8 +445,12 @@ function ProfileForm({
       }
       setSaved(true);
       onSaved();
-    } catch {
-      setError("Could not save your profile. Please try again.");
+    } catch (e) {
+      /* Keep the generic message for real failures, but never hide an area
+         rule refusal behind "try again" — retrying will not help, and the
+         provider needs to know their area is closed. */
+      const msg = friendlyAreaError((e as { message?: string })?.message);
+      setError(msg ?? "Could not save your profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -487,6 +497,7 @@ function ProfileForm({
         </Field>
         <Field label="City">
           <input className="auth-input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Gilgit, Skardu…" />
+          {area.picker}
         </Field>
         <Field label="Address">
           <input className="auth-input" value={address} onChange={(e) => setAddress(e.target.value)} />
