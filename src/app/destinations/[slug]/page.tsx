@@ -22,6 +22,12 @@ import {
   FaqJsonLd,
   TouristDestinationJsonLd,
 } from "@/components/seo/json-ld";
+import { getAnswers } from "@/lib/answers";
+import { DirectAnswer, TravelFAQ } from "@/components/aeo/answer-blocks";
+
+/* Answer content is rolled out one destination at a time. With the flag off
+   this page behaves exactly as it did before Phase 2. */
+const AEO_ENABLED = process.env.NEXT_PUBLIC_AEO_ENABLED === "1";
 import { feedAllListings } from "@/lib/home-feed";
 import { photo, cn } from "@/lib/utils";
 
@@ -131,6 +137,18 @@ export default async function DestinationPage({
   const nearby = location ? await getNearbyLocations(location.id).catch(() => []) : [];
   const openServices = location ? await getOpenServices(location.id).catch(() => []) : [];
 
+  /* Published answers for this destination. Behind a flag while Phase 2 is
+     rolled out one destination at a time — with it off, this page renders
+     exactly as it did before. Returns [] on any failure, so an answer
+     lookup can never take the page down. */
+  const answers =
+    AEO_ENABLED && location
+      ? await getAnswers({ locationId: location.id, limit: 20 }).catch(() => [])
+      : [];
+
+  const featuredAnswers = answers.filter((a) => a.is_featured).slice(0, 3);
+  const otherAnswers = answers.filter((a) => !a.is_featured);
+
   const parentName = location?.path_slugs?.length
     ? location.path_slugs[location.path_slugs.length - 2]
     : null;
@@ -153,8 +171,13 @@ export default async function DestinationPage({
         longitude={location?.longitude}
         containedIn={parentName ? titleCase(parentName) : "Gilgit-Baltistan"}
       />
-      {/* FAQ markup is emitted only alongside the visible FAQ block below. */}
-      {seo?.faq?.length ? <FaqJsonLd items={seo.faq} /> : null}
+      {/* FAQ markup only when the legacy location_seo.faq block is what
+          actually renders below. When governed answers exist, TravelFAQ owns
+          the schema — emitting both would put two FAQPage blocks on one page,
+          each describing a different set of questions. */}
+      {otherAnswers.length === 0 && seo?.faq?.length ? (
+        <FaqJsonLd items={seo.faq} />
+      ) : null}
       <Navbar />
       <main className="min-h-screen">
         {/* Hero */}
@@ -265,9 +288,33 @@ export default async function DestinationPage({
           <ListingsBrowser items={allListings} initialLocation={destination.location} hideHeader />
         </Suspense>
 
-        {/* FAQ — rendered visibly, which is what makes the FAQPage markup
-            above legitimate. If this block is absent, so is the schema. */}
-        {seo?.faq?.length ? (
+        {/* ---- Featured answers ----
+            The two or three questions worth a full heading. Everything else
+            goes in the FAQ below, so the page does not become a wall of
+            headings. */}
+        {featuredAnswers.length > 0 && (
+          <section className="container-px space-y-10 py-10">
+            {featuredAnswers.map((a) => (
+              <DirectAnswer key={a.id} answer={a} />
+            ))}
+          </section>
+        )}
+
+        {/* ---- FAQ ----
+            Governed answers when they exist, otherwise the older
+            location_seo.faq copy. Both render visibly; only the governed
+            path emits FAQPage schema, because only it carries verification
+            dates and sources.
+
+            Nothing renders when there is neither — no empty heading. */}
+        {otherAnswers.length > 0 ? (
+          <section className="container-px py-10">
+            <TravelFAQ
+              answers={otherAnswers}
+              title={`Common questions about ${destination.name}`}
+            />
+          </section>
+        ) : seo?.faq?.length ? (
           <section className="container-px py-10">
             <h2 className="font-display text-2xl font-bold text-forest">
               Common questions about {destination.name}

@@ -39,6 +39,7 @@ import {
   type ServiceFlag,
 } from "@/lib/markets";
 import { SeoEditor } from "@/components/dashboard/seo-editor";
+import { AnswersManager } from "@/components/dashboard/answers-manager";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -54,13 +55,14 @@ import { cn } from "@/lib/utils";
  * courtesy; /api/admin/markets re-checks everything.
  * ============================================================ */
 
-type Tab = "overview" | "availability" | "services" | "seo" | "audit";
+type Tab = "overview" | "availability" | "services" | "seo" | "answers" | "audit";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "availability", label: "Availability" },
   { id: "services", label: "Services" },
   { id: "seo", label: "SEO" },
+  { id: "answers", label: "Answers" },
   { id: "audit", label: "Audit History" },
 ];
 
@@ -300,6 +302,9 @@ export function MarketAreas() {
                       comingSoon: resolveFlag(selected, "coming_soon", locations).value,
                     }}
                   />
+                )}
+                {tab === "answers" && (
+                  <AnswersManager location={selected} services={services} />
                 )}
                 {tab === "audit" && <AuditHistory locationId={selected.id} />}
               </div>
