@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { CAREERS_EMAIL } from "@/lib/careers";
 
 /* ============================================================
  * REGO Jobs Portal (phase 62)
@@ -482,7 +483,7 @@ export function careerToJob(o: {
   return {
     id: `rego-career-${o.id}`,
     slug: null,
-    owner_email: "careers@rego.services",
+    owner_email: CAREERS_EMAIL,
     business_name: "Rego",
     business_category: "rego",
     business_logo: null,
@@ -505,7 +506,7 @@ export function careerToJob(o: {
     deadline: null,
     contact_name: null,
     contact_phone: null,
-    contact_email: "careers@rego.services",
+    contact_email: CAREERS_EMAIL,
     cv_required: true,
     application_method: "rego",
     external_url: null,

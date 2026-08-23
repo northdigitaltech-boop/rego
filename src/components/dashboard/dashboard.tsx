@@ -17,6 +17,7 @@ import {
   LifeBuoy,
 } from "lucide-react";
 
+import { VoucherButton } from "@/components/bookings/voucher-button";
 import { useWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/components/auth/auth-context";
 import { PartnerDashboard } from "@/components/dashboard/partner-dashboard";
@@ -547,6 +548,9 @@ function BookingItem({
             <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
           )}
         </button>
+        {/* Voucher only appears once the provider has actually accepted —
+            a pending request is not something to take to a hotel desk. */}
+        <VoucherButton bookingId={b.id} status={b.status} />
       </div>
     </div>
   );

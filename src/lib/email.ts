@@ -1,4 +1,5 @@
-import { emailLayout } from "@/lib/email-layout";
+import { emailLayout, emailButton } from "@/lib/email-layout";
+import { siteConfig } from "@/lib/site";
 
 /**
  * Send an email and report WHY it failed.
@@ -129,6 +130,18 @@ export function bookingStatusEmail(opts: {
     `<p>Hi ${opts.name},</p>
      <p>Your booking <strong>${opts.ref}</strong> for <strong>${opts.hotel}</strong> was
      ${opts.accepted ? "<strong>confirmed</strong>" : "unfortunately <strong>declined</strong>"}.</p>
-     ${opts.accepted ? "<p>We look forward to hosting you. Please keep your reference handy.</p>" : "<p>Please explore other great stays on Rego.</p>"}`
+     ${
+       opts.accepted
+         ? `<p>We look forward to hosting you. Please keep your reference handy.</p>
+            <p style="margin:18px 0 6px"><strong>Download your booking voucher</strong></p>
+            <p style="margin:0 0 14px;color:#556;font-size:14px;line-height:1.6">
+              Open your bookings and tap <strong>Download voucher</strong> to save a PDF with your
+              reference and check-in details. Save it to your phone before you travel &mdash; mobile
+              signal is limited in many Gilgit-Baltistan valleys, and the hotel desk can read the PDF
+              offline.
+            </p>
+            ${emailButton("Open my bookings", `${siteConfig.url}/dashboard`)}`
+         : "<p>Please explore other great stays on Rego.</p>"
+     }`
   );
 }

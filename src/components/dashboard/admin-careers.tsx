@@ -95,7 +95,7 @@ export function AdminCareers() {
 
       <p className="flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-800">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        To close a role, delete it and Save. Roles are grouped by the <strong>Department</strong> field on the public page. Applications go to careers@rego.services.
+        To close a role, delete it and Save. Roles are grouped by the <strong>Department</strong> field on the public page. Applications appear in the Applications tab, and a copy is emailed to you.
       </p>
 
       {jobs.length === 0 && (

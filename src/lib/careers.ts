@@ -1,11 +1,14 @@
 // Rego careers — open positions shown on /careers.
-// Applications go to careers@rego.services (mailto with a pre-filled subject).
+// Applications go to the single Rego mailbox. There is no careers@ mailbox —
+// sending there bounced with "550 User doesn't exist" and every application
+// notification was lost. Sourced from siteConfig so one change moves them all.
 // The array below is the built-in DEFAULT; admins can post/edit/close jobs from
 // the admin panel and edits are stored in `careers_content` (phase57).
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { siteConfig } from "@/lib/site";
 
-export const CAREERS_EMAIL = "careers@rego.services";
+export const CAREERS_EMAIL = siteConfig.contactEmail;
 
 export interface JobOpening {
   id: string;
