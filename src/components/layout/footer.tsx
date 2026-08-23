@@ -13,6 +13,7 @@ import {
 
 import { BrandLogo } from "@/components/layout/logo";
 import { HelplineLink } from "@/components/layout/helpline-link";
+import { SecpRegistration } from "@/components/layout/secp-registration";
 import { legalPolicies } from "@/lib/legal";
 import { siteConfig, contactLinks } from "@/lib/site";
 
@@ -39,6 +40,17 @@ const topDestinations = [
 const socials = [Facebook, Instagram, Youtube, MessageCircle];
 
 export function Footer() {
+  return (
+    <>
+      {/* Placed inside Footer rather than added to ~59 page files. One change,
+          and it appears above the footer everywhere the footer already is. */}
+      <SecpRegistration />
+      <FooterMain />
+    </>
+  );
+}
+
+function FooterMain() {
   return (
     <footer className="border-t-4 border-gold/80 bg-forest-800 text-white/75">
       <div className="container-px py-14">
