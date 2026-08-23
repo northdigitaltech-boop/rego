@@ -22,6 +22,7 @@ import { uploadFileToCloudinary, isCloudinaryConfigured } from "@/lib/cloudinary
 import { sendEmail } from "@/lib/email";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/lib/use-scroll-lock";
+import { alertJobApplication } from "@/lib/admin-alerts";
 
 function Portal({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);

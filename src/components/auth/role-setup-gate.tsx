@@ -8,6 +8,7 @@ import { useAuth, type AccountRole } from "@/components/auth/auth-context";
 import { BrandLogo } from "@/components/layout/logo";
 import { categories, type CategorySlug } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { alertNewProvider } from "@/lib/admin-alerts";
 
 /* Same list the email signup form offers, so both routes land in the
    same set of partner categories. */
@@ -45,10 +46,20 @@ export function RoleSetupGate({ children }: { children: React.ReactNode }) {
     }
     setBusy(true);
     try {
+      /* Tell the admin a provider is waiting. Fire-and-forget: if the
+         alert fails, the signup still succeeds. */
       await chooseRole(
         role,
         role === "partner" ? (businessCategory as CategorySlug) : undefined
       );
+
+      if (role === "partner") {
+        alertNewProvider({
+          name: user?.name ?? null,
+          email: user?.email ?? "",
+          category: businessCategory || null,
+        });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save. Please try again.");
     } finally {

@@ -10,6 +10,7 @@ import {
 } from "@/lib/provider-services";
 import { allCategories, type CategorySlug } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { alertServiceRequest } from "@/lib/admin-alerts";
 
 /**
  * Lets one provider account operate several services (hotel + transport +
@@ -139,6 +140,11 @@ function AddServiceModal({
     setBusy(true);
     setError("");
     const { error: err } = await requestService(email, cat, note);
+    if (!err) {
+      /* The provider cannot list in this category until it is approved,
+         so the admin needs to know today, not on their next login. */
+      alertServiceRequest({ email, service: cat, note: note || null });
+    }
     setBusy(false);
     if (err) {
       setError((err as { message?: string })?.message || "Could not send the request.");
