@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { buildMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { Search, GitCompare, CalendarCheck, Plane } from "lucide-react";
 
@@ -6,11 +8,14 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
+/* Canonical added: this page previously inherited the root layout's
+   canonical of "/", telling Google it was a duplicate of the homepage. */
+export const metadata: Metadata = buildMetadata({
   title: "How It Works",
   description:
     "Planning your trip to Gilgit Baltistan with Rego is simple: search, compare, book and travel.",
-};
+  path: "/how-it-works",
+});
 
 const steps = [
   {

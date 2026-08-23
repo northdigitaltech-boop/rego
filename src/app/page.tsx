@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+
+import { buildMetadata } from "@/lib/seo";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Hero } from "@/components/home/hero";
@@ -37,6 +40,14 @@ import {
 } from "@/lib/home-feed";
 
 export const revalidate = 60;
+
+/* The homepage now owns its canonical, which used to come from the root
+   layout and leak onto every other page. absoluteTitle bypasses the
+   "%s — Rego" template so the homepage title is not "Rego — Rego". */
+export const metadata: Metadata = buildMetadata({
+  absoluteTitle: "Rego — Book Your Entire Trip in One Place",
+  path: "/",
+});
 
 export default async function Home() {
   const [

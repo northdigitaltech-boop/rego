@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
+
+import { buildMetadata } from "@/lib/seo";
 import { TrendingUp, Wallet, BarChart3, ShieldCheck } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { PartnerForm } from "@/components/partner/partner-form";
 
-export const metadata: Metadata = {
+/* Canonical added: this page previously inherited the root layout's
+   canonical of "/", telling Google it was a duplicate of the homepage. */
+export const metadata: Metadata = buildMetadata({
   title: "Become a Partner",
   description:
     "List your hotel, homestay, tour, transport or service on Rego and reach travelers across Gilgit Baltistan.",
-};
+  path: "/partner",
+});
 
 const perks = [
   {

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { buildMetadata } from "@/lib/seo";
 import {
   Phone,
   Mail,
@@ -21,11 +23,14 @@ import { photo } from "@/lib/utils";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+/* Canonical added: this page previously inherited the root layout's
+   canonical of "/", telling Google it was a duplicate of the homepage. */
+export const metadata: Metadata = buildMetadata({
   title: "Contact Us",
   description:
     "Get in touch with the Rego team for help planning your trip to Gilgit Baltistan.",
-};
+  path: "/contact",
+});
 
 /** Social platform → icon. Unknown platforms fall back to a link glyph. */
 const SOCIAL_ICONS: Record<string, typeof Facebook> = {

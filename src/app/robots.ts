@@ -21,6 +21,12 @@ export default function robots(): MetadataRoute.Robots {
       // controlled with per-page `noindex, follow` metadata instead.
       disallow: [
         "/admin",
+        /* The security portal. It was missing here — it carries a page-level
+           noindex, but a private incident-response surface should not be
+           crawled at all. Normally you avoid blocking a page whose noindex
+           the crawler needs to read; that rule does not apply to a route
+           nobody outside the team should reach. */
+        "/cyber",
         "/dashboard",
         "/api/",
         "/signin",
@@ -31,6 +37,8 @@ export default function robots(): MetadataRoute.Robots {
         "/connect/setup",
         "/connect/requests",
         "/safarnama/create",
+        // PWA fallback shell — real content, no unique value, never a landing page.
+        "/offline",
       ],
     },
     sitemap: `${siteConfig.url}/sitemap.xml`,

@@ -75,7 +75,19 @@ export const metadata: Metadata = {
   authors: [{ name: "Rego" }],
   creator: "Rego",
   publisher: "Rego",
-  alternates: { canonical: "/" },
+  /* NO `alternates.canonical` HERE — ON PURPOSE.
+   *
+   * In the App Router, metadata fields from a layout are inherited by every
+   * page that does not set its own. A canonical of "/" in the root layout
+   * therefore made every page without an explicit canonical announce itself
+   * as a duplicate of the homepage — which asks Google not to index it.
+   *
+   * Leaving it out means a page with no canonical emits none at all, and the
+   * crawler self-canonicalises to the URL it fetched. A missing canonical is
+   * recoverable; a confidently wrong one is not.
+   *
+   * The homepage sets its own in app/page.tsx.
+   */
   // Site-wide default. Non-production hosts (preview/staging/local) are kept out
   // of the index; per-page metadata can still override this.
   robots: {
