@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { BrandLogo } from "@/components/layout/logo";
+import { HelplineLink } from "@/components/layout/helpline-link";
 import { legalPolicies } from "@/lib/legal";
 import { siteConfig, contactLinks } from "@/lib/site";
 
@@ -99,13 +100,13 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <a
-                  href={contactLinks.tel}
+                {/* Same admin-editable number as the Contact page and the
+                    navbar. This was hardcoded, so editing it in the admin
+                    left the footer showing the old one. */}
+                <HelplineLink
                   className="flex items-center gap-2 text-white/65 transition-colors hover:text-gold"
-                >
-                  <Phone className="h-4 w-4 shrink-0 text-gold" />
-                  {siteConfig.contactPhoneDisplay}
-                </a>
+                  icon={<Phone className="h-4 w-4 shrink-0 text-gold" />}
+                />
               </li>
               <li>
                 <a

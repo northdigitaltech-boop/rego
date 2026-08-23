@@ -18,6 +18,7 @@ import {
 } from "@/lib/rego-map";
 import { photo, cn } from "@/lib/utils";
 import { siteConfig, contactLinks } from "@/lib/site";
+import { HelplineLink } from "@/components/layout/helpline-link";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -325,7 +326,11 @@ export function RegoMapDashboard({
           </div>
           <div className="mt-3 flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 p-3">
             <LifeBuoy className="h-8 w-8 text-gold" />
-            <div><p className="text-sm font-semibold text-white">Need Help?</p><a href={contactLinks.tel} className="text-[11px] text-white/60 hover:text-gold">24/7 · {siteConfig.contactPhoneDisplay}</a></div>
+            <div>
+              <p className="text-sm font-semibold text-white">Need Help?</p>
+              {/* Same admin-editable number as the Contact page. */}
+              <HelplineLink className="text-[11px] text-white/60 hover:text-gold" prefix="24/7 · " />
+            </div>
           </div>
         </aside>
         {sideOpen && <div onClick={() => setSideOpen(false)} className="fixed inset-0 z-40 bg-black/50 xl:hidden" />}

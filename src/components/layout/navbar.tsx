@@ -35,6 +35,7 @@ import { useUnread } from "@/lib/use-unread";
 import { useWishlist } from "@/lib/wishlist";
 import { cn } from "@/lib/utils";
 import { siteConfig, contactLinks } from "@/lib/site";
+import { HelplineLink } from "@/components/layout/helpline-link";
 
 type NavNotif = { id: string; who: string; text: string; time: string };
 
@@ -366,16 +367,15 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
       {/* Desktop utility bar (white) — helpline + currency / wishlist / booking status / notifications */}
       <div className="hidden border-b border-border bg-white xl:block">
         <div className={cn(cx, "flex h-10 items-center justify-between")}>
-          {/* Number and link both come from siteConfig — the same source the
-              Contact page uses. It was hardcoded here, so changing the number
-              in one place left the other showing the old one. */}
-          <a
-            href={contactLinks.tel}
+          {/* Reads the SAME admin-editable value the Contact page shows.
+              siteConfig is only the fallback before an admin has saved a
+              number — pointing here at siteConfig looked like one source of
+              truth but let the two diverge the moment it was edited. */}
+          <HelplineLink
             className="flex items-center gap-1.5 text-sm font-semibold text-forest transition-colors hover:text-forest-600"
-          >
-            <Phone className="h-4 w-4 text-forest-600" /> Helpline:{" "}
-            {siteConfig.contactPhoneDisplay}
-          </a>
+            icon={<Phone className="h-4 w-4 text-forest-600" />}
+            prefix="Helpline: "
+          />
           <div className="flex items-center gap-5">
             <button className="flex items-center gap-1 text-sm font-medium text-forest transition-colors hover:text-forest-600">
               PKR <ChevronDown className="h-3.5 w-3.5" />
