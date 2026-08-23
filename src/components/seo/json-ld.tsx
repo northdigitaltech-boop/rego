@@ -1,196 +1,223 @@
 import { siteConfig, absoluteUrl } from "@/lib/site";
 
-/**
- * Server-rendered JSON-LD. Renders a single <script type="application/ld+json">.
- * `null`/`undefined` values are stripped so we never emit empty properties, and
- * the payload is safely escaped against "</script>" breakout.
+/* ============================================================
+ * JSON-LD structured data.
+ *
+ * ---------------------------------------------------------------------------
+ * ONE RULE: SCHEMA MUST DESCRIBE WHAT IS ACTUALLY ON THE PAGE.
+ *
+ * Every helper below takes only data the page itself renders.
+ * There is no aggregateRating helper, no "availability" helper
+ * and no review markup, because Rego has no verified source for
+ * those on a destination page — and marking up a rating that a
+ * visitor cannot see is exactly what earns a structured-data
+ * manual action.
+ *
+ * FAQPage is emitted ONLY when the FAQs are visibly displayed.
+ * The caller passes the same array it renders, so the two
+ * cannot drift.
+ * ---------------------------------------------------------------------------
  */
-export function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
-  const clean = Array.isArray(data) ? data.map(prune) : prune(data);
-  const json = JSON.stringify(clean).replace(/</g, "\\u003c");
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />;
-}
 
-/** Recursively remove null / undefined / "" / empty-array/object props. */
-function prune<T>(value: T): T {
-  if (Array.isArray(value)) {
-    const arr = value.map(prune).filter((v) => v !== undefined);
-    return arr as unknown as T;
-  }
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) {
-      const pv = prune(v);
-      if (
-        pv === null ||
-        pv === undefined ||
-        pv === "" ||
-        (Array.isArray(pv) && pv.length === 0)
-      )
-        continue;
-      out[k] = pv;
-    }
-    return out as unknown as T;
-  }
-  return value;
+/**
+ * Emit one schema object, or several.
+ *
+ * Exported and array-tolerant because layout.tsx and /jobs/[slug] already
+ * call it with an array — `<JsonLd data={[organizationSchema(), websiteSchema()]} />`.
+ */
+export function JsonLd({
+  data,
+}: {
+  data: Record<string, unknown> | Record<string, unknown>[];
+}) {
+  const payload = Array.isArray(data)
+    ? data.filter(Boolean)
+    : [data].filter(Boolean);
+  if (payload.length === 0) return null;
+
+  return (
+    <>
+      {payload.map((d, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          // Built server-side from our own data, never from user input.
+          // The escape closes the <script> injection vector regardless.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(d).replace(/</g, "\\u003c"),
+          }}
+        />
+      ))}
+    </>
+  );
 }
 
 /* ------------------------------------------------------------------ */
-/* Reusable schema builders (return plain objects for <JsonLd data>).  */
+/* Site-wide schemas                                                   */
 /* ------------------------------------------------------------------ */
 
-export function organizationSchema() {
+/** Organization. Only contact details we actually publish. */
+export function organizationSchema(): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: siteConfig.name,
     url: siteConfig.url,
     logo: absoluteUrl(siteConfig.ogImage),
-    description: siteConfig.description,
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: siteConfig.contactPhone,
-      contactType: "customer support",
-      areaServed: "PK",
+    email: siteConfig.contactEmail,
+    telephone: siteConfig.contactPhone,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Skardu",
+      addressRegion: "Gilgit-Baltistan",
+      addressCountry: "PK",
     },
   };
 }
 
-export function websiteSchema() {
+/** WebSite, with the search action pointed at the real listings query param. */
+export function websiteSchema(): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: siteConfig.name,
     url: siteConfig.url,
+    description: siteConfig.description,
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${siteConfig.url}/listings?q={search_term_string}`,
+        urlTemplate: absoluteUrl("/listings?q={search_term_string}"),
       },
       "query-input": "required name=search_term_string",
     },
   };
 }
 
-export type Crumb = { name: string; path: string };
-
-export function breadcrumbSchema(items: Crumb[]) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: items.map((c, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: c.name,
-      item: absoluteUrl(c.path),
-    })),
-  };
+export interface Crumb {
+  name: string;
+  path: string;
 }
 
-interface PlaceInput {
-  type: "LodgingBusiness" | "Hotel" | "Restaurant" | "TravelAgency" | "LocalBusiness" | "TouristAttraction";
+/** BreadcrumbList. Pass the same trail the page renders visually. */
+export function BreadcrumbJsonLd({ items }: { items: Crumb[] }) {
+  if (items.length === 0) return null;
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: items.map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: c.name,
+          item: absoluteUrl(c.path),
+        })),
+      }}
+    />
+  );
+}
+
+/**
+ * TouristDestination.
+ *
+ * Only fields we genuinely hold are emitted. `geo` is omitted entirely when
+ * coordinates are missing rather than sent as null, because a null coordinate
+ * is worse than no coordinate — it asserts we know and the answer is nothing.
+ */
+export function TouristDestinationJsonLd({
+  name,
+  description,
+  image,
+  path,
+  latitude,
+  longitude,
+  containedIn,
+}: {
   name: string;
   description?: string | null;
   image?: string | null;
   path: string;
-  location?: string | null;
-  address?: string | null;
-  phone?: string | null;
-  priceRange?: string | null;
-  // Only pass a rating when a REAL aggregate exists (never fabricate).
-  ratingValue?: number | null;
-  reviewCount?: number | null;
-}
-
-/** Generic LocalBusiness-style schema used by hotels, restaurants, providers, etc. */
-export function businessSchema(p: PlaceInput) {
-  return {
+  latitude?: number | null;
+  longitude?: number | null;
+  /** Parent area name, e.g. "Gilgit-Baltistan". */
+  containedIn?: string | null;
+}) {
+  const data: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": p.type,
-    name: p.name,
-    description: p.description || undefined,
-    image: p.image ? absoluteUrl(p.image) : undefined,
-    url: absoluteUrl(p.path),
-    telephone: p.phone || undefined,
-    priceRange: p.priceRange || undefined,
-    address:
-      p.address || p.location
-        ? {
-            "@type": "PostalAddress",
-            streetAddress: p.address || undefined,
-            addressLocality: p.location || undefined,
-            addressRegion: "Gilgit-Baltistan",
-            addressCountry: "PK",
-          }
-        : undefined,
-    aggregateRating:
-      p.ratingValue && p.reviewCount
-        ? {
-            "@type": "AggregateRating",
-            ratingValue: p.ratingValue,
-            reviewCount: p.reviewCount,
-          }
-        : undefined,
+    "@type": "TouristDestination",
+    name,
+    url: absoluteUrl(path),
   };
+  if (description) data.description = description;
+  if (image) data.image = image;
+  if (latitude != null && longitude != null) {
+    data.geo = {
+      "@type": "GeoCoordinates",
+      latitude,
+      longitude,
+    };
+  }
+  if (containedIn) {
+    data.containedInPlace = { "@type": "Place", name: containedIn };
+  }
+  return <JsonLd data={data} />;
 }
 
-interface ArticleInput {
-  title: string;
-  description?: string | null;
-  image?: string | null;
-  path: string;
-  authorName?: string | null;
-  publishedTime?: string | null;
-  modifiedTime?: string | null;
+/**
+ * FAQPage — ONLY call this when the same FAQs are rendered on screen.
+ *
+ * Google's guidelines require the content to be visible. Emitting hidden FAQ
+ * markup is a common way sites lose rich results across the whole domain, not
+ * just on the offending page.
+ */
+export function FaqJsonLd({ items }: { items: { q: string; a: string }[] }) {
+  const clean = items.filter((f) => f.q?.trim() && f.a?.trim());
+  if (clean.length === 0) return null;
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: clean.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }}
+    />
+  );
 }
 
-export function articleSchema(a: ArticleInput) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: a.title,
-    description: a.description || undefined,
-    image: a.image ? absoluteUrl(a.image) : undefined,
-    mainEntityOfPage: absoluteUrl(a.path),
-    author: a.authorName ? { "@type": "Person", name: a.authorName } : { "@type": "Organization", name: siteConfig.name },
-    publisher: {
-      "@type": "Organization",
-      name: siteConfig.name,
-      logo: { "@type": "ImageObject", url: absoluteUrl(siteConfig.ogImage) },
-    },
-    datePublished: a.publishedTime || undefined,
-    dateModified: a.modifiedTime || a.publishedTime || undefined,
-  };
-}
-
-interface EventInput {
+/**
+ * ItemList for a set of listings shown on a location+service page.
+ *
+ * Names and URLs only. No prices, no ratings, no availability — those change
+ * per date and per room, and marking up a price the page does not guarantee
+ * is a promise to a search engine that the booking flow may not keep.
+ */
+export function ListingItemListJsonLd({
+  items,
+  name,
+}: {
+  items: { title: string; path: string }[];
   name: string;
-  description?: string | null;
-  image?: string | null;
-  path: string;
-  startDate?: string | null;
-  endDate?: string | null;
-  location?: string | null;
-}
-
-export function eventSchema(e: EventInput) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: e.name,
-    description: e.description || undefined,
-    image: e.image ? absoluteUrl(e.image) : undefined,
-    url: absoluteUrl(e.path),
-    startDate: e.startDate || undefined,
-    endDate: e.endDate || undefined,
-    eventStatus: "https://schema.org/EventScheduled",
-    location: e.location
-      ? {
-          "@type": "Place",
-          name: e.location,
-          address: { "@type": "PostalAddress", addressLocality: e.location, addressRegion: "Gilgit-Baltistan", addressCountry: "PK" },
-        }
-      : undefined,
-  };
+}) {
+  if (items.length === 0) return null;
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name,
+        numberOfItems: items.length,
+        itemListElement: items.slice(0, 30).map((it, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: it.title,
+          url: absoluteUrl(it.path),
+        })),
+      }}
+    />
+  );
 }

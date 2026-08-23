@@ -105,5 +105,113 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return urls;
+  /* ---- Market & Area pages -------------------------------------------
+     Every candidate is put through decideIndexable(), the SAME function
+     the page's own generateMetadata calls. A sitemap that lists pages
+     those pages mark noindex is a crawl-budget leak, and it is exactly
+     what happens when the rule gets implemented twice.
+
+     Nothing is emitted until the market module is switched on and areas
+     are made public, so today this adds zero URLs. -------------------- */
+  for (const p of await safeMarketPages()) {
+    urls.push({
+      url: absoluteUrl(p.path),
+      lastModified: p.lastModified,
+      changeFrequency: "weekly",
+      priority: p.service ? 0.6 : 0.75,
+    });
+  }
+
+  /* Deduplicate. A destination that exists both in the hardcoded list in
+     lib/data.ts and in the locations table would otherwise appear twice,
+     and a duplicated URL in a sitemap is a signal that the site does not
+     know its own structure. */
+  const seen = new Set<string>();
+  return urls.filter((u) => {
+    const key = String(u.url);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Location and location+service URLs that genuinely deserve indexing.
+ *
+ * Returns [] on any failure. A sitemap must never 500 — an unreachable
+ * sitemap is worse than an incomplete one, because crawlers back off from
+ * the whole site rather than from one section.
+ */
+async function safeMarketPages(): Promise<
+  { path: string; service: string | null; lastModified: Date }[]
+> {
+  try {
+    const { supabase, isSupabaseConfigured } = await import("@/lib/supabase");
+    if (!isSupabaseConfigured) return [];
+
+    const { data, error } = await supabase.rpc("seo_page_candidates");
+    if (error || !Array.isArray(data)) return [];
+
+    const rows = data as {
+      location_id: string;
+      location_slug: string;
+      service_slug: string | null;
+      robots_index: boolean;
+      content_updated_at: string | null;
+    }[];
+    if (rows.length === 0) return [];
+
+    const {
+      contentLength,
+      decideIndexable,
+      getLocationSeo,
+      locationPath,
+    } = await import("@/lib/location-seo");
+
+    // Listing counts are the expensive part, so resolve each location once
+    // rather than once per service.
+    const countCache = new Map<string, number>();
+    const countFor = async (id: string) => {
+      if (countCache.has(id)) return countCache.get(id)!;
+      const { data: n } = await supabase.rpc("listing_count_at", { p_location_id: id });
+      const v = typeof n === "number" ? n : 0;
+      countCache.set(id, v);
+      return v;
+    };
+
+    const out: { path: string; service: string | null; lastModified: Date }[] = [];
+
+    for (const r of rows) {
+      const seo = await getLocationSeo(r.location_id, r.service_slug).catch(() => null);
+      const listingCount = await countFor(r.location_id);
+
+      const decision = decideIndexable({
+        // The SQL candidate query already required these four.
+        locationIsActive: true,
+        locationIsPublic: true,
+        seoEnabled: true,
+        serviceAvailable: true,
+        comingSoon: false,
+        robotsIndex: r.robots_index,
+        listingCount,
+        contentChars: contentLength(seo),
+      });
+
+      if (!decision.index) continue;
+
+      out.push({
+        path: locationPath(r.location_slug, r.service_slug),
+        service: r.service_slug,
+        /* lastmod reflects when the CONTENT changed, not when we deployed.
+           A lastmod that moves on every build teaches crawlers to ignore it. */
+        lastModified: r.content_updated_at
+          ? new Date(r.content_updated_at)
+          : new Date(),
+      });
+    }
+
+    return out;
+  } catch {
+    return [];
+  }
 }

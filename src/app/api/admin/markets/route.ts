@@ -72,6 +72,27 @@ const EDITABLE_FIELDS = new Set([
    silently. Slug editing belongs with the redirects tab, where the
    redirect can be created in the same transaction. */
 
+/** SEO fields a caller may write. Anything outside this list is rejected. */
+const SEO_FIELDS = new Set([
+  "seo_title",
+  "meta_description",
+  "h1",
+  "intro",
+  "body",
+  "focus_keyword",
+  "canonical_url",
+  "og_title",
+  "og_description",
+  "og_image",
+  "hero_image",
+  "hero_image_alt",
+  "faq",
+  "robots_index",
+  "robots_follow",
+]);
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rego.services";
+
 const MAX_BULK = 200;
 
 function adminClient(): SupabaseClient {
@@ -426,6 +447,124 @@ export async function POST(req: Request) {
         entityId: locationId,
         entityLabel: (before as { name?: string }).name ?? null,
         before: beforeSubset,
+        after: clean,
+      });
+
+      return NextResponse.json({ ok: true });
+    }
+
+    /* ---------------------------------------------------------------- */
+    case "save_seo": {
+      const locationId = String(body.locationId ?? "");
+      const serviceSlug = body.serviceSlug ? String(body.serviceSlug) : null;
+      const patch = (body.patch ?? {}) as Record<string, unknown>;
+
+      if (!locationId) return bad("Missing location.");
+
+      if (serviceSlug) {
+        const { data: svc } = await sb
+          .from("service_categories")
+          .select("slug")
+          .eq("slug", serviceSlug)
+          .maybeSingle();
+        if (!svc) return bad("Unknown service.");
+      }
+
+      const clean: Record<string, unknown> = {};
+      let contentTouched = false;
+
+      for (const [k, v] of Object.entries(patch)) {
+        if (!SEO_FIELDS.has(k)) return bad(`"${k}" cannot be edited here.`);
+
+        if (k === "robots_index" || k === "robots_follow") {
+          if (typeof v !== "boolean") return bad(`${k} must be true or false.`);
+          clean[k] = v;
+          continue;
+        }
+
+        if (k === "faq") {
+          if (!Array.isArray(v)) return bad("FAQ must be a list.");
+          if (v.length > 20) return bad("At most 20 FAQ entries.");
+          const items = v as { q?: unknown; a?: unknown }[];
+          const cleaned = items
+            .map((f) => ({
+              q: String(f.q ?? "").trim().slice(0, 300),
+              a: String(f.a ?? "").trim().slice(0, 2000),
+            }))
+            /* Drop half-filled entries. A question with no answer renders as
+               an empty <dd> and, worse, ships as FAQPage markup with a blank
+               acceptedAnswer — which is a structured-data violation. */
+            .filter((f) => f.q && f.a);
+          clean.faq = cleaned;
+          contentTouched = true;
+          continue;
+        }
+
+        const s = String(v ?? "").trim();
+        if (s.length > 20000) return bad(`"${k}" is too long.`);
+
+        if (k === "canonical_url" && s) {
+          // Relative paths, or absolute URLs on our own origin. A canonical
+          // pointing at another domain hands the page away.
+          const ok =
+            s.startsWith("/") ||
+            (() => {
+              try {
+                return new URL(s).host === new URL(SITE_URL).host;
+              } catch {
+                return false;
+              }
+            })();
+          if (!ok) return bad("Canonical must be a path on this site.");
+        }
+
+        if (["intro", "body"].includes(k)) contentTouched = true;
+        clean[k] = s || null;
+      }
+
+      if (Object.keys(clean).length === 0) return bad("Nothing to change.");
+
+      /* content_updated_at drives sitemap <lastmod>. Bump it only when the
+         actual prose changed — not when a title or a robots flag was
+         tweaked. A lastmod that moves for cosmetic edits teaches crawlers
+         to stop trusting it. */
+      if (contentTouched) clean.content_updated_at = new Date().toISOString();
+
+      const { data: existing } = await sb
+        .from("location_seo")
+        .select("*")
+        .eq("location_id", locationId)
+        .eq("language_code", "en")
+        .filter("service_slug", serviceSlug ? "eq" : "is", serviceSlug ?? null)
+        .maybeSingle();
+
+      const { error } = await sb.from("location_seo").upsert(
+        {
+          location_id: locationId,
+          service_slug: serviceSlug,
+          language_code: "en",
+          ...clean,
+          updated_by: caller.user.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "location_id,service_slug,language_code" }
+      );
+
+      if (error) return bad(error.message, 500);
+
+      const beforeSubset: Record<string, unknown> = {};
+      if (existing) {
+        for (const k of Object.keys(clean)) {
+          beforeSubset[k] = (existing as Record<string, unknown>)[k];
+        }
+      }
+
+      await audit({
+        action: "seo.update",
+        entityType: "location_seo",
+        entityId: locationId,
+        entityLabel: serviceSlug ? `${serviceSlug} page` : "destination page",
+        before: existing ? beforeSubset : null,
         after: clean,
       });
 

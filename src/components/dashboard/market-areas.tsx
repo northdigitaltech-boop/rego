@@ -38,6 +38,7 @@ import {
   type ServiceCategoryRow,
   type ServiceFlag,
 } from "@/lib/markets";
+import { SeoEditor } from "@/components/dashboard/seo-editor";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -288,7 +289,18 @@ export function MarketAreas() {
                     onError={setError}
                   />
                 )}
-                {tab === "seo" && <SeoPlaceholder />}
+                {tab === "seo" && (
+                  <SeoEditor
+                    location={selected}
+                    services={services}
+                    resolved={{
+                      isActive: resolveFlag(selected, "is_active", locations).value,
+                      isPublic: resolveFlag(selected, "is_public", locations).value,
+                      seoEnabled: resolveFlag(selected, "seo_enabled", locations).value,
+                      comingSoon: resolveFlag(selected, "coming_soon", locations).value,
+                    }}
+                  />
+                )}
                 {tab === "audit" && <AuditHistory locationId={selected.id} />}
               </div>
             </>
@@ -786,24 +798,6 @@ function Services({
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* SEO — honest placeholder                                            */
-/* ------------------------------------------------------------------ */
-
-function SeoPlaceholder() {
-  return (
-    <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-sm">
-      <p className="font-semibold text-forest">SEO editing arrives in Phase 5</p>
-      <p className="mt-1 leading-relaxed text-muted-foreground">
-        The <code className="rounded bg-muted px-1">location_seo</code> table exists and
-        is ready, but nothing reads it yet — public location pages, metadata and the
-        sitemap are Phase 5. Adding the editor now would let you write content that
-        silently goes nowhere.
-      </p>
     </div>
   );
 }

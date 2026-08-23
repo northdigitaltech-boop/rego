@@ -10,6 +10,18 @@ import { ListingsBrowser } from "@/components/listings/listings-browser";
 import { AttractionsSection } from "@/components/destinations/attractions-section";
 import { destinations } from "@/lib/data";
 import { getDestinationBySlug } from "@/lib/destinations";
+import {
+  getLocationSeo,
+  getNearbyLocations,
+  getPublicLocationBySlug,
+  getOpenServices,
+  locationPath,
+} from "@/lib/location-seo";
+import {
+  BreadcrumbJsonLd,
+  FaqJsonLd,
+  TouristDestinationJsonLd,
+} from "@/components/seo/json-ld";
 import { feedAllListings } from "@/lib/home-feed";
 import { photo, cn } from "@/lib/utils";
 
@@ -39,19 +51,62 @@ export async function generateMetadata({
   const { slug } = await params;
   const destination = await getDestinationBySlug(slug);
   if (!destination) return { title: "Destination not found" };
-  const description = `${destination.tagline}. Find hotels, tours and more in ${destination.name}, Gilgit Baltistan.`;
+
+  /* Admin-written SEO overrides the generated copy when it exists. Falls all
+     the way back to today's behaviour when the market module is not on, so
+     this page keeps working unchanged until somebody writes content for it. */
+  const seo = await getLocationSeoForSlug(slug);
+
+  const description =
+    seo?.meta_description?.trim() ||
+    `${destination.tagline}. Find hotels, tours and more in ${destination.name}, Gilgit Baltistan.`;
+
+  const title = seo?.seo_title?.trim() || destination.name;
+  const image = seo?.og_image || destination.image;
+
+  /* CANONICAL IGNORES ?category= ON PURPOSE.
+     The quick filters are the same page with a client-side filter applied —
+     they contain no unique content, so every filtered view must point back
+     here or they compete with each other for the same query. */
+  const canonical = seo?.canonical_url?.trim() || `/destinations/${slug}`;
+
   return {
-    title: destination.name,
+    title,
     description,
-    alternates: { canonical: `/destinations/${slug}` },
+    alternates: { canonical },
+    robots: seo
+      ? { index: seo.robots_index, follow: seo.robots_follow }
+      : undefined,
     openGraph: {
-      title: `${destination.name} — Rego`,
-      description,
-      url: `/destinations/${slug}`,
+      title: seo?.og_title?.trim() || `${destination.name} — Rego`,
+      description: seo?.og_description?.trim() || description,
+      url: canonical,
       type: "website",
-      images: destination.image ? [{ url: destination.image }] : undefined,
+      images: image ? [{ url: image }] : undefined,
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title: seo?.og_title?.trim() || destination.name,
+      description: seo?.og_description?.trim() || description,
+      images: image ? [image] : undefined,
     },
   };
+}
+
+/**
+ * SEO row for a destination slug, or null.
+ *
+ * Wrapped in its own try/catch: the market tables may not exist yet, and a
+ * missing table must not turn a working destination page into a 500.
+ */
+async function getLocationSeoForSlug(slug: string) {
+  try {
+    const loc = await getPublicLocationBySlug(slug);
+    if (!loc) return null;
+    return await getLocationSeo(loc.id, null);
+  } catch {
+    return null;
+  }
 }
 
 export default async function DestinationPage({
@@ -68,8 +123,38 @@ export default async function DestinationPage({
   if (!destination) notFound();
   const allListings = await feedAllListings();
 
+  /* Market data is optional. Every one of these returns empty rather than
+     throwing when the tables do not exist, so this page renders exactly as
+     it does today until the module is switched on. */
+  const location = await getPublicLocationBySlug(slug).catch(() => null);
+  const seo = location ? await getLocationSeo(location.id, null).catch(() => null) : null;
+  const nearby = location ? await getNearbyLocations(location.id).catch(() => []) : [];
+  const openServices = location ? await getOpenServices(location.id).catch(() => []) : [];
+
+  const parentName = location?.path_slugs?.length
+    ? location.path_slugs[location.path_slugs.length - 2]
+    : null;
+
   return (
     <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", path: "/" },
+          { name: "Destinations", path: "/destinations" },
+          { name: destination.name, path: `/destinations/${slug}` },
+        ]}
+      />
+      <TouristDestinationJsonLd
+        name={destination.name}
+        description={seo?.meta_description || destination.tagline}
+        image={seo?.og_image || destination.image}
+        path={`/destinations/${slug}`}
+        latitude={location?.latitude}
+        longitude={location?.longitude}
+        containedIn={parentName ? titleCase(parentName) : "Gilgit-Baltistan"}
+      />
+      {/* FAQ markup is emitted only alongside the visible FAQ block below. */}
+      {seo?.faq?.length ? <FaqJsonLd items={seo.faq} /> : null}
       <Navbar />
       <main className="min-h-screen">
         {/* Hero */}
@@ -129,6 +214,47 @@ export default async function DestinationPage({
           fallbackImage={destination.image}
         />
 
+        {/* Admin-written destination content. Renders nothing when empty —
+            an empty prose block is worse than no block. */}
+        {seo?.intro?.trim() || seo?.body?.trim() ? (
+          <section className="container-px py-10">
+            <div className="mx-auto max-w-3xl space-y-4">
+              {seo.intro?.trim() && (
+                <p className="text-lg leading-relaxed text-foreground">{seo.intro}</p>
+              )}
+              {seo.body?.trim() && (
+                <div className="space-y-3 leading-relaxed text-muted-foreground">
+                  {seo.body.split(/\n{2,}/).map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Service links — the destination-to-service half of internal
+            linking. Only services actually open here are shown, so no link
+            leads to an empty page. */}
+        {openServices.length > 0 && (
+          <section className="container-px py-8">
+            <h2 className="font-display text-2xl font-bold text-forest">
+              What you can book in {destination.name}
+            </h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {openServices.map((s) => (
+                <Link
+                  key={s.slug}
+                  href={locationPath(slug, s.slug)}
+                  className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-forest transition-colors hover:border-forest-600 hover:bg-forest-50"
+                >
+                  {s.name} in {destination.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <Suspense
           fallback={
             <div className="container-px py-20 text-center text-muted-foreground">
@@ -138,8 +264,55 @@ export default async function DestinationPage({
         >
           <ListingsBrowser items={allListings} initialLocation={destination.location} hideHeader />
         </Suspense>
+
+        {/* FAQ — rendered visibly, which is what makes the FAQPage markup
+            above legitimate. If this block is absent, so is the schema. */}
+        {seo?.faq?.length ? (
+          <section className="container-px py-10">
+            <h2 className="font-display text-2xl font-bold text-forest">
+              Common questions about {destination.name}
+            </h2>
+            <dl className="mx-auto mt-4 max-w-3xl divide-y divide-border">
+              {seo.faq.map((f, i) => (
+                <div key={i} className="py-4">
+                  <dt className="font-semibold text-forest">{f.q}</dt>
+                  <dd className="mt-1 leading-relaxed text-muted-foreground">{f.a}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ) : null}
+
+        {/* Nearby — admin-curated, not computed from distance. Two valleys
+            20km apart can be a nine-hour drive over a pass that is shut. */}
+        {nearby.length > 0 && (
+          <section className="container-px pb-14">
+            <h2 className="font-display text-2xl font-bold text-forest">
+              Nearby destinations
+            </h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {nearby.map((n) => (
+                <Link
+                  key={n.id}
+                  href={locationPath(n.slug)}
+                  className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-forest transition-colors hover:border-forest-600 hover:bg-forest-50"
+                >
+                  {n.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
       <Footer />
     </>
   );
+}
+
+/** "gilgit-baltistan" → "Gilgit Baltistan", for schema containedInPlace. */
+function titleCase(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }

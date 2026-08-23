@@ -413,6 +413,98 @@ export function bulkSetFlag(
   return post({ action: "bulk_set_flag", locationIds, flag, value });
 }
 
+export interface SeoDraft {
+  seo_title: string;
+  meta_description: string;
+  h1: string;
+  intro: string;
+  body: string;
+  focus_keyword: string;
+  canonical_url: string;
+  og_title: string;
+  og_description: string;
+  og_image: string;
+  hero_image: string;
+  hero_image_alt: string;
+  faq: { q: string; a: string }[];
+  robots_index: boolean;
+  robots_follow: boolean;
+}
+
+export const EMPTY_SEO: SeoDraft = {
+  seo_title: "",
+  meta_description: "",
+  h1: "",
+  intro: "",
+  body: "",
+  focus_keyword: "",
+  canonical_url: "",
+  og_title: "",
+  og_description: "",
+  og_image: "",
+  hero_image: "",
+  hero_image_alt: "",
+  faq: [],
+  // Opt-in, never opt-out. A new page must be earned into the index.
+  robots_index: false,
+  robots_follow: true,
+};
+
+/** Existing SEO row for a location (or a location+service page). */
+export async function getSeo(
+  locationId: string,
+  serviceSlug: string | null
+): Promise<SeoDraft | null> {
+  if (!isSupabaseConfigured || !locationId) return null;
+
+  let q = supabase
+    .from("location_seo")
+    .select("*")
+    .eq("location_id", locationId)
+    .eq("language_code", "en");
+  q = serviceSlug ? q.eq("service_slug", serviceSlug) : q.is("service_slug", null);
+
+  const { data } = await q.maybeSingle();
+  if (!data) return null;
+
+  const r = data as Record<string, unknown>;
+  const str = (k: string) => String(r[k] ?? "");
+  return {
+    seo_title: str("seo_title"),
+    meta_description: str("meta_description"),
+    h1: str("h1"),
+    intro: str("intro"),
+    body: str("body"),
+    focus_keyword: str("focus_keyword"),
+    canonical_url: str("canonical_url"),
+    og_title: str("og_title"),
+    og_description: str("og_description"),
+    og_image: str("og_image"),
+    hero_image: str("hero_image"),
+    hero_image_alt: str("hero_image_alt"),
+    faq: Array.isArray(r.faq) ? (r.faq as { q: string; a: string }[]) : [],
+    robots_index: Boolean(r.robots_index),
+    robots_follow: r.robots_follow !== false,
+  };
+}
+
+export function saveSeo(
+  locationId: string,
+  serviceSlug: string | null,
+  patch: Partial<SeoDraft>
+) {
+  return post({ action: "save_seo", locationId, serviceSlug, patch });
+}
+
+/** Approved listings in an area and everything under it. */
+export async function getListingCount(locationId: string): Promise<number> {
+  if (!isSupabaseConfigured || !locationId) return 0;
+  const { data } = await supabase.rpc("listing_count_at", {
+    p_location_id: locationId,
+  });
+  return typeof data === "number" ? data : 0;
+}
+
 export function updateLocation(
   locationId: string,
   patch: Partial<Pick<LocationRow, "name" | "display_order" | "latitude" | "longitude" | "coming_soon_message">>
