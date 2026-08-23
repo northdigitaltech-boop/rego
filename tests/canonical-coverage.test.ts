@@ -111,6 +111,39 @@ describe("the root layout must not set a site-wide canonical", () => {
   });
 });
 
+describe("private routes carry a noindex", () => {
+  /* THE BUG THIS GUARDS: /admin, /dashboard and /signin were disallowed in
+     robots.txt but had no meta robots tag, so they inherited `index, follow`
+     from the root layout. robots.txt stops CRAWLING — it does not stop
+     INDEXING. Google will list a URL it was never allowed to fetch if
+     something links to it. A live check found all three serving
+     "index, follow" in production. */
+  it.each([
+    ["admin"],
+    ["dashboard"],
+    ["signin"],
+    ["signup"],
+    ["reset-password"],
+    ["wishlist"],
+    ["pricing"],
+    ["offline"],
+    ["cyber"],
+  ])("/%s is noindex", (route) => {
+    const candidates = [
+      path.join(APP, route, "page.tsx"),
+      path.join(APP, route, "layout.tsx"),
+    ].filter((f) => fs.existsSync(f));
+
+    expect(candidates.length, `no page or layout found for /${route}`).toBeGreaterThan(0);
+
+    const combined = candidates.map((f) => fs.readFileSync(f, "utf8")).join("\n");
+    expect(
+      /noindexMetadata|index:\s*false/.test(combined),
+      `/${route} has no noindex. Use noindexMetadata() from @/lib/seo.`
+    ).toBe(true);
+  });
+});
+
 describe("private client routes carry a noindex layout", () => {
   /* These pages are "use client" and therefore cannot export metadata
      themselves — the noindex has to live in a sibling layout. Easy to forget,
