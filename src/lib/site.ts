@@ -44,6 +44,31 @@ export const siteConfig = {
 } as const;
 
 /**
+ * Company registration.
+ *
+ * Every value is copied verbatim from the SECP Certificate of Incorporation.
+ * Nothing here is rounded, abbreviated or inferred — misstating a company
+ * registration is a legal matter, not a copy decision.
+ *
+ * Kept beside siteConfig so the legal identity lives in one place and can be
+ * reused later (footer, invoices, JSON-LD Organization) without anyone
+ * retyping the number.
+ */
+export const companyRegistration = {
+  /** Exactly as it appears on the certificate. */
+  legalName: "REGO. (SMC-PRIVATE) LIMITED",
+  /** Shorter form for tight spaces like the footer. */
+  shortLegalName: "REGO. (SMC-PVT) LTD.",
+  regulator: "SECP",
+  regulatorFull: "Securities and Exchange Commission of Pakistan",
+  /** Corporate Unique Identification Number. */
+  cuin: "0345252",
+  incorporatedOn: "13 July 2026",
+  /** Public SECP record — this is the part that makes the claim checkable. */
+  verifyUrl: "https://leap.secp.gov.pk/#/verify-company-info/0345252",
+} as const;
+
+/**
  * Where contact-form messages are actually delivered.
  *
  * Deliberately separate from `contactEmail`. If the public address is a

@@ -9,13 +9,13 @@ import {
   MessageCircle,
   Play,
   Apple,
+  ShieldCheck,
 } from "lucide-react";
 
 import { BrandLogo } from "@/components/layout/logo";
 import { HelplineLink } from "@/components/layout/helpline-link";
-import { SecpRegistration } from "@/components/layout/secp-registration";
 import { legalPolicies } from "@/lib/legal";
-import { siteConfig, contactLinks } from "@/lib/site";
+import { siteConfig, contactLinks, companyRegistration } from "@/lib/site";
 
 const quickLinks = [
   { label: "Services", href: "/listings" },
@@ -41,17 +41,6 @@ const socials = [Facebook, Instagram, Youtube, MessageCircle];
 
 export function Footer() {
   return (
-    <>
-      {/* Placed inside Footer rather than added to ~59 page files. One change,
-          and it appears above the footer everywhere the footer already is. */}
-      <SecpRegistration />
-      <FooterMain />
-    </>
-  );
-}
-
-function FooterMain() {
-  return (
     <footer className="border-t-4 border-gold/80 bg-forest-800 text-white/75">
       <div className="container-px py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.2fr]">
@@ -64,6 +53,31 @@ function FooterMain() {
               Rego is your complete travel marketplace for exploring the beauty
               of Gilgit Baltistan.
             </p>
+
+            {/* Company registration.
+                The verify link is the point — anyone can print a claim, so the
+                value is that this one can be checked on the public SECP
+                record. Kept to two lines so it reads as a credential rather
+                than a legal notice. */}
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-white/90">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-gold" />
+                Registered with {companyRegistration.regulator}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-white/60">
+                {companyRegistration.shortLegalName}
+                <br />
+                CUIN{" "}
+                <a
+                  href={companyRegistration.verifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-white/80 underline decoration-gold/50 underline-offset-2 transition-colors hover:text-gold"
+                >
+                  {companyRegistration.cuin}
+                </a>
+              </p>
+            </div>
           </div>
 
           {/* Quick Links */}
