@@ -93,6 +93,19 @@ const SEO_FIELDS = new Set([
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rego.services";
 
+/* Location levels. Free text in the database on purpose — a country with an
+   administrative level we did not anticipate must not require a migration —
+   but the API still refuses anything outside this list, so a typo cannot
+   quietly create a level that nothing renders. */
+const LOCATION_TYPES = new Set([
+  "country",
+  "region",
+  "division",
+  "district",
+  "city",
+  "area",
+]);
+
 const MAX_BULK = 200;
 
 function adminClient(): SupabaseClient {
@@ -571,7 +584,107 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    /* ---------------------------------------------------------------- */
+    case "create_location": {
+      const parentId = body.parentId ? String(body.parentId) : null;
+      const marketId = String(body.marketId ?? "");
+      const name = String(body.name ?? "").trim();
+      const slug = String(body.slug ?? "").trim().toLowerCase();
+      const type = String(body.locationType ?? "").trim();
+
+      if (!marketId) return bad("Missing market.");
+      if (!name) return bad("Name is required.");
+      if (name.length > 120) return bad("Name is too long.");
+
+      if (!LOCATION_TYPES.has(type)) {
+        return bad(`Unknown location type "${type}".`);
+      }
+
+      /* Slug rules match the database CHECK constraint. Failing here gives a
+         readable message instead of a raw Postgres constraint violation. */
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+        return bad("Slug must be lowercase letters, numbers and single hyphens.");
+      }
+      if (slug.length > 80) return bad("Slug is too long.");
+
+      /* A new location starts with every flag NULL — inheriting from its
+         parent. It is not public, not bookable and not indexable until
+         somebody decides it should be. Creating a place is not the same as
+         opening it for business. */
+      let parent: Record<string, unknown> | null = null;
+      if (parentId) {
+        const { data } = await sb
+          .from("locations")
+          .select("*")
+          .eq("id", parentId)
+          .maybeSingle();
+        if (!data) return bad("Parent location not found.", 404);
+        parent = data as Record<string, unknown>;
+
+        if (String(parent.market_id) !== marketId) {
+          return bad("Parent belongs to a different market.");
+        }
+
+        /* phase81 blocks an area sharing its district's slug. Catching it
+           here means a clear sentence rather than a database exception. */
+        if (
+          type === "area" &&
+          parent.location_type === "district" &&
+          parent.slug === slug
+        ) {
+          return bad(
+            `"${name}" has the same slug as the district it sits in. If the destination IS the district, add content to the district itself instead of creating a child with the same name.`
+          );
+        }
+      }
+
+      const { data: created, error } = await sb
+        .from("locations")
+        .insert({
+          market_id: marketId,
+          parent_id: parentId,
+          location_type: type,
+          name,
+          slug,
+          country_code: (parent?.country_code as string) ?? "PK",
+          latitude: numOrNull(body.latitude),
+          longitude: numOrNull(body.longitude),
+          display_order: Number.isInteger(Number(body.displayOrder))
+            ? Number(body.displayOrder)
+            : 100,
+          created_by: caller.user.id,
+          updated_by: caller.user.id,
+        })
+        .select("id, name, slug")
+        .single();
+
+      if (error) {
+        if (error.code === "23505") {
+          return bad(`A location with the slug "${slug}" already exists here.`);
+        }
+        return bad(error.message, 500);
+      }
+
+      await audit({
+        action: "location.create",
+        entityType: "location",
+        entityId: created.id,
+        entityLabel: created.name,
+        before: null,
+        after: { name, slug, location_type: type, parent_id: parentId },
+      });
+
+      return NextResponse.json({ ok: true, id: created.id });
+    }
+
     default:
       return bad("Unknown action.");
   }
+}
+
+/** Number, or null for empty input. Rejects nothing — the DB has the ranges. */
+function numOrNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }

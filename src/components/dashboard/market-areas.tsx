@@ -39,6 +39,7 @@ import {
   type ServiceFlag,
 } from "@/lib/markets";
 import { SeoEditor } from "@/components/dashboard/seo-editor";
+import { AddLocation } from "@/components/dashboard/add-location";
 import { AnswersManager } from "@/components/dashboard/answers-manager";
 import { cn } from "@/lib/utils";
 
@@ -231,6 +232,18 @@ export function MarketAreas() {
               })
             }
             visibleIds={visibleIds}
+          />
+
+          {/* Adds INSIDE the selected area, or at the top of the market when
+              nothing is selected. Placed under the tree so the parent it will
+              attach to is visible while you fill the form. */}
+          <AddLocation
+            marketId={marketId}
+            parent={selected}
+            onCreated={async (id) => {
+              await refresh();
+              if (id) setSelectedId(id);
+            }}
           />
         </div>
 

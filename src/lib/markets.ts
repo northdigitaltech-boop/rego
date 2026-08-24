@@ -413,6 +413,80 @@ export function bulkSetFlag(
   return post({ action: "bulk_set_flag", locationIds, flag, value });
 }
 
+/* ------------------------------------------------------------------ */
+/* Creating locations                                                  */
+/* ------------------------------------------------------------------ */
+
+export const LOCATION_TYPES = [
+  "country",
+  "region",
+  "division",
+  "district",
+  "city",
+  "area",
+] as const;
+export type LocationType = (typeof LOCATION_TYPES)[number];
+
+export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
+  country: "Country",
+  region: "Region / Province",
+  division: "Division",
+  district: "District",
+  city: "City / Town",
+  area: "Area / Destination",
+};
+
+/**
+ * The level a child of this parent would normally be.
+ *
+ * A suggestion, not a rule — administrative structures differ and the admin
+ * can override it. But defaulting correctly is what stops a tree slowly
+ * filling with districts nested inside districts.
+ */
+export function suggestChildType(parentType: string | null): LocationType {
+  switch (parentType) {
+    case null:
+    case undefined:
+      return "country";
+    case "country":
+      return "region";
+    case "region":
+      return "division";
+    case "division":
+      return "district";
+    case "district":
+      return "area";
+    case "city":
+      return "area";
+    default:
+      return "area";
+  }
+}
+
+/** "Basho Valley" → "basho-valley". Matches the database CHECK constraint. */
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+export function createLocation(input: {
+  marketId: string;
+  parentId: string | null;
+  name: string;
+  slug: string;
+  locationType: LocationType;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  displayOrder?: number;
+}) {
+  return post({ action: "create_location", ...input });
+}
+
 export interface SeoDraft {
   seo_title: string;
   meta_description: string;
