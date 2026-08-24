@@ -27,6 +27,8 @@ const quickLinks = [
   { label: "Careers", href: "/careers" },
   { label: "Become a Partner", href: "/partner" },
   { label: "Contact Us", href: "/contact" },
+  // E-E-A-T: a reader can check how the travel information here is produced.
+  { label: "Editorial Policy", href: "/editorial-policy" },
 ];
 
 const topDestinations = [

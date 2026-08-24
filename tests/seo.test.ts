@@ -187,6 +187,35 @@ describe("buildMetadata robots decisions", () => {
 
 /* ------------------------------------------------------------------ */
 
+/**
+ * robots.rules became an ARRAY when the AI-crawler rules were added — one
+ * block for "*", then one per bot group. These helpers read either shape so
+ * the tests describe intent rather than the current data structure.
+ */
+type RuleBlock = {
+  userAgent?: string | string[];
+  allow?: string | string[];
+  disallow?: string | string[];
+};
+
+function blocks(r: { rules: unknown }): RuleBlock[] {
+  return Array.isArray(r.rules) ? (r.rules as RuleBlock[]) : [r.rules as RuleBlock];
+}
+
+/** The rules that apply to ordinary search engines. */
+function wildcardBlock(r: { rules: unknown }): RuleBlock {
+  return blocks(r).find((b) => b.userAgent === "*") ?? blocks(r)[0];
+}
+
+function agentBlock(r: { rules: unknown }, agent: string): RuleBlock | undefined {
+  return blocks(r).find((b) =>
+    Array.isArray(b.userAgent) ? b.userAgent.includes(agent) : b.userAgent === agent
+  );
+}
+
+const asList = (v: string | string[] | undefined): string[] =>
+  v === undefined ? [] : Array.isArray(v) ? v : [v];
+
 describe("robots.txt", () => {
   it("blocks everything on a preview deployment", async () => {
     const { robots } = await load({
@@ -194,7 +223,7 @@ describe("robots.txt", () => {
       NODE_ENV: "production",
     });
     const r = robots();
-    expect((r.rules as { disallow?: string }).disallow).toBe("/");
+    expect(asList(wildcardBlock(r).disallow)).toContain("/");
     // A blocked deployment must not advertise a sitemap.
     expect(r.sitemap).toBeUndefined();
   });
@@ -212,7 +241,7 @@ describe("robots.txt", () => {
       NEXT_PUBLIC_SITE_URL: PROD,
       NODE_ENV: "production",
     });
-    const disallow = (robots().rules as { disallow?: string[] }).disallow ?? [];
+    const disallow = asList(wildcardBlock(robots()).disallow);
     for (const p of [
       "/admin",
       "/cyber", // was missing — the security portal
@@ -235,7 +264,7 @@ describe("robots.txt", () => {
       NEXT_PUBLIC_SITE_URL: PROD,
       NODE_ENV: "production",
     });
-    const disallow = (robots().rules as { disallow?: string[] }).disallow ?? [];
+    const disallow = asList(wildcardBlock(robots()).disallow);
     expect(disallow.some((d) => d.includes("?"))).toBe(false);
   });
 
@@ -244,7 +273,7 @@ describe("robots.txt", () => {
       NEXT_PUBLIC_SITE_URL: PROD,
       NODE_ENV: "production",
     });
-    const disallow = (robots().rules as { disallow?: string[] }).disallow ?? [];
+    const disallow = asList(wildcardBlock(robots()).disallow);
     for (const p of ["/listings", "/destinations", "/categories", "/jobs", "/safarnama"]) {
       expect(disallow).not.toContain(p);
     }
@@ -383,5 +412,68 @@ describe("location page indexability gate", () => {
       })
     ).toBeGreaterThan(10);
     expect(contentLength(null)).toBe(0);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+
+describe("AI crawler policy", () => {
+  /* Whether AI crawlers may read Rego is a business decision held in one
+     constant. These tests check the MECHANISM works in both directions, not
+     which way it is currently set — so flipping the constant does not break
+     the suite. */
+
+  it("gives the AI training bots their own rule block", async () => {
+    const { robots } = await load({
+      NEXT_PUBLIC_SITE_URL: PROD,
+      NODE_ENV: "production",
+    });
+    expect(agentBlock(robots(), "GPTBot")).toBeDefined();
+    expect(agentBlock(robots(), "ClaudeBot")).toBeDefined();
+    expect(agentBlock(robots(), "PerplexityBot")).toBeDefined();
+  });
+
+  it("blocks Google-Extended separately from Googlebot", async () => {
+    const { robots } = await load({
+      NEXT_PUBLIC_SITE_URL: PROD,
+      NODE_ENV: "production",
+    });
+    /* Google-Extended controls Gemini training only. Confusing it with
+       Googlebot would remove Rego from ordinary Google Search. */
+    expect(agentBlock(robots(), "Google-Extended")).toBeDefined();
+    expect(agentBlock(robots(), "Googlebot")).toBeUndefined();
+  });
+
+  /* On-demand fetchers act for a person who pasted a Rego link and is waiting
+     for it to load. Blocking them protects nothing and breaks that. */
+  it("always allows on-demand user agents", async () => {
+    const { robots } = await load({
+      NEXT_PUBLIC_SITE_URL: PROD,
+      NODE_ENV: "production",
+    });
+    const b = agentBlock(robots(), "ChatGPT-User");
+    expect(b).toBeDefined();
+    expect(asList(b?.allow)).toContain("/");
+  });
+
+  it("keeps private areas blocked for AI bots too", async () => {
+    const { robots } = await load({
+      NEXT_PUBLIC_SITE_URL: PROD,
+      NODE_ENV: "production",
+    });
+    const b = agentBlock(robots(), "GPTBot");
+    const rules = asList(b?.disallow);
+    // Either every private path, or a blanket "/" when AI access is off.
+    const ok = rules.includes("/") || ["/admin", "/cyber", "/dashboard"].every((p) => rules.includes(p));
+    expect(ok).toBe(true);
+  });
+
+  it("emits no AI rules at all on a preview deployment", async () => {
+    const { robots } = await load({
+      NEXT_PUBLIC_SITE_URL: "https://preview.vercel.app",
+      NODE_ENV: "production",
+    });
+    // Preview returns a single blanket block; no per-bot rules to leak.
+    expect(agentBlock(robots(), "GPTBot")).toBeUndefined();
   });
 });

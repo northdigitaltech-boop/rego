@@ -1,4 +1,5 @@
-import { siteConfig, absoluteUrl } from "@/lib/site";
+import { siteConfig, absoluteUrl, companyRegistration } from "@/lib/site";
+import { aboutContent } from "@/lib/about-content";
 
 /* ============================================================
  * JSON-LD structured data.
@@ -56,22 +57,51 @@ export function JsonLd({
 /* Site-wide schemas                                                   */
 /* ------------------------------------------------------------------ */
 
-/** Organization. Only contact details we actually publish. */
+/**
+ * Organization.
+ *
+ * Carries the facts that make the entity checkable rather than merely
+ * described: the registered legal name, the SECP registration number, and the
+ * founder. Every one of these can be verified independently, which is the
+ * only kind of trust signal worth emitting.
+ *
+ * `identifier` and `sameAs` point at the public SECP record. Nothing here is
+ * a claim about quality.
+ */
 export function organizationSchema(): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: siteConfig.name,
+    legalName: companyRegistration.legalName,
     url: siteConfig.url,
     logo: absoluteUrl(siteConfig.ogImage),
     email: siteConfig.contactEmail,
     telephone: siteConfig.contactPhone,
+    foundingDate: "2026-07-13",
+    founder: {
+      "@type": "Person",
+      name: aboutContent.founder.name,
+      jobTitle: aboutContent.founder.position,
+    },
+    identifier: {
+      "@type": "PropertyValue",
+      name: "SECP CUIN",
+      value: companyRegistration.cuin,
+    },
+    // The public registration record — verifiable, not self-asserted.
+    sameAs: [companyRegistration.verifyUrl],
     address: {
       "@type": "PostalAddress",
       addressLocality: "Skardu",
       addressRegion: "Gilgit-Baltistan",
       addressCountry: "PK",
     },
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: "Gilgit-Baltistan, Pakistan",
+    },
+    publishingPrinciples: absoluteUrl("/editorial-policy"),
   };
 }
 

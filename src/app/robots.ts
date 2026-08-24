@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { siteConfig, IS_INDEXABLE } from "@/lib/site";
+import { aiCrawlerRules } from "@/lib/ai-crawlers";
 
 export default function robots(): MetadataRoute.Robots {
   // Non-production hosts (preview / staging / local): disallow everything so a
@@ -11,7 +12,8 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   return {
-    rules: {
+    rules: [
+      {
       userAgent: "*",
       allow: "/",
       // Private app areas, auth pages and utility/transactional routes + API.
@@ -40,7 +42,12 @@ export default function robots(): MetadataRoute.Robots {
         // PWA fallback shell — real content, no unique value, never a landing page.
         "/offline",
       ],
-    },
+      },
+      /* AI crawlers get their own rules. Whether they may read Rego at all is
+         a business decision, kept in one constant in lib/ai-crawlers.ts with
+         the trade-off written out. Private areas stay blocked either way. */
+      ...aiCrawlerRules(),
+    ],
     sitemap: `${siteConfig.url}/sitemap.xml`,
     host: siteConfig.url,
   };

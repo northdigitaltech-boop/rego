@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // --- Static, indexable marketing/landing pages ---
   add("/", { changeFrequency: "daily", priority: 1 });
-  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs"]) {
+  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy"]) {
     add(p, { changeFrequency: "weekly", priority: 0.7 });
   }
   for (const c of allCategories) add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
