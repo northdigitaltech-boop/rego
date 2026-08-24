@@ -507,9 +507,21 @@ export async function searchGeo(
       p_country: country,
       p_limit: 12,
     });
-    if (error || !Array.isArray(data)) return [];
-    return data as GeoSuggestion[];
-  } catch {
+
+    if (error) {
+      /* An empty dropdown with no explanation is unfindable — the first
+         version of this swallowed a PostgREST signature mismatch and the
+         form silently showed nothing for no visible reason.
+         "Not found" is expected before the migration runs; anything else
+         is worth seeing. */
+      if (!/schema cache|does not exist|not find the function/i.test(error.message)) {
+        console.warn("[searchGeo] lookup failed:", error.message);
+      }
+      return [];
+    }
+    return Array.isArray(data) ? (data as GeoSuggestion[]) : [];
+  } catch (e) {
+    console.warn("[searchGeo] request failed:", (e as Error)?.message);
     return [];
   }
 }
