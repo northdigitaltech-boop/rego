@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/site";
 import { allCategories, destinations } from "@/lib/data";
 import { getPublishedJobs } from "@/lib/jobs";
+import { getAllPublishedPosts } from "@/lib/blog";
 import { getHotels } from "@/lib/hotels";
 import { getHomestays } from "@/lib/homestays";
 import { getHostels } from "@/lib/hostels";
@@ -42,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // --- Static, indexable marketing/landing pages ---
   add("/", { changeFrequency: "daily", priority: 1 });
-  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy"]) {
+  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy", "/blog-news"]) {
     add(p, { changeFrequency: "weekly", priority: 0.7 });
   }
   for (const c of allCategories) add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
@@ -60,6 +61,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl(`/jobs/${j.slug}`),
       lastModified: j.updated_at ? new Date(j.updated_at) : now,
       changeFrequency: "daily",
+      priority: 0.7,
+    });
+  }
+
+  // --- Blog & News. RLS already limits this to visible posts, so a
+  //     scheduled article cannot leak into the sitemap before it is live. ---
+  for (const b of await safe(getAllPublishedPosts)) {
+    const post = b as unknown as { slug?: string; updated_at?: string; published_at?: string };
+    if (!post?.slug) continue;
+    urls.push({
+      url: absoluteUrl(`/blog-news/${post.slug}`),
+      // Content date, not build date — a lastmod that moves every deploy
+      // teaches crawlers to ignore it.
+      lastModified: new Date(post.updated_at || post.published_at || now),
+      changeFrequency: "monthly",
       priority: 0.7,
     });
   }

@@ -129,6 +129,7 @@ const navLinks: NavLink[] = [
     ],
   },
   { label: "Safarnama", href: "/safarnama" },
+  { label: "Blog & News", href: "/blog-news" },
   { label: "Rego Map", href: "/map" },
   { label: "About Us", href: "/about" },
   {

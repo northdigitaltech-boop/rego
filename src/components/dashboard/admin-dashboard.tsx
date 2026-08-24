@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Globe,
+  Newspaper,
   Info,
   BarChart3,
   KeyRound,
@@ -87,6 +88,7 @@ import { setHotelFeatured } from "@/lib/hotels";
 import { setRankingBadge, RANKING_OPTIONS } from "@/lib/ranking";
 import { getAdminOverviewStats, type AdminOverviewStats } from "@/lib/platform-stats";
 import { MarketAreas } from "@/components/dashboard/market-areas";
+import { AdminBlog } from "@/components/dashboard/admin-blog";
 import { AdminAnalytics } from "@/components/dashboard/admin-analytics";
 import { AdminClientPasswords } from "@/components/dashboard/admin-client-passwords";
 import { AdminRoadside } from "@/components/dashboard/admin-roadside";
@@ -475,6 +477,7 @@ type Tab =
   | "activities"
   | "solo"
   | "safarnama"
+  | "blog"
   | "regomap"
   | "messages"
   | "destinations"
@@ -516,6 +519,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "activities", label: "Activities", icon: Mountain },
   { id: "solo", label: "Connect Solo Traveler", icon: Compass },
   { id: "safarnama", label: "Safarnama Stories", icon: BookOpen },
+  { id: "blog", label: "Blog & News", icon: Newspaper },
   { id: "regomap", label: "Rego Map", icon: MapPin },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "destinations", label: "Destinations", icon: MapPin },
@@ -994,6 +998,7 @@ export function AdminDashboard() {
             <DestinationsAdmin rows={destRows} onChange={refresh} />
           )}
           {tab === "markets" && <MarketAreas />}
+          {tab === "blog" && <AdminBlog />}
           {tab === "manage" && <AdminListingsManager />}
           {tab === "about" && <AdminAbout />}
           {tab === "contact" && <AdminContact />}

@@ -220,6 +220,64 @@ export function FaqJsonLd({ items }: { items: { q: string; a: string }[] }) {
 }
 
 /**
+ * Article — for Blog & News posts.
+ *
+ * Only fields the page actually renders. `author` is a Person when we have a
+ * name and omitted otherwise: an author block naming the organisation as the
+ * writer of every piece is worse than none, because it is the field a reader
+ * checks when deciding whether to trust a travel claim.
+ *
+ * No `wordCount`, no `speakable`, no fabricated `dateline`.
+ */
+export function ArticleJsonLd({
+  headline,
+  description,
+  image,
+  path,
+  publishedAt,
+  modifiedAt,
+  authorName,
+  section,
+  tags,
+}: {
+  headline: string;
+  description?: string | null;
+  image?: string | null;
+  path: string;
+  publishedAt?: string | null;
+  modifiedAt?: string | null;
+  authorName?: string | null;
+  section?: string | null;
+  tags?: string[];
+}) {
+  const data: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    url: absoluteUrl(path),
+    mainEntityOfPage: { "@type": "WebPage", "@id": absoluteUrl(path) },
+    publisher: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      logo: { "@type": "ImageObject", url: absoluteUrl(siteConfig.ogImage) },
+    },
+  };
+
+  if (description) data.description = description;
+  if (image) data.image = absoluteUrl(image);
+  if (publishedAt) data.datePublished = publishedAt;
+  /* Falls back to the publication date rather than "now" — a dateModified
+     that moves on every deploy tells a crawler the article changed when it
+     did not. */
+  if (modifiedAt || publishedAt) data.dateModified = modifiedAt || publishedAt;
+  if (authorName) data.author = { "@type": "Person", name: authorName };
+  if (section) data.articleSection = section;
+  if (tags && tags.length > 0) data.keywords = tags.join(", ");
+
+  return <JsonLd data={data} />;
+}
+
+/**
  * ItemList for a set of listings shown on a location+service page.
  *
  * Names and URLs only. No prices, no ratings, no availability — those change
