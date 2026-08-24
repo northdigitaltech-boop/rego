@@ -110,16 +110,23 @@ const H_SIZES = [
 export function StoryMarkdown({
   text,
   className = "",
+  paragraphClassName = "text-[15px] leading-relaxed text-forest/90",
 }: {
   text: string;
   className?: string;
+  /** Paragraph styling. Defaults to the Safarnama look; the blog overrides
+   *  it so an article body reads as body copy rather than brand green. */
+  paragraphClassName?: string;
 }) {
-  const blocks = React.useMemo(() => parse(text ?? ""), [text]);
+  const blocks = React.useMemo(
+    () => parse(text ?? "", paragraphClassName),
+    [text, paragraphClassName]
+  );
   if (!text?.trim()) return null;
   return <div className={`space-y-4 ${className}`}>{blocks}</div>;
 }
 
-function parse(src: string): React.ReactNode[] {
+function parse(src: string, paraClass: string): React.ReactNode[] {
   const lines = src.replace(/\r\n?/g, "\n").split("\n");
   const out: React.ReactNode[] = [];
   let i = 0;
@@ -130,7 +137,7 @@ function parse(src: string): React.ReactNode[] {
     const joined = buf.join(" ").trim();
     if (joined) {
       out.push(
-        <p key={`p${key++}`} className="text-[15px] leading-relaxed text-forest/90">
+        <p key={`p${key++}`} className={paraClass}>
           {renderInline(joined, `p${key}`)}
         </p>
       );

@@ -114,9 +114,13 @@ export default async function ArticlePage({ params }: { params: Params }) {
           {/* ---- Header ---- */}
           <header className="border-b border-border bg-muted/40">
             <div className="container-px py-8 sm:py-12">
+              {/* One content column for the whole article. The header used to
+                  be left-aligned while the image and body were centred, which
+                  looked fine on mobile (everything is full width) and clearly
+                  broken on a desktop screen. */}
               <nav
                 aria-label="Breadcrumb"
-                className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+                className="mx-auto flex max-w-3xl flex-wrap items-center gap-1 text-sm text-muted-foreground"
               >
                 <Link href="/" className="hover:text-forest">Home</Link>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -125,7 +129,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
                 <span className="text-forest">{categoryLabel}</span>
               </nav>
 
-              <div className="mt-4 max-w-3xl">
+              <div className="mx-auto mt-4 max-w-3xl">
                 <Link
                   href={`/blog-news?category=${post.category}`}
                   className="inline-block rounded-full bg-forest-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-forest-600 hover:bg-forest-100"
@@ -169,7 +173,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
           {/* ---- Featured image ---- */}
           {post.featured_image_url && (
             <div className="container-px pt-8">
-              <figure className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-border">
+              <figure className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo(post.featured_image_url)}
@@ -192,7 +196,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
             <div className="mx-auto max-w-3xl">
               <StoryMarkdown
                 text={post.content}
-                className="text-base leading-relaxed text-foreground"
+                paragraphClassName="text-base leading-relaxed text-foreground"
               />
 
               {post.tags.length > 0 && (

@@ -207,6 +207,12 @@ export async function POST(req: Request) {
 
       const s = String(v ?? "").trim();
 
+      /* An email address in the byline is a public contact detail nobody
+         chose to publish, and it is the kind of thing that gets scraped. */
+      if (k === "author_name" && /\S+@\S+\.\S+/.test(s)) {
+        return bad("Use a name for the author, not an email address.");
+      }
+
       if (k === "content") {
         if (s.length > MAX_CONTENT) return bad("Article is too long.");
         const unsafe = contentIsSafe(s);
@@ -266,8 +272,15 @@ export async function POST(req: Request) {
            action with its own request. */
         status: "draft",
         author_id: caller.user.id,
+        /* NEVER fall back to the email address.
+           author_name is printed on the public article page and emitted in
+           Article JSON-LD, so an admin with no full_name set had their email
+           published on every post they wrote. "Rego Team" is the correct
+           fallback — a byline, not a contact address. */
         author_name:
-          (clean.author_name as string) || p.full_name || p.email || "Rego",
+          (clean.author_name as string)?.trim() ||
+          p.full_name?.trim() ||
+          "Rego Team",
       })
       .select("id, slug")
       .single();
