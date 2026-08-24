@@ -7,8 +7,10 @@ import {
   LOCATION_TYPES,
   LOCATION_TYPE_LABELS,
   createLocation,
+  searchGeo,
   slugify,
   suggestChildType,
+  type GeoSuggestion,
   type LocationRow,
   type LocationType,
 } from "@/lib/markets";
@@ -50,10 +52,48 @@ export function AddLocation({
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
 
+  const [suggestions, setSuggestions] = React.useState<GeoSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+
   // Re-suggest the level when the selected parent changes.
   React.useEffect(() => {
     setType(suggestChildType(parent?.location_type ?? null));
   }, [parent?.location_type]);
+
+  /* Debounced GeoNames lookup. 250ms because a query per keystroke would be
+     a request per character for no benefit — the admin is still typing. */
+  React.useEffect(() => {
+    if (name.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(async () => {
+      const rows = await searchGeo(name);
+      if (alive) setSuggestions(rows);
+    }, 250);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [name]);
+
+  /**
+   * Fill the form from a GeoNames row.
+   *
+   * Everything it sets is EDITABLE afterwards. GeoNames names a place the way
+   * a gazetteer does, not the way a traveller searches for it — "Skardu" is
+   * fine, but you may well want "Hunza Valley" where GeoNames says "Hunza".
+   * The suggestion is a starting point, not an answer.
+   */
+  const applySuggestion = (s: GeoSuggestion) => {
+    setName(s.name);
+    if (!slugTouched) setSlug(slugify(s.name));
+    setType(s.suggested_type);
+    setLat(s.latitude != null ? String(s.latitude) : "");
+    setLng(s.longitude != null ? String(s.longitude) : "");
+    setShowSuggestions(false);
+  };
 
   const reset = () => {
     setName("");
@@ -62,6 +102,8 @@ export function AddLocation({
     setLat("");
     setLng("");
     setError("");
+    setSuggestions([]);
+    setShowSuggestions(false);
     setOpen(false);
   };
 
@@ -129,7 +171,7 @@ export function AddLocation({
       </div>
 
       <div className="space-y-2">
-        <div>
+        <div className="relative">
           <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Name
           </label>
@@ -137,9 +179,46 @@ export function AddLocation({
             autoFocus
             value={name}
             onChange={(e) => onName(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
             placeholder="e.g. Hushe Valley"
             className="w-full rounded border border-border bg-card px-2 py-1.5 text-sm"
+            autoComplete="off"
           />
+
+          {/* GeoNames suggestions. Renders nothing when the reference table is
+              empty or absent, so the form still works as a plain manual entry
+              exactly as it did before the import existed. */}
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+              {suggestions.map((s) => (
+                <li key={s.geonameid}>
+                  <button
+                    type="button"
+                    onClick={() => applySuggestion(s)}
+                    className="flex w-full items-baseline justify-between gap-2 px-2.5 py-2 text-left hover:bg-forest-50"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-forest">
+                        {s.name}
+                      </span>
+                      {s.admin_path && (
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {s.admin_path}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {LOCATION_TYPE_LABELS[s.suggested_type]}
+                    </span>
+                  </button>
+                </li>
+              ))}
+              <li className="border-t border-border px-2.5 py-1.5 text-[10px] text-muted-foreground">
+                {/* CC BY 4.0 requires visible credit wherever the data appears. */}
+                Suggestions from GeoNames (CC BY 4.0)
+              </li>
+            </ul>
+          )}
         </div>
 
         <div>

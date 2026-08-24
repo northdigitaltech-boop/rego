@@ -474,6 +474,46 @@ export function slugify(name: string): string {
     .slice(0, 80);
 }
 
+/* ------------------------------------------------------------------ */
+/* GeoNames lookup                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface GeoSuggestion {
+  geonameid: number;
+  name: string;
+  suggested_type: LocationType;
+  admin_path: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  feature_code: string | null;
+  population: number | null;
+}
+
+/**
+ * Search the GeoNames reference table.
+ *
+ * Returns [] when the table does not exist or the import has not been run —
+ * the Add Location form then simply behaves as a plain manual form, which is
+ * how it worked before this existed.
+ */
+export async function searchGeo(
+  query: string,
+  country = "PK"
+): Promise<GeoSuggestion[]> {
+  if (!isSupabaseConfigured || query.trim().length < 2) return [];
+  try {
+    const { data, error } = await supabase.rpc("search_geo_reference", {
+      p_query: query.trim(),
+      p_country: country,
+      p_limit: 12,
+    });
+    if (error || !Array.isArray(data)) return [];
+    return data as GeoSuggestion[];
+  } catch {
+    return [];
+  }
+}
+
 export function createLocation(input: {
   marketId: string;
   parentId: string | null;
