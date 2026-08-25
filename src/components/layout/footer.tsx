@@ -16,6 +16,7 @@ import { BrandLogo } from "@/components/layout/logo";
 import { HelplineLink } from "@/components/layout/helpline-link";
 import { legalPolicies } from "@/lib/legal";
 import { siteConfig, contactLinks, companyRegistration } from "@/lib/site";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 const quickLinks = [
   { label: "Services", href: "/listings" },
@@ -167,7 +168,18 @@ export function Footer() {
               ))}
             </div>
 
+            {/* The web app is the app, and it can be installed today — so it
+                leads, above the stores that are still "coming soon". This is
+                also the only route to the install card once its own
+                once-per-session appearance has been used up. */}
             <h4 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
+              Get the app
+            </h4>
+            <div className="mb-3">
+              <InstallAppButton />
+            </div>
+
+            <h4 className="mb-3 font-display text-sm font-semibold text-white">
               Coming Soon
             </h4>
             <div className="flex flex-wrap gap-2">

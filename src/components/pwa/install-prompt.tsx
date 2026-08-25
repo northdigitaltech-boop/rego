@@ -32,6 +32,9 @@ import {
  * Rendered through a portal so no transformed ancestor can clip it.
  * ============================================================ */
 
+/** Anything on the page can open the card by dispatching this. */
+export const OPEN_INSTALL_EVENT = "rego-open-install";
+
 const DISMISS_KEY = "rego-install-dismissed";
 const SEEN_KEY = "rego-install-seen";
 /** Let the page paint and settle before interrupting. */
@@ -96,9 +99,8 @@ export function InstallPrompt() {
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
+    /* Already running as an installed app — there is nothing to offer. */
     if (isStandalone()) return;
-    if (HIDE_ON.some((p) => window.location.pathname.startsWith(p))) return;
-    if (suppressed()) return;
 
     const plat = detectPlatform();
     setPlatform(plat);
@@ -130,16 +132,31 @@ export function InstallPrompt() {
     };
     window.addEventListener("appinstalled", onInstalled);
 
-    const timer = window.setTimeout(() => {
+    /* Asked for by hand — from the footer, or anywhere else that wants to
+       offer it. This ignores every suppression rule on purpose: someone who
+       goes looking for the install button has clearly not installed it, and
+       being told "you already saw this card" would be useless. */
+    const onAsk = () => {
+      setShowSteps(false);
       setOpen(true);
-      try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
-    }, SHOW_AFTER_MS);
+    };
+    window.addEventListener(OPEN_INSTALL_EVENT, onAsk);
+
+    /* The unprompted appearance is the part that has to stay polite. */
+    const auto =
+      HIDE_ON.some((p) => window.location.pathname.startsWith(p)) || suppressed()
+        ? 0
+        : window.setTimeout(() => {
+            setOpen(true);
+            try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
+          }, SHOW_AFTER_MS);
 
     return () => {
-      window.clearTimeout(timer);
+      if (auto) window.clearTimeout(auto);
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("rego-installable", onCaptured);
       window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener(OPEN_INSTALL_EVENT, onAsk);
     };
   }, []);
 
@@ -339,14 +356,29 @@ export function InstallPrompt() {
                     </Step>
                   </ol>
                 ) : (
-                  /* Desktop Safari/Firefox can't install. Rather than a dead
-                     button, point them somewhere it actually works. */
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    Open <strong className="text-forest">rego.services</strong> on
-                    your phone in <strong className="text-forest">Chrome</strong>{" "}
-                    (Android) or <strong className="text-forest">Safari</strong>{" "}
-                    (iPhone) to add Rego to your home screen.
-                  </p>
+                  /* Desktop. Chrome and Edge CAN install a web app — if we
+                     are here, the browser simply has not offered the prompt
+                     yet, so point at the control it puts in the address bar
+                     rather than sending someone to a phone they may not have
+                     to hand. Safari and Firefox genuinely cannot, hence the
+                     second line. */
+                  <>
+                    <ol className="space-y-2.5">
+                      <Step n={1} icon={<Download className="h-4 w-4" />}>
+                        In <strong>Chrome</strong> or <strong>Edge</strong>, click the
+                        install icon at the right of the address bar
+                      </Step>
+                      <Step n={2} icon={<MoreVertical className="h-4 w-4" />}>
+                        Or open the browser <strong>menu</strong> and choose{" "}
+                        <strong>Install Rego</strong>
+                      </Step>
+                    </ol>
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                      On Safari or Firefox, open{" "}
+                      <strong className="text-forest">rego.services</strong> on your
+                      phone instead — those browsers cannot install a web app.
+                    </p>
+                  </>
                 )}
                 <button
                   type="button"
