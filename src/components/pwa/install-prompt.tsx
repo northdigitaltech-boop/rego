@@ -18,20 +18,22 @@ import {
  *   iPhone & iPad (Safari)   → Share → Add to Home Screen steps
  *   Everything else          → open on a phone browser instead
  *
- * RESTRAINT RULES — an install popup that reappears is the fastest
- * way to make people bounce, so:
- *   • never when already installed
- *   • dismissal remembered for 30 days, install remembered forever
- *   • one appearance per session, never twice
+ * IT KEEPS ASKING UNTIL THE APP IS INSTALLED.
+ * Closing it used to mute the card for thirty days, which meant most
+ * people were only ever asked once and the install never happened. It
+ * now returns on the next visit. What it will not do is ask twice in
+ * one sitting:
+ *   • never when already installed — that is remembered forever
+ *   • at most one appearance per session, however many pages are opened
  *   • never on auth pages or the private consoles
  *   • Escape and backdrop both close it
+ * So the cost of saying no is one card per visit, not one per page.
  *
  * Rendered through a portal so no transformed ancestor can clip it.
  * ============================================================ */
 
 const DISMISS_KEY = "rego-install-dismissed";
 const SEEN_KEY = "rego-install-seen";
-const DISMISS_DAYS = 30;
 /** Let the page paint and settle before interrupting. */
 const SHOW_AFTER_MS = 2500;
 
@@ -71,11 +73,9 @@ function detectPlatform(): Platform {
 function suppressed(): boolean {
   try {
     if (sessionStorage.getItem(SEEN_KEY)) return true; // once per session
-    const raw = localStorage.getItem(DISMISS_KEY);
-    if (!raw) return false;
-    if (raw === "installed") return true;
-    const at = Number(raw);
-    return Number.isFinite(at) && Date.now() - at < DISMISS_DAYS * 86_400_000;
+    /* Installed is the only permanent answer. "Not now" lasts until the
+       next visit — the whole point is to keep offering until they have it. */
+    return localStorage.getItem(DISMISS_KEY) === "installed";
   } catch {
     return false; // private mode — just don't remember
   }
@@ -87,6 +87,10 @@ export function InstallPrompt() {
   const [deferred, setDeferred] =
     React.useState<BeforeInstallPromptEvent | null>(null);
   const [mounted, setMounted] = React.useState(false);
+  /* iOS and a Chrome that never offered a prompt cannot be installed from
+     JavaScript at all. The card still leads with a download button — pressing
+     it opens the steps, which is the only real install path there is. */
+  const [showSteps, setShowSteps] = React.useState(false);
 
   React.useEffect(() => setMounted(true), []);
 
@@ -139,10 +143,10 @@ export function InstallPrompt() {
     };
   }, []);
 
-  const close = React.useCallback(() => {
-    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ }
-    setOpen(false);
-  }, []);
+  /* Closing only ends this session's appearance — SEEN_KEY was already set
+     when the card opened. Nothing durable is written, so it comes back next
+     visit unless the app got installed. */
+  const close = React.useCallback(() => setOpen(false), []);
 
   React.useEffect(() => {
     if (!open) return;
@@ -160,10 +164,12 @@ export function InstallPrompt() {
   const install = async () => {
     if (!deferred) return;
     await deferred.prompt();
-    const { outcome } = await deferred.userChoice;
+    /* Waited on so the card does not close underneath the browser's own
+       dialog. The outcome itself is not needed: "appinstalled" is what records
+       an install permanently, and declining just closes ours for this visit. */
+    await deferred.userChoice;
     setDeferred(null);
-    if (outcome === "accepted") setOpen(false);
-    else close();
+    setOpen(false);
   };
 
   if (!mounted || !open) return null;
@@ -256,6 +262,22 @@ export function InstallPrompt() {
 
             {mode === "ios" && (
               <>
+                {!showSteps && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowSteps(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-forest px-4 py-3 text-sm font-bold text-white shadow-soft transition-transform hover:-translate-y-0.5"
+                    >
+                      <Download className="h-4 w-4" /> Add Rego to Home Screen
+                    </button>
+                    <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                      Free · about 1 MB · no app store needed
+                    </p>
+                  </>
+                )}
+                {showSteps && (
+                  <>
                 <p className="mb-3 text-xs font-bold uppercase tracking-wide text-forest">
                   Add to your iPhone
                 </p>
@@ -277,11 +299,29 @@ export function InstallPrompt() {
                 >
                   Got it
                 </button>
+                  </>
+                )}
               </>
             )}
 
             {mode === "other" && (
               <>
+                {platform === "android" && !showSteps && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowSteps(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-forest px-4 py-3 text-sm font-bold text-white shadow-soft transition-transform hover:-translate-y-0.5"
+                    >
+                      <Download className="h-4 w-4" /> Add Rego to your phone
+                    </button>
+                    <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                      Free · about 1 MB · no app store needed
+                    </p>
+                  </>
+                )}
+                {(platform !== "android" || showSteps) && (
+                  <>
                 <p className="mb-3 text-xs font-bold uppercase tracking-wide text-forest">
                   {platform === "android" ? "Add to your phone" : "Install on your phone"}
                 </p>
@@ -315,6 +355,8 @@ export function InstallPrompt() {
                 >
                   Got it
                 </button>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -324,7 +366,7 @@ export function InstallPrompt() {
             onClick={close}
             className="mt-3 w-full text-center text-xs font-semibold text-muted-foreground hover:text-forest"
           >
-            Maybe later
+            Not now
           </button>
         </div>
       </div>
