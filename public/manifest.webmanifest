@@ -8,10 +8,13 @@
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#0F4C3A",
-  "background_color": "#0F4C3A",
+  "background_color": "#011E11",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["travel", "lifestyle"],
+  "categories": [
+    "travel",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -37,13 +40,23 @@
       "name": "Search stays",
       "short_name": "Stays",
       "url": "/categories/hotels?source=pwa",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Road updates",
       "short_name": "Roads",
       "url": "/roadside/updates?source=pwa",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

@@ -10,6 +10,7 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { IosSplash } from "@/components/pwa/ios-splash";
 
 // Montserrat is the single brand font for the entire site (headings, body,
 // buttons, inputs, navbar, footer — everything). Bound to --font-sans, which
@@ -60,6 +61,14 @@ export const metadata: Metadata = {
     // "default" keeps the iOS status bar legible over the light app background.
     // "black-translucent" would push content under the notch.
     statusBarStyle: "default",
+  },
+  icons: {
+    // iOS applies its own rounded mask, so this is the square artwork.
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
   },
   keywords: [
     "Gilgit Baltistan tourism",
@@ -149,6 +158,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        {/* iPhone and iPad launch screens. Android builds its own from the
+            manifest; iOS needs an exact per-device match or it shows white. */}
+        <IosSplash />
       </head>
       {/* Captures beforeinstallprompt before hydration — Chrome fires it
           earlier than React mounts, and a missed event means no button. */}
