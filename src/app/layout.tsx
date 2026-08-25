@@ -9,6 +9,7 @@ import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 // Montserrat is the single brand font for the entire site (headings, body,
 // buttons, inputs, navbar, footer — everything). Bound to --font-sans, which
@@ -165,6 +166,10 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           <InstallPrompt />
         </Providers>
+        {/* Loads after the page is interactive, so it costs nothing on the
+            metric Google actually measures. Renders nothing at all when
+            NEXT_PUBLIC_GA_ID is unset. */}
+        <GoogleAnalytics />
       </body>
     </html>
   );
