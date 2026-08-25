@@ -58,25 +58,10 @@ export default async function SafarnamaPage() {
           </div>
         </section>
 
-        {/* Featured */}
-        {featured.length > 0 && (
-          <Section title="Featured Safarnama" subtitle="Hand-picked journeys worth reading.">
-            <Grid stories={featured} />
-          </Section>
-        )}
-
-        {/* Most viewed */}
-        {mostViewed.length > 0 && (
-          <Section
-            title="Most Viewed Stories"
-            subtitle="What fellow travellers are reading right now."
-            icon
-          >
-            <Grid stories={mostViewed} />
-          </Section>
-        )}
-
-        {/* Browser with filters */}
+        {/* Browser with filters.
+            This comes first on purpose. Someone arriving at Safarnama wants
+            the stories and the search box — the curated strips are a way to
+            browse further once they are here, not the thing they came for. */}
         <section className="container-px py-10 sm:py-12">
           <h2 className="font-display text-xl font-bold uppercase text-forest sm:text-2xl">
             All stories
@@ -106,6 +91,24 @@ export default async function SafarnamaPage() {
             )}
           </div>
         </section>
+
+        {/* Featured */}
+        {featured.length > 0 && (
+          <Section title="Featured Safarnama" subtitle="Hand-picked journeys worth reading.">
+            <Grid stories={featured} />
+          </Section>
+        )}
+
+        {/* Most viewed */}
+        {mostViewed.length > 0 && (
+          <Section
+            title="Most Viewed Stories"
+            subtitle="What fellow travellers are reading right now."
+            icon
+          >
+            <Grid stories={mostViewed} />
+          </Section>
+        )}
       </main>
       <Footer />
     </>
