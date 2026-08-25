@@ -27,6 +27,7 @@ import {
   type BlogPost,
   type BlogStatus,
 } from "@/lib/blog";
+import { AdminBlogComments } from "@/components/dashboard/admin-blog-comments";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -581,6 +582,13 @@ export function AdminBlog() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ---- Comment moderation ---- */}
+      {!creating && (
+        <div className="rounded-xl border border-border p-4">
+          <AdminBlogComments />
         </div>
       )}
 

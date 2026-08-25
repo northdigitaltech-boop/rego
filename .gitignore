@@ -34,3 +34,7 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# Company presentation — build scripts, deck and screenshots stay local.
+# Kept out of a public repo deliberately.
+presentation/

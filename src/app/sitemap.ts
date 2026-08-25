@@ -18,6 +18,7 @@ import { getApprovedRoadsideProviders } from "@/lib/roadside";
 import { getApprovedStories } from "@/lib/safarnama";
 import { legalPolicies } from "@/lib/legal";
 import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getExpeditionPros } from "@/lib/expeditions";
+import { categoryHasOwnPage } from "@/lib/category-routing";
 
 // Re-generate the sitemap at most hourly.
 export const revalidate = 3600;
@@ -46,7 +47,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy", "/blog-news"]) {
     add(p, { changeFrequency: "weekly", priority: 0.7 });
   }
-  for (const c of allCategories) add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
+  /* Twenty of the category slugs redirect straight into /roadside,
+     /events or /activities. Listing them here asked Google to crawl
+     twenty URLs that immediately bounce — so only real pages go in. */
+  for (const c of allCategories) {
+    if (!categoryHasOwnPage(c.slug)) continue;
+    add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
+  }
   for (const d of destinations) add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7 });
 
   // --- Legal & policy pages ---

@@ -1,9 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { isRoadsideService } from "@/lib/roadside";
-import { isEventCategory } from "@/lib/events";
-import { isActivityCategory, isIndoorActivity } from "@/lib/activities";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -30,6 +27,8 @@ import { feedAllListings } from "@/lib/home-feed";
 import { getHotels } from "@/lib/hotels";
 import { getHomestays } from "@/lib/homestays";
 import { getHostels } from "@/lib/hostels";
+import { categoryDescription, categoryTitle } from "@/lib/seo-copy";
+import { categoryIsEmpty, categoryRedirect } from "@/lib/category-routing";
 import {
   getApprovedPackages,
   getApprovedTransports,
@@ -60,13 +59,28 @@ export async function generateMetadata({
   const { slug } = await params;
   const category = getCategory(slug);
   if (!category) return { title: "Category not found" };
-  const description = `${category.tagline}. Browse ${category.name} across Gilgit Baltistan on Rego.`;
+  /* "Hotels & Resorts" alone told a search engine nothing about where these
+     are. The region belongs in the title — it is the whole point of the
+     page. */
+  const description = categoryDescription(category.name, category.tagline);
+
+  /* A category with nothing in it is a dead end for a searcher and a drag on
+     the whole site's quality. Keep it out of the index while it is empty —
+     it comes back on its own as soon as somebody lists in it. Only the
+     catch-all categories are ever eligible, and a failed count leaves the
+     page indexed. */
+  const empty = await categoryIsEmpty(
+    slug,
+    await feedAllListings().catch(() => null)
+  );
+
   return {
-    title: category.name,
+    title: categoryTitle(category.name),
     description,
+    robots: empty ? { index: false, follow: true } : undefined,
     alternates: { canonical: `/categories/${slug}` },
     openGraph: {
-      title: `${category.name} — Rego`,
+      title: `${categoryTitle(category.name)} — Rego`,
       description,
       url: `/categories/${slug}`,
       type: "website",
@@ -84,19 +98,10 @@ export default async function CategoryPage({
   const { slug } = await params;
   const sp = await searchParams;
   const query = (Array.isArray(sp.location) ? sp.location[0] : sp.location) ?? "";
-  // Roadside services have a dedicated, fully-functional module.
-  if (isRoadsideService(slug)) redirect(`/roadside/${slug}`);
-  // Events & Expo has a dedicated, admin-managed module.
-  if (isEventCategory(slug)) redirect(`/events?category=${slug}`);
-  // Activities has a dedicated, provider-driven module.
-  if (slug === "activities") redirect("/activities");
-  if (slug === "mountaineering") redirect("/expeditions");
-  if (isActivityCategory(slug))
-    redirect(
-      isIndoorActivity(slug)
-        ? `/activities?kind=indoor&category=${slug}`
-        : `/activities?category=${slug}`
-    );
+  /* Same rule the sitemap uses, so the two can never disagree about which
+     of these URLs is a real page. */
+  const redirectTo = categoryRedirect(slug);
+  if (redirectTo) redirect(redirectTo);
   const category = getCategory(slug);
   if (!category) notFound();
 

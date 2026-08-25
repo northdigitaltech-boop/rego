@@ -14,6 +14,7 @@ import { Footer } from "@/components/layout/footer";
 import { StoryMarkdown } from "@/components/safarnama/story-markdown";
 import { PostCard } from "@/components/blog/post-card";
 import { ShareButtons } from "@/components/blog/share-buttons";
+import { Comments, LikeButton } from "@/components/blog/engagement";
 import { BreadcrumbJsonLd, ArticleJsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import {
@@ -216,7 +217,10 @@ export default async function ArticlePage({ params }: { params: Params }) {
               )}
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-5">
-                <ShareButtons url={url} title={post.title} />
+                <div className="flex flex-wrap items-center gap-4">
+                  <LikeButton postId={post.id} />
+                  <ShareButtons url={url} title={post.title} />
+                </div>
                 <Link
                   href="/blog-news"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest transition-colors hover:border-forest-600 hover:bg-forest-50"
@@ -228,6 +232,15 @@ export default async function ArticlePage({ params }: { params: Params }) {
             </div>
           </div>
         </article>
+
+        {/* ---- Comments ----
+            Below the article and outside <article>, so the discussion is not
+            part of the piece itself in the document outline. */}
+        <section className="container-px pb-12">
+          <div className="border-t border-border pt-10">
+            <Comments postId={post.id} />
+          </div>
+        </section>
 
         {/* ---- Related ---- */}
         {related.length > 0 && (

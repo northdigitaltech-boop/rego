@@ -335,5 +335,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  /* ---------------------------------------------------------------- */
+  if (action === "moderate_comment") {
+    const id = String(body.id ?? "");
+    const op = String(body.op ?? "");
+    if (!id) return bad("Missing comment.");
+
+    /* HIDE, not delete, by default. A moderation call is a judgement made in
+       a hurry; keeping the row means a mistake can be undone and a pattern of
+       abuse can still be reviewed later. Deleting is a separate, explicit
+       choice. */
+    if (op === "hide" || op === "unhide") {
+      const { error } = await sb
+        .from("blog_comments")
+        .update({
+          is_hidden: op === "hide",
+          hidden_reason:
+            op === "hide" ? String(body.reason ?? "").trim().slice(0, 200) || null : null,
+        })
+        .eq("id", id);
+      if (error) return bad(error.message, 500);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (op === "delete") {
+      const { error } = await sb.from("blog_comments").delete().eq("id", id);
+      if (error) return bad(error.message, 500);
+      return NextResponse.json({ ok: true });
+    }
+
+    return bad("Unknown moderation action.");
+  }
+
   return bad("Unknown action.");
 }

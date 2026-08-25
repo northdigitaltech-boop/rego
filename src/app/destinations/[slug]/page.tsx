@@ -30,6 +30,7 @@ import { DirectAnswer, TravelFAQ } from "@/components/aeo/answer-blocks";
 const AEO_ENABLED = process.env.NEXT_PUBLIC_AEO_ENABLED === "1";
 import { feedAllListings } from "@/lib/home-feed";
 import { photo, cn } from "@/lib/utils";
+import { destinationDescription, destinationTitle, tidyName } from "@/lib/seo-copy";
 
 const QUICK_FILTERS = [
   { slug: "", label: "All" },
@@ -63,11 +64,14 @@ export async function generateMetadata({
      this page keeps working unchanged until somebody writes content for it. */
   const seo = await getLocationSeoForSlug(slug);
 
+  /* The bare name ("SKARDU") was the whole title tag, which gave the page
+     nothing to rank on. These fallbacks carry the words travellers actually
+     type; admin-written SEO still wins whenever it exists. */
   const description =
     seo?.meta_description?.trim() ||
-    `${destination.tagline}. Find hotels, tours and more in ${destination.name}, Gilgit Baltistan.`;
+    destinationDescription(destination.name, destination.tagline);
 
-  const title = seo?.seo_title?.trim() || destination.name;
+  const title = seo?.seo_title?.trim() || destinationTitle(destination.name);
   const image = seo?.og_image || destination.image;
 
   /* CANONICAL IGNORES ?category= ON PURPOSE.
@@ -84,7 +88,7 @@ export async function generateMetadata({
       ? { index: seo.robots_index, follow: seo.robots_follow }
       : undefined,
     openGraph: {
-      title: seo?.og_title?.trim() || `${destination.name} — Rego`,
+      title: seo?.og_title?.trim() || `${tidyName(destination.name)} — Rego`,
       description: seo?.og_description?.trim() || description,
       url: canonical,
       type: "website",
@@ -92,7 +96,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: image ? "summary_large_image" : "summary",
-      title: seo?.og_title?.trim() || destination.name,
+      title: seo?.og_title?.trim() || tidyName(destination.name),
       description: seo?.og_description?.trim() || description,
       images: image ? [image] : undefined,
     },
