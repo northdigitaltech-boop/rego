@@ -84,11 +84,21 @@ export function GoogleAnalytics() {
 
   return (
     <>
+      {/* lazyOnload, not afterInteractive. gtag.js is ~326 KB of third-party
+          JavaScript; on a throttled mobile connection it competes with the
+          hero image for bandwidth, and the hero image is the LCP element.
+          Loading it with afterInteractive cost about 28 Lighthouse points.
+          Waiting for the load event costs the handful of visitors who leave
+          within a second or two — a trade worth making.
+
+          Nothing is lost from the delay: gtag() only ever pushes to
+          dataLayer, so the page views recorded below queue up and replay in
+          order the moment the script arrives. */}
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="ga-init" strategy="afterInteractive">
+      <Script id="ga-init" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}

@@ -37,8 +37,20 @@ export const OPEN_INSTALL_EVENT = "rego-open-install";
 
 const DISMISS_KEY = "rego-install-dismissed";
 const SEEN_KEY = "rego-install-seen";
-/** Let the page paint and settle before interrupting. */
-const SHOW_AFTER_MS = 2500;
+/**
+ * How long after the page has finished loading before the card appears.
+ *
+ * It used to be 2.5s from mount, which landed in the middle of the page
+ * still rendering. A full-screen card with a blurred backdrop arriving then
+ * covers the hero — the largest element on the page — so it became the
+ * largest contentful paint, and the browser had to re-composite the whole
+ * viewport at the worst possible moment.
+ *
+ * Now it waits for the load event and then for the browser to be idle, so it
+ * cannot interfere with the page arriving. It is also simply better manners:
+ * nobody wants a popup before they have seen the page.
+ */
+const SHOW_AFTER_MS = 3000;
 
 const HIDE_ON = [
   "/signin", "/signup", "/reset-password", "/verify", "/auth",
@@ -143,16 +155,38 @@ export function InstallPrompt() {
     window.addEventListener(OPEN_INSTALL_EVENT, onAsk);
 
     /* The unprompted appearance is the part that has to stay polite. */
-    const auto =
-      HIDE_ON.some((p) => window.location.pathname.startsWith(p)) || suppressed()
-        ? 0
-        : window.setTimeout(() => {
-            setOpen(true);
-            try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
-          }, SHOW_AFTER_MS);
+    let auto = 0;
+    let idle = 0;
+    const muted =
+      HIDE_ON.some((p) => window.location.pathname.startsWith(p)) || suppressed();
+
+    const schedule = () => {
+      auto = window.setTimeout(() => {
+        /* One last wait for a quiet moment, so the card never lands on top of
+           work the browser is still doing. */
+        const show = () => {
+          setOpen(true);
+          try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
+        };
+        const ric = (window as unknown as {
+          requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+        }).requestIdleCallback;
+        if (ric) idle = ric(show, { timeout: 2000 });
+        else show();
+      }, SHOW_AFTER_MS);
+    };
+
+    if (!muted) {
+      if (document.readyState === "complete") schedule();
+      else window.addEventListener("load", schedule, { once: true });
+    }
 
     return () => {
       if (auto) window.clearTimeout(auto);
+      if (idle) (window as unknown as {
+        cancelIdleCallback?: (h: number) => void;
+      }).cancelIdleCallback?.(idle);
+      window.removeEventListener("load", schedule);
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("rego-installable", onCaptured);
       window.removeEventListener("appinstalled", onInstalled);
