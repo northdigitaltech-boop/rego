@@ -4,6 +4,7 @@ import { buildMetadata } from "@/lib/seo";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Hero } from "@/components/home/hero";
+import { getHeroImage } from "@/lib/hero-image";
 import { Destinations } from "@/components/home/destinations";
 import { Categories } from "@/components/home/categories";
 import { FeaturedGrid } from "@/components/home/featured-grid";
@@ -50,6 +51,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function Home() {
+  const hero = await getHeroImage();
   const [
     hotels,
     packages,
@@ -86,7 +88,20 @@ export default async function Home() {
       <Navbar />
       <main>
         {/* Hero & universal search (unchanged) */}
-        <Hero />
+        {/* The preload lives here, not in the root layout. It used to sit in
+            <head> for every route, naming the built-in files — which meant
+            every page on the site preloaded a hero only the homepage shows,
+            and an admin-set hero could never be preloaded at all. React
+            hoists this link into <head> from where it is rendered. */}
+        <link
+          rel="preload"
+          as="image"
+          href={hero.src}
+          imageSrcSet={hero.srcSet}
+          imageSizes="100vw"
+          fetchPriority="high"
+        />
+        <Hero image={hero} />
 
         {/* Popular Destinations */}
         <Destinations />

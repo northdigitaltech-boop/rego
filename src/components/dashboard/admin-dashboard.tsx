@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Globe,
   Newspaper,
+  ImagePlus,
   Info,
   BarChart3,
   KeyRound,
@@ -98,6 +99,7 @@ import { AdminSolo } from "@/components/dashboard/admin-solo";
 import { AdminRoadUpdates } from "@/components/dashboard/admin-road-updates";
 import { AdminSafarnama } from "@/components/dashboard/admin-safarnama";
 import { AdminRegoMap } from "@/components/dashboard/admin-rego-map";
+import { AdminHeroImage } from "@/components/dashboard/admin-hero-image";
 import { AdminAbout } from "@/components/dashboard/admin-about";
 import { AdminContact } from "@/components/dashboard/admin-contact";
 import { AdminAds } from "@/components/dashboard/admin-ads";
@@ -481,6 +483,7 @@ type Tab =
   | "regomap"
   | "messages"
   | "destinations"
+  | "hero"
   | "about"
   | "contact"
   | "ads"
@@ -523,6 +526,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "regomap", label: "Rego Map", icon: MapPin },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "destinations", label: "Destinations", icon: MapPin },
+  { id: "hero", label: "Homepage Hero", icon: ImagePlus },
   { id: "about", label: "About Page", icon: Info },
   { id: "contact", label: "Contact Page", icon: Phone },
   { id: "ads", label: "Promotions & Ads", icon: Megaphone },
@@ -1000,6 +1004,7 @@ export function AdminDashboard() {
           {tab === "markets" && <MarketAreas />}
           {tab === "blog" && <AdminBlog />}
           {tab === "manage" && <AdminListingsManager />}
+          {tab === "hero" && <AdminHeroImage />}
           {tab === "about" && <AdminAbout />}
           {tab === "contact" && <AdminContact />}
           {tab === "ads" && <AdminAds />}

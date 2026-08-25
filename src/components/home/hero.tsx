@@ -18,6 +18,7 @@ import { SiteSearch } from "@/components/ui/site-search";
 import { HeroWeather } from "@/components/home/hero-weather";
 import { searchTabs, type CategorySlug } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { DEFAULT_HERO, type HeroImage } from "@/lib/hero-image";
 import {
   getSavedFilters,
   saveFilters,
@@ -119,7 +120,12 @@ const GENERIC_CFG: TabConfig = {
   peopleLabel: "People",
 };
 
-export function Hero() {
+/**
+ * @param image  The hero to paint. Defaults to the one that ships with the
+ *   app, so this stays a drop-in for any caller that does not set one.
+ */
+export function Hero({ image }: { image?: HeroImage } = {}) {
+  const hero = image ?? DEFAULT_HERO;
   const router = useRouter();
   const reduce = useReducedMotion();
   const [activeTab, setActiveTab] = React.useState(searchTabs[0].name);
@@ -229,16 +235,18 @@ export function Hero() {
           desktop via cheap CSS (no JS animation on the critical path). */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="hero-kenburns relative h-full w-full">
-          {/* LCP element. Deliberately a plain <img> with PRE-BUILT WebP files
-              instead of next/image: `/_next/image` transforms on demand, and
-              that per-region cold-start was costing seconds on the first view.
-              These are static assets served straight from the CDN. */}
+          {/* LCP element. Deliberately a plain <img> instead of next/image:
+              `/_next/image` transforms on demand, and that per-region
+              cold-start was costing seconds on the first view. The built-in
+              hero is a set of pre-sized WebP files served straight from the
+              CDN; an admin-set one comes through Cloudinary already sized per
+              breakpoint. Either way the browser gets a finished image. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/hero-1024.webp"
-            srcSet="/hero-640.webp 640w, /hero-1024.webp 1024w, /hero-1536.webp 1536w"
+            src={hero.src}
+            srcSet={hero.srcSet}
             sizes="100vw"
-            alt=""
+            alt={hero.alt}
             width={1536}
             height={1024}
             fetchPriority="high"

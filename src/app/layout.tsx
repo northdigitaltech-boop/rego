@@ -143,16 +143,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preload the hero (the LCP element) so it starts downloading in
-            parallel with the stylesheet instead of waiting for CSS to parse. */}
-        <link
-          rel="preload"
-          as="image"
-          href="/hero-1024.webp"
-          imageSrcSet="/hero-640.webp 640w, /hero-1024.webp 1024w, /hero-1536.webp 1536w"
-          imageSizes="100vw"
-          fetchPriority="high"
-        />
+        {/* The hero preload used to live here. It has moved to app/page.tsx:
+            the hero only appears on the homepage, so every other route was
+            preloading an image it never painted — and now that the image can
+            be set by an admin, the preload has to name whichever one is
+            actually configured. */}
         {/* Warm up connections to the image CDNs so card photos load faster. */}
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
