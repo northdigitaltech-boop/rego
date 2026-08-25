@@ -46,8 +46,20 @@ export function transportBookingRef(id: string) {
   return "SGB-" + id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
+/* Bookings are confirmed as they are created — the provider is not asked to
+   accept first. Set here rather than in each booking form, so no form can be
+   added later that quietly leaves one pending.
+
+   Every one of the eight booking tables uses 'accepted' for the confirmed
+   state (pending | accepted | rejected [| completed]), so the same literal is
+   correct for all of them. The column default is still 'pending', which is
+   what an insert from anywhere else will get. */
 export async function createTransportBooking(input: TransportBookingInput) {
-  return supabase.from("transport_bookings").insert(input).select().single();
+  return supabase
+    .from("transport_bookings")
+    .insert({ ...input, status: "accepted" })
+    .select()
+    .single();
 }
 
 export async function getTransportBookingsByOwner(

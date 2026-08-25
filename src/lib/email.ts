@@ -119,6 +119,38 @@ export function bookingRequestEmailToOwner(opts: {
   );
 }
 
+/**
+ * Sent to the provider the moment a booking is created.
+ *
+ * Bookings are confirmed on creation, so this deliberately does not ask the
+ * provider to accept or reject — that wording would describe a step that no
+ * longer exists and would leave them waiting for a button that does nothing.
+ * It tells them the date is taken and points them at the details.
+ */
+export function bookingConfirmedEmailToOwner(opts: {
+  hotel: string;
+  ref: string;
+  customer: string;
+  customerPhone?: string | null;
+  checkIn?: string | null;
+  checkOut?: string | null;
+}) {
+  return shell(
+    "New confirmed booking",
+    `<p>A booking for <strong>${opts.hotel}</strong> has been confirmed.</p>
+     ${row("Booking reference", opts.ref)}
+     ${row("Customer", opts.customer)}
+     ${opts.customerPhone ? row("Phone", opts.customerPhone) : ""}
+     ${opts.checkIn ? row("From", opts.checkIn) : ""}
+     ${opts.checkOut ? row("To", opts.checkOut) : ""}
+     <p>The traveller has already been sent a confirmation. Open your provider
+     dashboard for the full details and to message them.</p>
+     <p style="color:#556;font-size:14px;line-height:1.6">If you cannot honour
+     this booking, contact the traveller as soon as you can &mdash; they are
+     expecting it to go ahead.</p>`
+  );
+}
+
 export function bookingStatusEmail(opts: {
   name: string;
   hotel: string;

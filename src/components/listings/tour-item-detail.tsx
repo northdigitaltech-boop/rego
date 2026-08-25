@@ -35,9 +35,17 @@ import { ReviewsSection } from "@/components/listings/reviews-section";
 import { sendBookingNotification } from "@/lib/messages";
 import {
   sendEmail,
-  bookingRequestEmailToCustomer,
-  bookingRequestEmailToOwner,
+  bookingConfirmedEmailToOwner,
+  bookingStatusEmail,
 } from "@/lib/email";
+import {
+  bool,
+  num,
+  savePendingBooking,
+  signupHref,
+  str,
+  useResumeBooking,
+} from "@/lib/pending-booking";
 import { cn, formatPrice, photo } from "@/lib/utils";
 
 
@@ -131,7 +139,18 @@ export function TourItemDetail({
 
   const handleBook = async () => {
     if (!user) {
-      router.push(`/signin?redirect=${encodeURIComponent(`/listings/${id}#book`)}`);
+      /* Hold everything they typed, then send them to create an account. It
+         replays itself when they come back — see useResumeBooking below. */
+      savePendingBooking("tour", id, {
+        startDate,
+        endDate,
+        guests,
+        custName,
+        custPhone,
+        custCity,
+        notes
+      });
+      router.push(signupHref(`/listings/${id}#book`));
       return;
     }
     setBookError("");
@@ -174,23 +193,42 @@ export function TourItemDetail({
     }
     sendEmail(
       user.email,
-      "Your Rego booking request",
-      bookingRequestEmailToCustomer({
-        name: fullName,
-        hotel: title,
-        ref,
-        checkIn: startDate || null,
-        checkOut: endDate || null,
-      })
+      "Your Rego booking is confirmed",
+      bookingStatusEmail({ name: fullName, hotel: title, ref, accepted: true })
     );
     if (ownerEmail) {
       sendEmail(
         ownerEmail,
-        "New booking request — Rego",
-        bookingRequestEmailToOwner({ hotel: title, ref, customer: fullName })
+        "New confirmed booking — Rego",
+        bookingConfirmedEmailToOwner({
+          hotel: title,
+          ref,
+          customer: fullName,
+          customerPhone: custPhone.trim() || null,
+          checkIn: startDate || null,
+          checkOut: endDate || null,
+        })
       );
     }
   };
+
+  /* Replays the held form once they are back and signed in. Reading the
+     snapshot also deletes it, so a refresh cannot book the same thing twice. */
+  const resuming = useResumeBooking({
+    kind: "tour",
+    listingId: id,
+    ready: Boolean(user),
+    restore: (f) => {
+      setStartDate(str(f.startDate));
+      setEndDate(str(f.endDate));
+      setGuests(num(f.guests, kind === "package" ? 2 : 1));
+      setCustName(str(f.custName));
+      setCustPhone(str(f.custPhone));
+      setCustCity(str(f.custCity));
+      setNotes(str(f.notes));
+    },
+    submit: () => void handleBook(),
+  });
 
   const allImages = [image, ...gallery].filter(Boolean);
 
@@ -319,8 +357,8 @@ export function TourItemDetail({
               <span>{formatPrice(total)}</span>
             </div>
 
-            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking}>
-              {booking ? "Sending…" : booked ? "Request sent ✓" : !user ? "Sign in to book" : "Next"}
+            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || resuming}>
+              {resuming ? "Completing your booking…" : booking ? "Sending…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>
             {bookError && <p className="mt-2 text-center text-sm text-red-600">{bookError}</p>}
 

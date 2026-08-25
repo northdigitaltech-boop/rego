@@ -43,9 +43,17 @@ import { GalleryGrid } from "@/components/listings/profile-gallery";
 import { sendBookingNotification } from "@/lib/messages";
 import {
   sendEmail,
-  bookingRequestEmailToCustomer,
-  bookingRequestEmailToOwner,
+  bookingConfirmedEmailToOwner,
+  bookingStatusEmail,
 } from "@/lib/email";
+import {
+  bool,
+  num,
+  savePendingBooking,
+  signupHref,
+  str,
+  useResumeBooking,
+} from "@/lib/pending-booking";
 import { cn, formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
 
@@ -111,7 +119,19 @@ export function GuideProfile({
 
   const handleBook = async () => {
     if (!user) {
-      router.push(`/signin?redirect=${encodeURIComponent(`/listings/${guide.id}#book`)}`);
+      /* Hold everything they typed, then send them to create an account. It
+         replays itself when they come back — see useResumeBooking below. */
+      savePendingBooking("guide", guide.id, {
+        serviceId,
+        startDate,
+        endDate,
+        guests,
+        pickup,
+        custName,
+        custPhone,
+        notes
+      });
+      router.push(signupHref(`/listings/${guide.id}#book`));
       return;
     }
     setBookError("");
@@ -196,23 +216,43 @@ export function GuideProfile({
     }
     sendEmail(
       user.email,
-      "Your Rego booking request",
-      bookingRequestEmailToCustomer({
-        name: fullName,
-        hotel: guide.name,
-        ref,
-        checkIn: startDate || null,
-        checkOut: endDate || null,
-      })
+      "Your Rego booking is confirmed",
+      bookingStatusEmail({ name: fullName, hotel: guide.name, ref, accepted: true })
     );
     if (guide.owner_email) {
       sendEmail(
         guide.owner_email,
-        "New booking request — Rego",
-        bookingRequestEmailToOwner({ hotel: guide.name, ref, customer: fullName })
+        "New confirmed booking — Rego",
+        bookingConfirmedEmailToOwner({
+          hotel: guide.name,
+          ref,
+          customer: fullName,
+          customerPhone: custPhone.trim() || null,
+          checkIn: startDate || null,
+          checkOut: endDate || null,
+        })
       );
     }
   };
+
+  /* Replays the held form once they are back and signed in. Reading the
+     snapshot also deletes it, so a refresh cannot book the same thing twice. */
+  const resuming = useResumeBooking({
+    kind: "guide",
+    listingId: guide.id,
+    ready: Boolean(user),
+    restore: (f) => {
+      setServiceId(str(f.serviceId));
+      setStartDate(str(f.startDate));
+      setEndDate(str(f.endDate));
+      setGuests(num(f.guests, 1));
+      setPickup(str(f.pickup));
+      setCustName(str(f.custName));
+      setCustPhone(str(f.custPhone));
+      setNotes(str(f.notes));
+    },
+    submit: () => void handleBook(),
+  });
 
   const allImages = [image, ...gallery].filter(Boolean);
 
@@ -432,8 +472,8 @@ export function GuideProfile({
               <span>{formatPrice(total)}</span>
             </div>
 
-            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked}>
-              {booking ? "Checking availability…" : booked ? "Request sent ✓" : !user ? "Sign in to book" : "Next"}
+            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked || resuming}>
+              {resuming ? "Completing your booking…" : booking ? "Checking availability…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>
             {bookError && <p className="mt-2 text-center text-sm font-medium text-red-600">{bookError}</p>}
 

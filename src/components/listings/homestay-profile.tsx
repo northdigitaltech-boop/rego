@@ -46,9 +46,16 @@ import {
 import { ReviewsSection } from "@/components/listings/reviews-section";
 import {
   sendEmail,
-  bookingRequestEmailToCustomer,
-  bookingRequestEmailToOwner,
+  bookingConfirmedEmailToOwner,
+  bookingStatusEmail,
 } from "@/lib/email";
+import {
+  num,
+  savePendingBooking,
+  signupHref,
+  str,
+  useResumeBooking,
+} from "@/lib/pending-booking";
 import { sendBookingNotification } from "@/lib/messages";
 import { cn, formatPrice, photo } from "@/lib/utils";
 
@@ -196,7 +203,13 @@ export function HomestayProfile({
 
   const handleBook = async () => {
     if (!user) {
-      router.push(`/signin?redirect=${encodeURIComponent(`/listings/${homestay.id}#book`)}`);
+      /* Hold everything they typed, then send them to create an account. It
+         replays itself when they come back — see useResumeBooking below.
+         qty carries the chosen rooms, so the selection survives too. */
+      savePendingBooking("homestay", homestay.id, {
+        qty, checkIn, checkOut, guests, custName, custPhone, custCity, notes,
+      });
+      router.push(signupHref(`/listings/${homestay.id}#book`));
       return;
     }
     if (selectedRooms.length === 0) {
@@ -286,27 +299,53 @@ export function HomestayProfile({
     }
     sendEmail(
       user.email,
-      "Your Rego homestay booking request",
-      bookingRequestEmailToCustomer({
-        name: fullName,
-        hotel: homestay.title,
-        ref,
-        checkIn: checkIn || null,
-        checkOut: checkOut || null,
-      })
+      "Your Rego homestay booking is confirmed",
+      bookingStatusEmail({ name: fullName, hotel: homestay.title, ref, accepted: true })
     );
     if (homestay.owner_email) {
       sendEmail(
         homestay.owner_email,
-        "New homestay booking request — Rego",
-        bookingRequestEmailToOwner({
+        "New confirmed homestay booking — Rego",
+        bookingConfirmedEmailToOwner({
           hotel: homestay.title,
           ref,
           customer: fullName,
+          customerPhone: custPhone.trim() || null,
+          checkIn: checkIn || null,
+          checkOut: checkOut || null,
         })
       );
     }
   };
+
+  /* Replays the held form once they are back and signed in. Reading the
+     snapshot also deletes it, so a refresh cannot book the same rooms twice. */
+  const resuming = useResumeBooking({
+    kind: "homestay",
+    listingId: homestay.id,
+    ready: Boolean(user),
+    restore: (f) => {
+      /* qty round-trips through JSON, which turns its numeric keys into
+         strings — they have to be put back as numbers or no room matches. */
+      const q = f.qty;
+      if (q && typeof q === "object") {
+        const out: Record<number, number> = {};
+        for (const [k, v] of Object.entries(q as Record<string, unknown>)) {
+          const n = Number(k);
+          if (Number.isFinite(n) && typeof v === "number") out[n] = v;
+        }
+        setQty(out);
+      }
+      setCheckIn(str(f.checkIn));
+      setCheckOut(str(f.checkOut));
+      setGuests(num(f.guests, 2));
+      setCustName(str(f.custName));
+      setCustPhone(str(f.custPhone));
+      setCustCity(str(f.custCity));
+      setNotes(str(f.notes));
+    },
+    submit: () => void handleBook(),
+  });
 
 
   const mapSrc = homestay.map_link
@@ -721,15 +760,15 @@ export function HomestayProfile({
               size="lg"
               className="mt-4 w-full rounded-lg"
               onClick={handleBook}
-              disabled={booking}
+              disabled={booking || resuming}
             >
-              {booking
-                ? "Sending…"
-                : booked
-                  ? "Request sent ✓"
-                  : !user
-                    ? "Sign in to book"
-                    : "Next"}
+              {resuming
+                ? "Completing your booking…"
+                : booking
+                  ? "Sending…"
+                  : booked
+                    ? "Booking confirmed ✓"
+                    : "Book now"}
             </Button>
             {bookError && (
               <p className="mt-2 text-center text-sm text-red-600">{bookError}</p>

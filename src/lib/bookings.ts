@@ -43,6 +43,13 @@ export function bookingRef(id: string) {
 }
 
 export async function createBooking(input: BookingInput) {
+  /* NOT forced to 'accepted' here, unlike the other seven booking types.
+     A hotel booking is created before the customer has chosen how to pay and
+     pressed Submit — the row exists while they are still on the payment step.
+     Confirming it here would show the owner a confirmed booking for a
+     checkout that was abandoned. It is confirmed in notifyBookingSubmitted
+     instead, which is the point the existing code already treats as the
+     moment the booking becomes real. */
   return supabase.from("bookings").insert(input).select().single();
 }
 

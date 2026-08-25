@@ -34,9 +34,16 @@ import {
 import { ReviewsSection } from "@/components/listings/reviews-section";
 import {
   sendEmail,
-  bookingRequestEmailToCustomer,
-  bookingRequestEmailToOwner,
+  bookingConfirmedEmailToOwner,
+  bookingStatusEmail,
 } from "@/lib/email";
+import {
+  num,
+  savePendingBooking,
+  signupHref,
+  str,
+  useResumeBooking,
+} from "@/lib/pending-booking";
 import { sendBookingNotification } from "@/lib/messages";
 import { cn, formatPrice, photo } from "@/lib/utils";
 
@@ -105,7 +112,17 @@ export function RestaurantDetail({
   };
 
   const handleBook = async () => {
-    if (!requireAuth() || !user) return;
+    if (!user) {
+      /* Hold everything they typed, then send them to create an account. It
+         replays itself when they come back — see useResumeBooking below.
+         Deliberately not requireAuth(): that is shared with the menu inquiry,
+         which has no form worth holding. */
+      savePendingBooking("restaurant", r.id, {
+        custName, custPhone, date, time, guests, notes,
+      });
+      router.push(signupHref(`/listings/${r.id}#book`));
+      return;
+    }
     setBookError("");
     if (!date) { setBookError("Please select a date."); return; }
     setBooking(true);
@@ -138,9 +155,43 @@ export function RestaurantDetail({
         summary: `Table for ${guests} at ${r.name}`,
       });
     }
-    sendEmail(user.email, "Your Rego table booking request", bookingRequestEmailToCustomer({ name: fullName, hotel: r.name, ref, checkIn: date || null, checkOut: null }));
-    if (r.owner_email) sendEmail(r.owner_email, "New table booking — Rego", bookingRequestEmailToOwner({ hotel: r.name, ref, customer: fullName }));
+    sendEmail(
+      user.email,
+      "Your Rego table booking is confirmed",
+      bookingStatusEmail({ name: fullName, hotel: r.name, ref, accepted: true })
+    );
+    if (r.owner_email) {
+      sendEmail(
+        r.owner_email,
+        "New confirmed table booking — Rego",
+        bookingConfirmedEmailToOwner({
+          hotel: r.name,
+          ref,
+          customer: fullName,
+          customerPhone: custPhone.trim() || null,
+          checkIn: date || null,
+          checkOut: time || null,
+        })
+      );
+    }
   };
+
+  /* Replays the held form once they are back and signed in. Reading the
+     snapshot also deletes it, so a refresh cannot book the same table twice. */
+  const resuming = useResumeBooking({
+    kind: "restaurant",
+    listingId: r.id,
+    ready: Boolean(user),
+    restore: (f) => {
+      setCustName(str(f.custName));
+      setCustPhone(str(f.custPhone));
+      setDate(str(f.date));
+      setTime(str(f.time));
+      setGuests(num(f.guests, 2));
+      setNotes(str(f.notes));
+    },
+    submit: () => void handleBook(),
+  });
 
   const handleInquiry = async (item: MenuItemRow) => {
     if (!requireAuth() || !user) return;
@@ -340,8 +391,8 @@ export function RestaurantDetail({
               </label>
             </div>
 
-            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked}>
-              {booking ? "Sending…" : booked ? "Request sent ✓" : !user ? "Sign in to book" : "Next"}
+            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked || resuming}>
+              {resuming ? "Completing your booking…" : booking ? "Sending…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>
             {bookError && <p className="mt-2 text-center text-sm font-medium text-red-600">{bookError}</p>}
 

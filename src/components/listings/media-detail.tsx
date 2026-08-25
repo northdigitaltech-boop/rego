@@ -37,9 +37,17 @@ import { paymentConfigFrom } from "@/lib/payments";
 import { sendBookingNotification } from "@/lib/messages";
 import {
   sendEmail,
-  bookingRequestEmailToCustomer,
-  bookingRequestEmailToOwner,
+  bookingConfirmedEmailToOwner,
+  bookingStatusEmail,
 } from "@/lib/email";
+import {
+  bool,
+  num,
+  savePendingBooking,
+  signupHref,
+  str,
+  useResumeBooking,
+} from "@/lib/pending-booking";
 import { cn, formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
 
@@ -117,7 +125,13 @@ export function MediaDetail({
 
   const handleBook = async () => {
     if (!user) {
-      router.push(`/signin?redirect=${encodeURIComponent(`/listings/${provider.id}#book`)}`);
+      /* Hold everything they typed, then send them to create an account. It
+         replays itself when they come back — see useResumeBooking below. */
+      savePendingBooking("media", provider.id, {
+        serviceId, startDate, endDate, people, location, shootType,
+        droneRequired, editingRequired, custName, custPhone, notes,
+      });
+      router.push(signupHref(`/listings/${provider.id}#book`));
       return;
     }
     setBookError("");
@@ -176,23 +190,46 @@ export function MediaDetail({
     }
     sendEmail(
       user.email,
-      "Your Rego booking request",
-      bookingRequestEmailToCustomer({
-        name: fullName,
-        hotel: provider.name,
-        ref,
-        checkIn: startDate || null,
-        checkOut: endDate || null,
-      })
+      "Your Rego booking is confirmed",
+      bookingStatusEmail({ name: fullName, hotel: provider.name, ref, accepted: true })
     );
     if (provider.owner_email) {
       sendEmail(
         provider.owner_email,
-        "New booking request — Rego",
-        bookingRequestEmailToOwner({ hotel: provider.name, ref, customer: fullName })
+        "New confirmed booking — Rego",
+        bookingConfirmedEmailToOwner({
+          hotel: provider.name,
+          ref,
+          customer: fullName,
+          customerPhone: custPhone.trim() || null,
+          checkIn: startDate || null,
+          checkOut: endDate || null,
+        })
       );
     }
   };
+
+  /* Replays the held form once they are back and signed in. Reading the
+     snapshot also deletes it, so a refresh cannot book the same thing twice. */
+  const resuming = useResumeBooking({
+    kind: "media",
+    listingId: provider.id,
+    ready: Boolean(user),
+    restore: (f) => {
+      setServiceId(str(f.serviceId));
+      setStartDate(str(f.startDate));
+      setEndDate(str(f.endDate));
+      setPeople(num(f.people, 1));
+      setLocation(str(f.location));
+      setShootType(str(f.shootType));
+      setDroneRequired(bool(f.droneRequired));
+      setEditingRequired(bool(f.editingRequired, provider.editing_included));
+      setCustName(str(f.custName));
+      setCustPhone(str(f.custPhone));
+      setNotes(str(f.notes));
+    },
+    submit: () => void handleBook(),
+  });
 
   return (
     <div className="bg-background">
@@ -401,8 +438,8 @@ export function MediaDetail({
               <span>{formatPrice(total)}</span>
             </div>
 
-            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked}>
-              {booking ? "Checking availability…" : booked ? "Request sent ✓" : !user ? "Sign in to book" : "Next"}
+            <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked || resuming}>
+              {resuming ? "Completing your booking…" : booking ? "Checking availability…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>
             {bookError && <p className="mt-2 text-center text-sm font-medium text-red-600">{bookError}</p>}
 

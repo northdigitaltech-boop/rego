@@ -132,7 +132,12 @@ function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
 
       {/* profile */}
       <div className="flex flex-1 flex-col p-4">
-        <div className="-mt-9 flex items-end gap-3">
+        {/* relative z-10 is doing real work here. The portfolio grid above is
+            position:relative, and a positioned element paints in a later layer
+            than the static content that follows it — so the images were being
+            drawn on top of this avatar and slicing off its top half. Giving the
+            row its own position puts it back in front. */}
+        <div className="relative z-10 -mt-9 flex items-end gap-3">
           <span className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-4 border-card bg-forest-100 shadow-premium">
             {avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
