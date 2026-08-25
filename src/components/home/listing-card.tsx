@@ -158,8 +158,14 @@ export function ListingCard({
 
         <p className="mt-1 text-sm text-muted-foreground">{listing.location}</p>
 
-        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
-          {!hidePrice && listing.price > 0 ? (
+        {/* Price and button sat on one row at every width. In a two-up grid on
+            a phone the card is barely 150px wide, so a price like
+            "PKR 3,000 / shoot" ate the row and pushed the button off the
+            card's edge. Below sm they stack: price on its own line, then a
+            full-width button — which also gives a thumb something reasonable
+            to hit. From sm up the original side-by-side row is unchanged. */}
+        <div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row sm:items-end sm:justify-between">
+          {!hidePrice && listing.price > 0 && (
             <div className="flex items-end gap-1">
               <span className="font-display text-lg font-bold text-forest">
                 {formatPrice(listing.price)}
@@ -168,13 +174,13 @@ export function ListingCard({
                 / {listing.unit}
               </span>
             </div>
-          ) : (
-            <span />
           )}
           <Link
             href={`/listings/${listing.id}`}
             aria-label={`View more about ${listing.title}`}
-            className="relative z-20 shrink-0 rounded-lg bg-forest-800 px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition-colors hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
+            /* sm:ml-auto keeps the button hard right on wider cards even when
+               there is no price for justify-between to push against. */
+            className="relative z-20 w-full shrink-0 rounded-lg bg-forest-800 px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-colors hover:bg-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 sm:ml-auto sm:w-auto sm:py-1.5"
           >
             View more
           </Link>
