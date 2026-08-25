@@ -85,9 +85,9 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="mb-4 font-display text-sm font-semibold text-white">
+            <h2 className="mb-4 font-display text-sm font-semibold text-white">
               Quick Links
-            </h4>
+            </h2>
             <ul className="space-y-2.5 text-sm">
               {quickLinks.map((link) => (
                 <li key={link.label}>
@@ -104,9 +104,9 @@ export function Footer() {
 
           {/* Top Destinations */}
           <div>
-            <h4 className="mb-4 font-display text-sm font-semibold text-white">
+            <h2 className="mb-4 font-display text-sm font-semibold text-white">
               Top Destinations
-            </h4>
+            </h2>
             <ul className="space-y-2.5 text-sm">
               {topDestinations.map((d) => (
                 <li key={d.label}>
@@ -124,9 +124,9 @@ export function Footer() {
 
           {/* Contact + App */}
           <div>
-            <h4 className="mb-4 font-display text-sm font-semibold text-white">
+            <h2 className="mb-4 font-display text-sm font-semibold text-white">
               Contact Us
-            </h4>
+            </h2>
             <ul className="space-y-2.5 text-sm">
               <li>
                 {/* Same admin-editable number as the Contact page and the
@@ -152,9 +152,9 @@ export function Footer() {
               </li>
             </ul>
 
-            <h4 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
+            <h2 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
               Follow Us
-            </h4>
+            </h2>
             <div className="flex items-center gap-3">
               {socials.map((Icon, i) => (
                 <Link
@@ -172,16 +172,16 @@ export function Footer() {
                 leads, above the stores that are still "coming soon". This is
                 also the only route to the install card once its own
                 once-per-session appearance has been used up. */}
-            <h4 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
+            <h2 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
               Get the app
-            </h4>
+            </h2>
             <div className="mb-3">
               <InstallAppButton />
             </div>
 
-            <h4 className="mb-3 font-display text-sm font-semibold text-white">
+            <h2 className="mb-3 font-display text-sm font-semibold text-white">
               Coming Soon
-            </h4>
+            </h2>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="#"
@@ -211,9 +211,9 @@ export function Footer() {
 
         {/* Legal */}
         <div className="mt-12 border-t border-white/10 pt-6">
-          <h4 className="mb-3 font-display text-sm font-semibold text-white">
+          <h2 className="mb-3 font-display text-sm font-semibold text-white">
             Legal
-          </h4>
+          </h2>
           <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
             {legalPolicies.map((p) => (
               <li key={p.slug}>

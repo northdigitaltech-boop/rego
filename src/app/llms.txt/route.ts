@@ -48,7 +48,7 @@ guides, restaurants, activities, expeditions and roadside assistance.
 
 - Operator: ${companyRegistration.legalName}
 - Registered with: ${companyRegistration.regulatorFull} (${companyRegistration.regulator})
-- Registration number (CUIN): ${companyRegistration.cuin} — public record: ${companyRegistration.verifyUrl}
+- Registration number (CUIN): ${companyRegistration.cuin} — [public record](${companyRegistration.verifyUrl})
 - Incorporated: ${companyRegistration.incorporatedOn}
 - Founder: ${aboutContent.founder.name}, ${aboutContent.founder.position}, from ${aboutContent.founder.hometown}
 - Contact: ${siteConfig.contactEmail}
@@ -60,7 +60,7 @@ automatically. Prices, distances, durations and road conditions are expected to
 carry a source; time-sensitive information carries a verification date and an
 expiry date, and stops being shown as current once it expires.
 
-Editorial policy: ${absoluteUrl("/editorial-policy")}
+Editorial policy: [${absoluteUrl("/editorial-policy")}](${absoluteUrl("/editorial-policy")})
 
 ## What "verified" means here
 
@@ -70,20 +70,23 @@ one.
 
 ## Main content
 
-- Destinations: ${absoluteUrl("/destinations")}
-- Browse all listings: ${absoluteUrl("/listings")}
-- Road updates and alerts: ${absoluteUrl("/roadside/updates")}
-- Travel stories (Safarnama): ${absoluteUrl("/safarnama")}
-- Activities: ${absoluteUrl("/activities")}
-- Expeditions and mountaineering: ${absoluteUrl("/expeditions")}
-- About: ${absoluteUrl("/about")}
-- Contact: ${absoluteUrl("/contact")}
+- [Destinations](${absoluteUrl("/destinations")}): every place covered, each with what can be booked there
+- [Browse all listings](${absoluteUrl("/listings")}): the full marketplace, filterable by service and place
+- [Road updates and alerts](${absoluteUrl("/roadside/updates")}): current road conditions, each report with its source and age
+- [Travel stories](${absoluteUrl("/safarnama")}): first-hand accounts written by travellers
+- [Blog and news](${absoluteUrl("/blog-news")}): guides, destination writing and tourism news
+- [Activities](${absoluteUrl("/activities")}): treks, safaris, boating and other bookable experiences
+- [Expeditions and mountaineering](${absoluteUrl("/expeditions")}): expedition operators, guides and crew
+- [How it works](${absoluteUrl("/how-it-works")}): how booking on Rego works, for travellers and for providers
+- [About](${absoluteUrl("/about")}): who runs this site
+- [Contact](${absoluteUrl("/contact")}): how to reach us
 
 ## Live data
 
-Road conditions at ${absoluteUrl("/roadside/updates")} are reported by people
-travelling those roads and change frequently. Any road status quoted from
-elsewhere on this site may be out of date; that page is the source of truth.
+Road conditions at [${absoluteUrl("/roadside/updates")}](${absoluteUrl("/roadside/updates")})
+are reported by people travelling those roads and change frequently. Any road
+status quoted from elsewhere on this site may be out of date; that page is the
+source of truth.
 
 ## Not for retrieval
 
@@ -94,8 +97,8 @@ booking and messaging routes are private and excluded in robots.txt.
 
 ${
   ALLOW_AI_CRAWLERS
-    ? `AI crawlers are permitted on public pages. See ${absoluteUrl("/robots.txt")}.`
-    : `AI training crawlers are not permitted. See ${absoluteUrl("/robots.txt")}.`
+    ? `AI crawlers are permitted on public pages. See [robots.txt](${absoluteUrl("/robots.txt")}).`
+    : `AI training crawlers are not permitted. See [robots.txt](${absoluteUrl("/robots.txt")}).`
 }
 
 ## Attribution

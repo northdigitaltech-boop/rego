@@ -42,10 +42,25 @@ describe("an admin-set hero", () => {
     }
   });
 
-  it("asks Cloudinary for a modern format and automatic quality", () => {
+  it("asks Cloudinary for a modern format and a lower quality target", () => {
     const h = heroFromUrl(CLOUD);
     expect(h.src).toContain("f_auto");
-    expect(h.src).toContain("q_auto");
+    /* Not plain q_auto. The hero sits under a dark wash with text over it, so
+       the detail q_auto pays for is detail nobody can see — Lighthouse found
+       67 KiB of an 87 KiB hero recoverable this way. */
+    expect(h.src).toContain("q_auto:eco");
+  });
+
+  it("crops to the interesting part, not the middle", () => {
+    /* Only a slice of a wide photo is visible on a phone. */
+    expect(heroFromUrl(CLOUD).src).toContain("g_auto");
+  });
+
+  it("leaves a URL that already carries a transformation alone", () => {
+    const tuned =
+      "https://res.cloudinary.com/demo/image/upload/e_sharpen,q_90/v1/hero.jpg";
+    /* Someone set that deliberately; overwriting it would undo their work. */
+    expect(heroFromUrl(tuned).src).not.toContain("q_auto:eco");
   });
 
   it("is marked as not the default, so the admin preview can say so", () => {

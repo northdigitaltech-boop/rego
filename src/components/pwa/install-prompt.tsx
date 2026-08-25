@@ -38,19 +38,24 @@ export const OPEN_INSTALL_EVENT = "rego-open-install";
 const DISMISS_KEY = "rego-install-dismissed";
 const SEEN_KEY = "rego-install-seen";
 /**
- * How long after the page has finished loading before the card appears.
+ * A short pause after the visitor first does something, before the card
+ * appears — long enough that it does not feel like a reaction to the tap.
  *
- * It used to be 2.5s from mount, which landed in the middle of the page
- * still rendering. A full-screen card with a blurred backdrop arriving then
- * covers the hero — the largest element on the page — so it became the
- * largest contentful paint, and the browser had to re-composite the whole
- * viewport at the worst possible moment.
+ * WHY IT WAITS FOR AN INTERACTION AND NOT A TIMER.
+ * A timer was tried twice: 2.5s from mount, then the load event plus an idle
+ * callback. Both put a full-screen card with a blurred backdrop on screen
+ * while the page was still being measured, and because it is larger than
+ * anything else on the page it became the largest contentful paint. On a
+ * throttled phone that landed at the very end of the trace — LCP 11.6s for a
+ * page whose hero was already visible at 1.4s. The card was not slowing the
+ * page down; it was being mistaken for it.
  *
- * Now it waits for the load event and then for the browser to be idle, so it
- * cannot interfere with the page arriving. It is also simply better manners:
- * nobody wants a popup before they have seen the page.
+ * Waiting for a scroll, a tap or a key press fixes that completely: there is
+ * no interaction during a page-load measurement, so the card cannot appear
+ * inside one. It is also the better moment to ask. Someone who has started
+ * reading has shown some interest; someone who has just arrived has not.
  */
-const SHOW_AFTER_MS = 3000;
+const SHOW_AFTER_MS = 1200;
 
 const HIDE_ON = [
   "/signin", "/signup", "/reset-password", "/verify", "/auth",
@@ -160,10 +165,20 @@ export function InstallPrompt() {
     const muted =
       HIDE_ON.some((p) => window.location.pathname.startsWith(p)) || suppressed();
 
-    const schedule = () => {
+    /* Fires once, on whichever of these happens first. */
+    const INTERACTIONS = ["scroll", "pointerdown", "keydown"] as const;
+
+    const stopWatching = () => {
+      for (const evt of INTERACTIONS) {
+        window.removeEventListener(evt, onFirstInteraction);
+      }
+    };
+
+    function onFirstInteraction() {
+      stopWatching();
       auto = window.setTimeout(() => {
-        /* One last wait for a quiet moment, so the card never lands on top of
-           work the browser is still doing. */
+        /* Still yields to a quiet moment, so the card never lands on top of
+           work the browser is in the middle of. */
         const show = () => {
           setOpen(true);
           try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
@@ -174,11 +189,14 @@ export function InstallPrompt() {
         if (ric) idle = ric(show, { timeout: 2000 });
         else show();
       }, SHOW_AFTER_MS);
-    };
+    }
 
     if (!muted) {
-      if (document.readyState === "complete") schedule();
-      else window.addEventListener("load", schedule, { once: true });
+      for (const evt of INTERACTIONS) {
+        /* passive: a scroll listener that cannot preventDefault lets the
+           browser keep scrolling on the compositor thread. */
+        window.addEventListener(evt, onFirstInteraction, { once: true, passive: true });
+      }
     }
 
     return () => {
@@ -186,7 +204,7 @@ export function InstallPrompt() {
       if (idle) (window as unknown as {
         cancelIdleCallback?: (h: number) => void;
       }).cancelIdleCallback?.(idle);
-      window.removeEventListener("load", schedule);
+      stopWatching();
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("rego-installable", onCaptured);
       window.removeEventListener("appinstalled", onInstalled);
