@@ -26,6 +26,15 @@ export interface HeroImage {
   alt: string;
   /** True when this is the file that ships with the app. */
   isDefault: boolean;
+  /**
+   * A different picture for phones, when one has been set.
+   *
+   * Not a smaller version of the same photo — a tall viewport can only show a
+   * vertical slice of a landscape frame, so the part that made the photo worth
+   * choosing is usually the part that gets cropped away. Null means phones get
+   * the desktop image, which is what happened before this existed.
+   */
+  mobile: { src: string; srcSet: string } | null;
 }
 
 /** The hero that ships in /public. Used whenever nothing else is set. */
@@ -34,6 +43,8 @@ export const DEFAULT_HERO: HeroImage = {
   srcSet: "/hero-640.webp 640w, /hero-1024.webp 1024w, /hero-1536.webp 1536w",
   alt: "",
   isDefault: true,
+  /* The app ships one hero. Phones get it cropped, as they always did. */
+  mobile: null,
 };
 
 /**
@@ -55,7 +66,7 @@ export const DEFAULT_HERO: HeroImage = {
  * is nothing we can do to it, and a broken transformation would be worse
  * than a large image.
  */
-function heroSrc(url: string, width: number): string {
+function heroSrc(url: string, width: number, portrait = false): string {
   if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
     return url;
   }
@@ -63,20 +74,41 @@ function heroSrc(url: string, width: number): string {
      transformation was set deliberately and is left alone. */
   if (/\/upload\/[^/]*[,_]/.test(url)) return photo(url, width);
 
-  const height = Math.round((width * 2) / 3);
+  /* 4:5 on a phone, 3:2 on everything else. The phone crop is deliberately
+     not as tall as the viewport: the hero grows with its content, and asking
+     for a 9:16 image would waste most of it behind the search card. */
+  const height = portrait
+    ? Math.round((width * 5) / 4)
+    : Math.round((width * 2) / 3);
   return url.replace(
     "/upload/",
     `/upload/f_auto,q_auto:eco,c_fill,g_auto,w_${width},h_${height}/`
   );
 }
 
+/** Widths worth serving to a phone. Nothing above 828 is ever painted there. */
+const MOBILE_WIDTHS = [430, 640, 828] as const;
+
+function mobileVariant(url: string) {
+  return {
+    src: heroSrc(url, 640, true),
+    srcSet: MOBILE_WIDTHS.map((w) => `${heroSrc(url, w, true)} ${w}w`).join(", "),
+  };
+}
+
 /** Build the responsive set for an admin-supplied image. */
-export function heroFromUrl(url: string, alt?: string | null): HeroImage {
+export function heroFromUrl(
+  url: string,
+  alt?: string | null,
+  mobileUrl?: string | null
+): HeroImage {
+  const mob = mobileUrl?.trim();
   return {
     src: heroSrc(url, 1024),
     srcSet: HERO_WIDTHS.map((w) => `${heroSrc(url, w)} ${w}w`).join(", "),
     alt: alt?.trim() || "",
     isDefault: false,
+    mobile: mob && /^https:\/\//i.test(mob) ? mobileVariant(mob) : null,
   };
 }
 
@@ -93,7 +125,7 @@ export async function getHeroImage(): Promise<HeroImage> {
   try {
     const { data, error } = await supabase
       .from("platform_settings")
-      .select("hero_image_url, hero_image_alt")
+      .select("hero_image_url, hero_image_alt, hero_image_mobile_url")
       .eq("id", 1)
       .maybeSingle();
 
@@ -101,29 +133,41 @@ export async function getHeroImage(): Promise<HeroImage> {
        is a normal state, not a fault. */
     if (error || !data) return DEFAULT_HERO;
 
-    const row = data as { hero_image_url?: string | null; hero_image_alt?: string | null };
+    const row = data as {
+      hero_image_url?: string | null;
+      hero_image_alt?: string | null;
+      hero_image_mobile_url?: string | null;
+    };
     const url = row.hero_image_url?.trim();
 
     /* Checked again in the browser's own terms, not just the database's: this
        string is about to become an <img src> on the busiest page on the site. */
     if (!url || !/^https:\/\//i.test(url)) return DEFAULT_HERO;
 
-    return heroFromUrl(url, row.hero_image_alt);
+    return heroFromUrl(url, row.hero_image_alt, row.hero_image_mobile_url);
   } catch {
     return DEFAULT_HERO;
   }
 }
 
 /** Save (or clear) the hero. Admin only — enforced by RLS on the table. */
-export async function setHeroImage(url: string | null, alt: string | null) {
+export async function setHeroImage(
+  url: string | null,
+  alt: string | null,
+  mobileUrl?: string | null
+) {
   const clean = url?.trim() || null;
-  if (clean && !/^https:\/\//i.test(clean)) {
-    return { error: new Error("The image URL must start with https://") };
+  const cleanMobile = mobileUrl?.trim() || null;
+  for (const v of [clean, cleanMobile]) {
+    if (v && !/^https:\/\//i.test(v)) {
+      return { error: new Error("Image URLs must start with https://") };
+    }
   }
   const { error } = await supabase
     .from("platform_settings")
     .update({
       hero_image_url: clean,
+      hero_image_mobile_url: cleanMobile,
       hero_image_alt: alt?.trim() || null,
       hero_updated_at: new Date().toISOString(),
     })

@@ -241,19 +241,31 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
               hero is a set of pre-sized WebP files served straight from the
               CDN; an admin-set one comes through Cloudinary already sized per
               breakpoint. Either way the browser gets a finished image. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={hero.src}
-            srcSet={hero.srcSet}
-            sizes="100vw"
-            alt={hero.alt}
-            width={1536}
-            height={1024}
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
+          {/* <picture> so a phone can be given a different photograph, not a
+              cropped one. The source is only rendered when a mobile hero has
+              been set; without it the browser falls straight through to the
+              <img> and behaves exactly as it did before. */}
+          <picture>
+            {hero.mobile && (
+              <source
+                media="(max-width: 640px)"
+                srcSet={hero.mobile.srcSet}
+                sizes="100vw"
+              />
+            )}
+            <img
+              src={hero.src}
+              srcSet={hero.srcSet}
+              sizes="100vw"
+              alt={hero.alt}
+              width={1536}
+              height={1024}
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+          </picture>
         </div>
         {/* Soft wash on the left only — keeps the headline readable while the
             photo stays clean and bright. */}

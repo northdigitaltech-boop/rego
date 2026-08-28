@@ -93,12 +93,27 @@ export default async function Home() {
             every page on the site preloaded a hero only the homepage shows,
             and an admin-set hero could never be preloaded at all. React
             hoists this link into <head> from where it is rendered. */}
+        {/* When there is a separate phone hero, both preloads carry a media
+            query so each browser fetches only the one it will paint. Without
+            the query on the desktop link, a phone would download both. */}
+        {hero.mobile && (
+          <link
+            rel="preload"
+            as="image"
+            href={hero.mobile.src}
+            imageSrcSet={hero.mobile.srcSet}
+            imageSizes="100vw"
+            media="(max-width: 640px)"
+            fetchPriority="high"
+          />
+        )}
         <link
           rel="preload"
           as="image"
           href={hero.src}
           imageSrcSet={hero.srcSet}
           imageSizes="100vw"
+          media={hero.mobile ? "(min-width: 641px)" : undefined}
           fetchPriority="high"
         />
         <Hero image={hero} />

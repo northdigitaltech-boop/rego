@@ -82,3 +82,42 @@ describe("an admin-set hero", () => {
     expect(h.srcSet).toContain("640w");
   });
 });
+
+describe("a separate hero for phones", () => {
+  const WIDE = "https://res.cloudinary.com/demo/image/upload/v1/wide.jpg";
+  const TALL = "https://res.cloudinary.com/demo/image/upload/v1/tall.jpg";
+
+  it("is null unless one is set, so phones keep getting the desktop image", () => {
+    expect(heroFromUrl(WIDE).mobile).toBeNull();
+    expect(heroFromUrl(WIDE, null, "").mobile).toBeNull();
+    expect(heroFromUrl(WIDE, null, "   ").mobile).toBeNull();
+    expect(DEFAULT_HERO.mobile).toBeNull();
+  });
+
+  it("is refused when it is not https — it goes into an img src", () => {
+    expect(heroFromUrl(WIDE, null, "http://insecure.example/x.jpg").mobile).toBeNull();
+    expect(heroFromUrl(WIDE, null, "/relative.jpg").mobile).toBeNull();
+    expect(heroFromUrl(WIDE, null, "javascript:alert(1)").mobile).toBeNull();
+  });
+
+  it("is cropped upright, not wide like the desktop one", () => {
+    const m = heroFromUrl(WIDE, null, TALL).mobile;
+    expect(m).not.toBeNull();
+    /* 4:5 — taller than it is wide. The desktop crop is 3:2, the other way. */
+    expect(m!.src).toContain("w_640,h_800");
+    expect(heroFromUrl(WIDE).src).toContain("w_1024,h_683");
+  });
+
+  it("offers phone-sized widths and nothing larger", () => {
+    const m = heroFromUrl(WIDE, null, TALL).mobile!;
+    for (const w of [430, 640, 828]) expect(m.srcSet).toContain(`${w}w`);
+    /* 1536 belongs to a desktop; sending it to a phone wastes the download. */
+    expect(m.srcSet).not.toContain("1536w");
+  });
+
+  it("keeps the two images separate", () => {
+    const h = heroFromUrl(WIDE, null, TALL);
+    expect(h.src).toContain("wide.jpg");
+    expect(h.mobile!.src).toContain("tall.jpg");
+  });
+});
