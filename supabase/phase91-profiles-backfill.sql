@@ -90,7 +90,7 @@ on conflict (id) do nothing;
 -- ----------------------------------------------------------------------------
 update public.profiles
    set role = 'admin'
- where lower(email) = lower('northdigitaltech@gmail.com');
+ where lower(email) = lower('northdigitalsolution@gmail.com');
 
 
 -- ----------------------------------------------------------------------------
@@ -133,7 +133,7 @@ order by (role = 'admin') desc, created_at;
 -- supposed to have, and deleting them would break sign-in for real users.
 --
 --   update public.profiles set role = 'customer'
---    where lower(email) = lower('northdigitaltech@gmail.com');
+--    where lower(email) = lower('northdigitalsolution@gmail.com');
 --
 -- To remove the backfilled rows as well (only sensible if phase29 itself is
 -- being reverted — this signs everyone out of their role):
