@@ -48,11 +48,11 @@ export function categoryHasOwnPage(slug: string): boolean {
  * Categories that may legitimately have nothing in them, and that are served
  * by the generic listings browser rather than a purpose-built view.
  *
- * This is an explicit list rather than a computed one on purpose. Hotels,
- * homestays and the rest are fetched by their own dedicated components, and a
- * count taken from the shared feed does not see all of them — computing this
- * would risk hiding a page that is actually full. Everything not named here
- * stays indexed no matter what.
+ * This is an explicit list rather than a computed one on purpose. Several
+ * categories are rendered by their own dedicated components with their own
+ * queries, so a count taken from the shared feed is not the whole picture for
+ * them — computing this would risk hiding a page that is actually full.
+ * Everything not named here stays indexed no matter what.
  */
 const MAY_BE_EMPTY = new Set(["visa", "more", "drone-pilots"]);
 

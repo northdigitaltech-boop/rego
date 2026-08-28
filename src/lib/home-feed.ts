@@ -1,5 +1,7 @@
 import { type Listing } from "@/lib/data";
 import { getHotels } from "@/lib/hotels";
+import { getHomestays } from "@/lib/homestays";
+import { getHostels } from "@/lib/hostels";
 import {
   getApprovedPackages,
   getApprovedGuides,
@@ -199,6 +201,8 @@ export async function feedTransport(n = 5) {
 export async function feedAllListings(): Promise<Listing[]> {
   const [
     hotels,
+    homestays,
+    hostels,
     packages,
     guides,
     restaurants,
@@ -209,6 +213,13 @@ export async function feedAllListings(): Promise<Listing[]> {
     transports,
   ] = await Promise.all([
     getHotels(),
+    /* Homestays and hostels were missing from this feed, which is what every
+       page built on it shows. On a destination page that meant tapping
+       "Homestays" always came back empty — not because there were none, but
+       because they were never fetched. Both getters already return Listing[],
+       so there was nothing to map. */
+    getHomestays(),
+    getHostels(),
     getApprovedPackages(),
     getApprovedGuides(),
     getApprovedRestaurants(),
@@ -221,6 +232,8 @@ export async function feedAllListings(): Promise<Listing[]> {
 
   const all: Listing[] = [
     ...hotels,
+    ...homestays,
+    ...hostels,
     ...packages.map(packageToListing),
     ...guides.map(guideToListing),
     ...restaurants.map(restaurantToListing),

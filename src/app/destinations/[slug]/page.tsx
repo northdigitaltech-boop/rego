@@ -129,6 +129,14 @@ export default async function DestinationPage({
   const { slug } = await params;
   const sp = await searchParams;
   const activeCat = (Array.isArray(sp.category) ? sp.category[0] : sp.category) ?? "";
+
+  /* A chip is selected. Someone who taps "Hotels" has asked a narrower
+     question than the page was answering, and the material above the listings
+     — the attractions, the links to every other service — is now in the way of
+     the answer. It is all still one tap back on "All". */
+  const filtered = activeCat !== "";
+  const activeLabel =
+    QUICK_FILTERS.find((f) => f.slug === activeCat)?.label ?? "";
   const destination = await getDestinationBySlug(slug);
   if (!destination) notFound();
   const allListings = await feedAllListings();
@@ -234,12 +242,17 @@ export default async function DestinationPage({
           </div>
         </section>
 
-        {/* Top attractions — admin-managed per destination */}
-        <AttractionsSection
-          items={destination.attractions ?? []}
-          destinationName={destination.name}
-          fallbackImage={destination.image}
-        />
+        {/* Top attractions — admin-managed per destination. Hidden once a
+            service is chosen: the question is now "which hotels", and a
+            gallery of lakes above the answer is just something to scroll
+            past. */}
+        {!filtered && (
+          <AttractionsSection
+            items={destination.attractions ?? []}
+            destinationName={destination.name}
+            fallbackImage={destination.image}
+          />
+        )}
 
         {/* Admin-written destination content. Renders nothing when empty —
             an empty prose block is worse than no block. */}
@@ -263,7 +276,7 @@ export default async function DestinationPage({
         {/* Service links — the destination-to-service half of internal
             linking. Only services actually open here are shown, so no link
             leads to an empty page. */}
-        {openServices.length > 0 && (
+        {!filtered && openServices.length > 0 && (
           <section className="container-px py-8">
             <h2 className="font-display text-2xl font-bold text-forest">
               What you can book in {destination.name}
@@ -280,6 +293,24 @@ export default async function DestinationPage({
               ))}
             </div>
           </section>
+        )}
+
+        {/* Says what is being shown, and offers the way back. Without this a
+            filtered page just looks like a destination page with less on it. */}
+        {filtered && activeLabel && (
+          <div className="container-px pt-8">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h2 className="font-display text-2xl font-bold text-forest">
+                {activeLabel} in {destination.name}
+              </h2>
+              <Link
+                href={`/destinations/${slug}`}
+                className="text-sm font-semibold text-forest-600 hover:text-gold"
+              >
+                Show everything in {destination.name}
+              </Link>
+            </div>
+          </div>
         )}
 
         <Suspense
