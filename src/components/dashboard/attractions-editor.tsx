@@ -49,7 +49,10 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
     setItems((p) => [...p, ...add]);
     setNote(
       add.length
-        ? { ok: true, text: `Added ${add.length} suggested spot${add.length === 1 ? "" : "s"}. Add photos, then save.` }
+        ? {
+            ok: true,
+            text: `Added ${add.length} suggested spot${add.length === 1 ? "" : "s"} as a starting point. Read each one before saving — they carry ages, heights and altitudes that nobody here has checked, and once saved they are published in Rego's name.`,
+          }
         : { ok: true, text: "All suggested spots are already in the list." }
     );
   };
@@ -116,19 +119,32 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
           )}
 
           {presets.length > 0 && (
-            <button
-              type="button"
-              onClick={loadPresets}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gold/50 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-forest hover:bg-gold/20"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-gold" />
-              Load {presets.length} suggested spots for {row.name}
-            </button>
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={loadPresets}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gold/50 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-forest hover:bg-gold/20"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-gold" />
+                Load {presets.length} suggested spots for {row.name}
+              </button>
+              {/* These used to appear on the public page on their own, with
+                  nobody having read them. Now they only get there if somebody
+                  loads them here and saves — so this says what that means. */}
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                A draft to edit, not finished copy. The wording includes ages,
+                heights and altitudes that have not been verified — check
+                anything specific before you save, or delete it. Nothing
+                appears on the destination page until you do save.
+              </p>
+            </div>
           )}
 
           {items.length === 0 && (
             <p className="rounded-lg border border-dashed border-border bg-card px-3 py-6 text-center text-xs text-muted-foreground">
-              No attractions yet. Add them one by one, or load the suggested list.
+              No attractions yet, so this destination&apos;s page shows no
+              attractions section at all. Add them one by one, or start from
+              the suggested list.
             </p>
           )}
 

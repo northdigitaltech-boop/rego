@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { destinations as staticDestinations, type Destination } from "@/lib/data";
-import { parseAttractions, suggestedFor, type Attraction } from "@/lib/attractions";
+import { parseAttractions, type Attraction } from "@/lib/attractions";
 
 /* ---- Row type (matches supabase/phase10-destinations.sql) ---- */
 
@@ -30,14 +30,24 @@ export function rowToDestination(r: DestinationRow): Destination {
   };
 }
 
-/** Built-in destinations, pre-filled with the suggested spots for that valley. */
-function withSuggested(d: Destination): Destination {
-  return d.attractions?.length ? d : { ...d, attractions: suggestedFor(d.slug) };
-}
+/* THE PRESETS ARE NO LONGER PUBLISHED AUTOMATICALLY.
+ *
+ * A destination with no attractions used to be filled in from the ninety
+ * suggestions in lib/attractions.ts, so a page nobody had edited still showed
+ * a list — and that list read as Rego's own writing. It carried specific
+ * claims: a fort's age, a pass's altitude, the height of a waterfall, the year
+ * of a landslide. Nobody at Rego had checked any of them, and they went out
+ * under Rego's name on a page a traveller might plan around.
+ *
+ * They are still one click away in the admin editor, which is the right place
+ * for them: an admin loads them, reads them, corrects them and chooses to
+ * save. A destination with nothing saved now shows no attractions section at
+ * all, which is honest — there is nothing to say yet.
+ */
 
 /** Public destinations for the site. Falls back to the built-in list. */
 export async function getDestinations(): Promise<Destination[]> {
-  const fallbackAll = staticDestinations.map(withSuggested);
+  const fallbackAll = staticDestinations;
   if (!isSupabaseConfigured) return fallbackAll;
   const { data, error } = await supabase
     .from("destinations")
@@ -51,16 +61,31 @@ export async function getDestinations(): Promise<Destination[]> {
 export async function getDestinationBySlug(
   slug: string
 ): Promise<Destination | null> {
-  const found = staticDestinations.find((d) => d.slug === slug);
-  const fallback = found ? withSuggested(found) : null;
+  const fallback = staticDestinations.find((d) => d.slug === slug) ?? null;
   if (!isSupabaseConfigured) return fallback;
+
   const { data, error } = await supabase
     .from("destinations")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
-  if (error || !data) return fallback;
-  return rowToDestination(data as DestinationRow);
+  if (data) return rowToDestination(data as DestinationRow);
+
+  /* A read that actually failed is not the same as a destination that is not
+     there. On an error, keep serving the built-in page rather than 404-ing a
+     live URL because the database blinked. */
+  if (error) return fallback;
+
+  /* No row. The built-in list is only a starting point for an empty
+     database — once there are destinations in it, the admin's list is the
+     list, and a slug missing from it is missing on purpose. Without this, a
+     destination deleted in the admin would keep serving from the code and
+     could never be removed. */
+  const { count } = await supabase
+    .from("destinations")
+    .select("id", { count: "exact", head: true });
+
+  return count && count > 0 ? null : fallback;
 }
 
 /* ---------------- Admin operations ---------------- */

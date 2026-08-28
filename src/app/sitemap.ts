@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { absoluteUrl } from "@/lib/site";
-import { allCategories, destinations } from "@/lib/data";
+import { allCategories } from "@/lib/data";
 import { getPublishedJobs } from "@/lib/jobs";
 import { getAllPublishedPosts } from "@/lib/blog";
 import { getHotels } from "@/lib/hotels";
@@ -19,6 +19,7 @@ import { getApprovedStories } from "@/lib/safarnama";
 import { legalPolicies } from "@/lib/legal";
 import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getExpeditionPros } from "@/lib/expeditions";
 import { categoryHasOwnPage } from "@/lib/category-routing";
+import { getDestinations } from "@/lib/destinations";
 
 // Re-generate the sitemap at most hourly.
 export const revalidate = 3600;
@@ -54,7 +55,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!categoryHasOwnPage(c.slug)) continue;
     add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
   }
-  for (const d of destinations) add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7 });
+  /* From the database, not the built-in list — otherwise a destination added
+     in the admin never gets crawled, and one deleted there is still offered
+     to Google. getDestinations() falls back to the built-in list on its own
+     when the table is empty. */
+  const dests = (await safe(getDestinations)) as { slug?: string }[];
+  for (const d of dests) {
+    if (d?.slug) add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7 });
+  }
 
   // --- Legal & policy pages ---
   add("/legal", { changeFrequency: "monthly", priority: 0.4 });
