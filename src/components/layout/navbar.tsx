@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   Menu,
   X,
@@ -34,7 +33,8 @@ import { getNotifications, markRead, type NotificationRow } from "@/lib/notifica
 import { useUnread } from "@/lib/use-unread";
 import { useWishlist } from "@/lib/wishlist";
 import { cn } from "@/lib/utils";
-import { siteConfig, contactLinks } from "@/lib/site";
+/* siteConfig and contactLinks were imported here but only ever mentioned in
+   a comment below — dead since the helpline moved to its own hook. */
 import { HelplineLink } from "@/components/layout/helpline-link";
 
 type NavNotif = { id: string; who: string; text: string; time: string };
@@ -644,16 +644,18 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
       </nav>
       </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden border-t border-white/10 bg-gradient-forest-deep xl:hidden"
-          >
-            <div className="container-px h-[calc(100dvh-5rem)] overflow-y-auto py-4">
+      {/* Was AnimatePresence. It stays in the DOM now and collapses with CSS —
+          inert while closed, so nothing inside it can be tabbed to or read out
+          by a screen reader. That keeps framer-motion out of the bundle the
+          browser fetches before it can paint the hero. */}
+      <div
+        data-open={open ? "true" : "false"}
+        inert={!open}
+        aria-hidden={!open}
+        className="collapse-grid bg-gradient-forest-deep xl:hidden"
+      >
+        <div>
+            <div className="container-px h-[calc(100dvh-5rem)] overflow-y-auto border-t border-white/10 py-4">
               <div className="flex flex-col gap-1">
                 {navLinks.map((link) =>
                   link.children ? (
@@ -670,15 +672,11 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                           )}
                         />
                       </button>
-                      <AnimatePresence initial={false}>
-                        {openSections.has(link.label) && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.25 }}
-                            className="overflow-hidden"
-                          >
+                      <div
+                        data-open={openSections.has(link.label) ? "true" : "false"}
+                        className="collapse-grid"
+                      >
+                        <div>
                             <div className="ml-3 flex flex-col gap-0.5 border-l border-white/10 pl-3 pb-2">
                               {link.children.map((c) => (
                                 <SmartLink
@@ -691,9 +689,8 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                                 </SmartLink>
                               ))}
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <Link
@@ -731,9 +728,8 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                 <span className="text-sm font-medium text-white/90">PKR</span>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </div>
 
       {statusOpen && <BookingStatusModal onClose={() => setStatusOpen(false)} />}
 

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
 import {
   Search,
   MapPin,
@@ -127,7 +126,6 @@ const GENERIC_CFG: TabConfig = {
 export function Hero({ image }: { image?: HeroImage } = {}) {
   const hero = image ?? DEFAULT_HERO;
   const router = useRouter();
-  const reduce = useReducedMotion();
   const [activeTab, setActiveTab] = React.useState(searchTabs[0].name);
   const [destination, setDestination] = React.useState("");
   const [pickedHref, setPickedHref] = React.useState("");
@@ -256,7 +254,17 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
             <img
               src={hero.src}
               srcSet={hero.srcSet}
-              sizes="100vw"
+              /* Not 100vw. At 100vw a 375px phone at dpr2 asks for 750px and
+                 the browser takes hero-1024 — 95 KB, on the one request that
+                 decides LCP. At 70vw it takes hero-640 instead, 42 KB, for an
+                 effective 1.2x pixel density.
+
+                 That is a real trade and it is made deliberately: this photo
+                 sits behind a dark green wash with white text over it, at the
+                 back of the page. Nobody inspects it. Fifty kilobytes off the
+                 critical path is worth more here than density no one can see.
+                 Desktop is unchanged. */
+              sizes="(max-width: 768px) 70vw, 100vw"
               alt={hero.alt}
               width={1536}
               height={1024}
@@ -273,12 +281,7 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
       </div>
 
       <div className="container-px relative pb-12 pt-16 lg:pb-36 lg:pt-20">
-        <motion.div
-          initial={{ opacity: 0, y: reduce ? 0 : 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: reduce ? 0 : 0.7, ease: "easeOut" }}
-          className="max-w-2xl"
-        >
+        <div className="rise max-w-2xl">
           <p className="flex items-center gap-2 font-script text-3xl text-gold sm:text-4xl">
             Your complete
             {/* A gold star icon rather than the ⭐ emoji: emoji render
@@ -315,17 +318,12 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
 
           {/* Live weather for key GB destinations */}
           <HeroWeather />
-        </motion.div>
+        </div>
       </div>
 
       {/* Search card — overlaps the hero on large screens, sits below it on mobile */}
       <div className="container-px relative mt-2 pb-12 lg:-mt-24 lg:pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: reduce ? 0 : 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: reduce ? 0 : 0.7, delay: reduce ? 0 : 0.15, ease: "easeOut" }}
-          className="rounded-3xl border border-white/60 bg-white/95 p-4 shadow-premium-lg backdrop-blur-xl sm:p-5"
-        >
+        <div className="rise rise-delay rounded-3xl border border-white/60 bg-white/95 p-4 shadow-premium-lg backdrop-blur-xl sm:p-5">
           {/* Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 pb-3">
             {/* Stays leads — it's what most people come for. Flights sits
@@ -384,12 +382,9 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
                     className="fixed inset-0 z-10"
                     onClick={() => setMoreOpen(false)}
                   />
-                  <motion.div
+                  <div
                     role="menu"
-                    initial={reduce ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: reduce ? 0 : 0.16, ease: "easeOut" }}
-                    className="absolute right-0 top-full z-20 mt-1 min-w-[200px] rounded-xl border border-border bg-white p-1.5 shadow-premium-lg"
+                    className="rise-sm absolute right-0 top-full z-20 mt-1 min-w-[200px] rounded-xl border border-border bg-white p-1.5 shadow-premium-lg"
                   >
                     {moreServices.map((m) => (
                       <button
@@ -409,7 +404,7 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
                         {m.name}
                       </button>
                     ))}
-                  </motion.div>
+                  </div>
                 </>
               )}
             </div>
@@ -534,7 +529,7 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
               </button>
             </div>
           )}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

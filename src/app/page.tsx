@@ -102,7 +102,7 @@ export default async function Home() {
             as="image"
             href={hero.mobile.src}
             imageSrcSet={hero.mobile.srcSet}
-            imageSizes="100vw"
+            imageSizes="(max-width: 768px) 70vw, 100vw"
             media="(max-width: 640px)"
             fetchPriority="high"
           />
@@ -112,7 +112,7 @@ export default async function Home() {
           as="image"
           href={hero.src}
           imageSrcSet={hero.srcSet}
-          imageSizes="100vw"
+          imageSizes="(max-width: 768px) 70vw, 100vw"
           media={hero.mobile ? "(min-width: 641px)" : undefined}
           fetchPriority="high"
         />

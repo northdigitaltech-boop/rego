@@ -351,6 +351,65 @@ summary:focus-visible,
   }
 }
 
+/* ---- Entrance animations, in CSS rather than JavaScript ----
+ *
+ * These were framer-motion. Hero and Navbar are both above the fold, so as
+ * long as either imported it, its ~100 KB sat in the first bundle the browser
+ * had to fetch — competing with the hero image, which is the LCP element.
+ * A fade and a slide do not need an animation library.
+ *
+ * Everything below the fold still uses framer-motion, which is now in a
+ * deferred chunk where it costs nothing on first paint.
+ */
+.rise {
+  animation: riseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rise-sm {
+  animation: riseInSm 0.16s ease-out both;
+}
+.rise-delay {
+  animation-delay: 0.15s;
+}
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes riseInSm {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The library read the OS setting for us; this is that, in CSS. */
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-sm {
+    animation: fadeIn 0.01s both;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+}
+
+/* ---- Mobile menu collapse ----
+ * grid-template-rows 0fr -> 1fr animates to the content's own height, which
+ * is the thing plain CSS could not do before and the reason AnimatePresence
+ * was used here.
+ */
+.collapse-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+.collapse-grid > * {
+  overflow: hidden;
+  min-height: 0;
+}
+.collapse-grid[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .collapse-grid { transition: none; }
+}
+
 /* ---- Mobile dashboard drill-down (sidebar menu <-> section content) ---- */
 /* The "Menu" back button is hidden everywhere except mobile content view. */
 .rego-dash-back {
