@@ -45,8 +45,19 @@ export const revalidate = 60;
 /* The homepage now owns its canonical, which used to come from the root
    layout and leak onto every other page. absoluteTitle bypasses the
    "%s — Rego" template so the homepage title is not "Rego — Rego". */
+/* The H1 has said "Gilgit Baltistan Tourism Marketplace" all along; the title
+   tag said "Book Your Entire Trip in One Place", which is a nice line and
+   names nothing anybody searches for. A title tag is the strongest signal a
+   page has, and this one was spending it on a slogan.
+
+   58 characters, so Google shows all of it. absoluteTitle because the layout's
+   "— Rego" suffix would otherwise make it "… | REGO — Rego". */
 export const metadata: Metadata = buildMetadata({
-  absoluteTitle: "Rego — Book Your Entire Trip in One Place",
+  absoluteTitle: "REGO | Gilgit Baltistan Tourism Marketplace & Travel Booking",
+  description:
+    "Hotels, tour packages, transport, guides and activities across " +
+    "Gilgit-Baltistan — Skardu, Hunza, Gilgit and beyond. Book local " +
+    "providers directly on Rego.",
   path: "/",
 });
 
