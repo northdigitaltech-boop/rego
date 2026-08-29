@@ -32,24 +32,16 @@ import {
   takeFlash,
   type AccountRole,
 } from "@/components/auth/auth-context";
-import { categories, type CategorySlug } from "@/lib/data";
+import { type CategorySlug } from "@/lib/data";
 import { checkSignupEmail } from "@/lib/email-validation";
 import { sendEmail, verificationCodeEmail } from "@/lib/email";
+import { CategoryPicker } from "@/components/auth/category-picker";
+import { partnerCategory, STASHED_CATEGORY_KEY } from "@/lib/partner-categories";
 import { cn } from "@/lib/utils";
 import { friendlyAuthError } from "@/lib/auth-errors";
 import { reportSecurity } from "@/lib/security-report";
 
 type Mode = "signin" | "signup";
-
-// Tour packages are added by travel companies, not registered as their own
-// partner type — so exclude "tours" (and the generic "more") from signup.
-const partnerCategories = [
-  ...categories.filter((c) => c.slug !== "more" && c.slug !== "tours"),
-  // Roadside Assistance registers as a single partner type (not one per service).
-  { slug: "roadside", name: "Roadside Assistance" } as (typeof categories)[number],
-  // Co-working spaces for remote workers / freelancers.
-  { slug: "coworking", name: "Co-working Space" } as (typeof categories)[number],
-];
 
 /** Google's mark, inline so the button needs no network request. */
 function GoogleMark() {
@@ -86,9 +78,22 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [role, setRole] = React.useState<AccountRole>("traveler");
+
+  /* Partner signup is two steps: what you offer, then your account.
+   *
+   * Only for partners. A traveller has no category to choose, so splitting
+   * their signup would add a screen that asks nothing.
+   *
+   * The first step is deliberately the easy one. Someone who has tapped a
+   * card has started, and people finish what they have started far more
+   * often than they begin something that opens with a password field. */
+  const [step, setStep] = React.useState<1 | 2>(1);
+  const partnerPicking = isSignup && role === "partner" && step === 1;
   const [businessCategory, setBusinessCategory] = React.useState<CategorySlug | "">(
     ""
   );
+  /** The card they tapped, for the summary shown on step 2. */
+  const chosen = partnerCategory(businessCategory);
   const [showPw, setShowPw] = React.useState(false);
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
@@ -576,6 +581,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
             type="button"
             onClick={async () => {
               setError("");
+              /* Carry the chosen category across the redirect. Google takes
+                 the page away, so nothing in React state survives; the
+                 role-setup screen reads this back rather than asking the
+                 same question a second time. */
+              try {
+                if (isSignup && role === "partner" && businessCategory) {
+                  sessionStorage.setItem(STASHED_CATEGORY_KEY, businessCategory);
+                }
+              } catch {
+                /* Storage unavailable. They will be asked again — mildly
+                   annoying, not broken. */
+              }
               try {
                 await loginWithGoogle(redirectTo || undefined);
               } catch (err) {
@@ -609,7 +626,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setRole("traveler")}
+                    onClick={() => {
+                      setRole("traveler");
+                      /* A traveller has no step 1, so leaving `step` at 2
+                         from a previous partner visit would strand them. */
+                      setStep(1);
+                    }}
                     className={cn(
                       "rounded-xl border px-4 py-3 text-sm font-semibold transition-colors",
                       role === "traveler"
@@ -624,7 +646,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRole("partner")}
+                    onClick={() => {
+                      setRole("partner");
+                      setStep(1);
+                    }}
                     className={cn(
                       "rounded-xl border px-4 py-3 text-sm font-semibold transition-colors",
                       role === "partner"
@@ -641,31 +666,61 @@ export function AuthForm({ mode }: { mode: Mode }) {
               </div>
             )}
 
-            {isSignup && role === "partner" && (
+            {/* STEP 1 — what do you offer. Cards, not a <select>: someone
+                unsure whether they are a "Travel Company" or a "Tour Guide"
+                can see both at once instead of scrolling a native picker
+                back and forth. */}
+            {partnerPicking && (
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-forest">
-                  Business category
+                  What do you offer?
                 </label>
-                <select
+                <CategoryPicker
                   value={businessCategory}
-                  onChange={(e) =>
-                    setBusinessCategory(e.target.value as CategorySlug)
-                  }
-                  className="auth-input"
+                  onChange={(slug) => {
+                    setBusinessCategory(slug as CategorySlug);
+                    setError("");
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!businessCategory}
+                  onClick={() => setStep(2)}
+                  className="mt-4 w-full rounded-xl bg-gradient-forest px-4 py-3 text-sm font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                 >
-                  <option value="" disabled>
-                    Select what you offer (Hotel, Transport…)
-                  </option>
-                  {partnerCategories.map((c) => (
-                    <option key={c.slug} value={c.slug}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  Continue
+                </button>
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  You can add more services later.
+                </p>
               </div>
             )}
 
-            {isSignup && (
+            {/* STEP 2 — a reminder of what they picked, and the way back.
+                Without this, "Business / Partner" is the only thing on
+                screen telling them what account they are creating. */}
+            {isSignup && role === "partner" && step === 2 && chosen && (
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-left transition-colors hover:bg-muted"
+              >
+                <chosen.icon className="h-5 w-5 shrink-0 text-forest-600" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-forest">
+                    {chosen.name}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Registering as this
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-forest-600 underline">
+                  Change
+                </span>
+              </button>
+            )}
+
+            {isSignup && !partnerPicking && (
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-forest">
                   {role === "partner" ? "Business / contact name" : "Full name"}
@@ -685,6 +740,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
               </div>
             )}
 
+            {/* STEP 2 — the account itself. Hidden while a partner is still
+                choosing what they offer: a password field next to that
+                question is exactly the wall the two steps exist to remove. */}
+            {!partnerPicking && (
+              <>
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-forest">
                 Email address
@@ -786,6 +846,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
               {busy ? (isSignup ? "Creating account…" : "Signing in…") : isSignup ? "Create account" : "Sign in"}
             </Button>
 
+              </>
+            )}
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">

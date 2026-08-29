@@ -6,17 +6,14 @@ import { Loader2, AlertCircle, UserRound, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, type AccountRole } from "@/components/auth/auth-context";
 import { BrandLogo } from "@/components/layout/logo";
-import { categories, type CategorySlug } from "@/lib/data";
+import { type CategorySlug } from "@/lib/data";
+import { CategoryPicker } from "@/components/auth/category-picker";
+import { STASHED_CATEGORY_KEY } from "@/lib/partner-categories";
 import { cn } from "@/lib/utils";
 import { alertNewProvider } from "@/lib/admin-alerts";
 
 /* Same list the email signup form offers, so both routes land in the
    same set of partner categories. */
-const partnerCategories = [
-  ...categories.filter((c) => c.slug !== "more" && c.slug !== "tours"),
-  { slug: "roadside", name: "Roadside Assistance" } as (typeof categories)[number],
-  { slug: "coworking", name: "Co-working Space" } as (typeof categories)[number],
-];
 
 /**
  * Asked once, right after a Google sign-in.
@@ -31,6 +28,24 @@ export function RoleSetupGate({ children }: { children: React.ReactNode }) {
 
   const [role, setRole] = React.useState<AccountRole>("traveler");
   const [businessCategory, setBusinessCategory] = React.useState<CategorySlug | "">("");
+
+  /* Someone who tapped a category on the signup form and then chose Google
+     never submitted it — OAuth leaves the page. It was stashed on the way
+     out; this is where it comes back, so they are not asked the same
+     question twice in one sitting. */
+  React.useEffect(() => {
+    try {
+      const stashed = sessionStorage.getItem(STASHED_CATEGORY_KEY);
+      if (stashed) {
+        setBusinessCategory(stashed as CategorySlug);
+        setRole("partner");
+        sessionStorage.removeItem(STASHED_CATEGORY_KEY);
+      }
+    } catch {
+      /* Private browsing, or storage disabled. Nothing is lost that was not
+         already going to be asked. */
+    }
+  }, []);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
 
@@ -143,20 +158,10 @@ export function RoleSetupGate({ children }: { children: React.ReactNode }) {
               <span className="mb-1.5 block text-sm font-semibold text-forest">
                 What do you offer?
               </span>
-              <select
+              <CategoryPicker
                 value={businessCategory}
-                onChange={(e) => setBusinessCategory(e.target.value as CategorySlug)}
-                className="auth-input"
-              >
-                <option value="" disabled>
-                  Select a category (Hotel, Transport…)
-                </option>
-                {partnerCategories.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(slug) => setBusinessCategory(slug as CategorySlug)}
+              />
               <span className="mt-1.5 block text-xs text-muted-foreground">
                 You can add more services later from your dashboard.
               </span>
