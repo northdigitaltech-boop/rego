@@ -46,6 +46,7 @@ import {
   ProviderJobApplications,
 } from "@/components/dashboard/provider-jobs";
 import { Briefcase as JobsIcon, Users as ApplicantsIcon } from "lucide-react";
+import { CoworkingRegisterWizard } from "@/components/dashboard/coworking-register";
 
 const splitList = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
@@ -178,7 +179,7 @@ export function CoworkingProviderDashboard({
               {tab === "post-job" && <ProviderPostJob user={user} />}
               {tab === "my-jobs" && <ProviderMyJobs user={user} />}
               {tab === "job-applications" && <ProviderJobApplications user={user} />}
-              {tab === "overview" && <Overview space={space} bookings={bookings} reviews={reviews} onGo={setTab} />}
+              {tab === "overview" && <Overview space={space} bookings={bookings} reviews={reviews} user={user} onRegistered={() => void refresh()} />}
               {tab === "profile" && (
                 <>
                   <ProfileForm user={user} space={space} onSaved={refresh} />
@@ -200,23 +201,23 @@ function Overview({
   space,
   bookings,
   reviews,
-  onGo,
+  user,
+  onRegistered,
 }: {
   space: CoworkingSpaceRow | null;
   bookings: CoworkingBookingRow[];
   reviews: ReviewRow[];
-  onGo: (t: Tab) => void;
+  /* Needed because the empty state is now the registration form itself,
+     rather than a button pointing at one. */
+  user: User;
+  onRegistered: () => void;
 }) {
   if (!space) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border bg-muted/40 py-16 text-center">
-        <Briefcase className="mx-auto h-10 w-10 text-forest-600" />
-        <p className="mt-2 font-display text-lg font-semibold text-forest">List your co-working space</p>
-        <p className="mt-1 text-sm text-muted-foreground">Add your details to start receiving bookings.</p>
-        <Button variant="gold" className="mt-4 rounded-lg" onClick={() => onGo("profile")}>Create profile</Button>
-      </div>
-    );
+    /* Stepped, and it registers rather than sending them to a profile tab.
+       "Create profile" was a button to another form; this is the form. */
+    return <CoworkingRegisterWizard user={user} onDone={onRegistered} />;
   }
+
   return (
     <div className="grid gap-5 sm:grid-cols-3">
       <Stat icon={CalendarCheck} label="Requests" value={String(bookings.length)} />

@@ -39,6 +39,7 @@ import {
 import { sendEmail } from "@/lib/email";
 import { cn, formatPrice } from "@/lib/utils";
 import { CancellationNotice } from "@/components/bookings/cancellation-notice";
+import { ActivityRegisterWizard } from "@/components/dashboard/activity-register";
 
 const splitList = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
@@ -111,12 +112,11 @@ export function ActivitiesManager({
       {loading ? (
         <div className="py-16 text-center text-muted-foreground"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></div>
       ) : view === "list" ? (
-        activities.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-muted/40 py-16 text-center">
-            <Mountain className="mx-auto h-10 w-10 text-forest-600" />
-            <p className="mt-2 font-display text-lg font-semibold text-forest">No activities yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">Add your first adventure — it goes live once an admin approves it.</p>
-          </div>
+        activities.length === 0 && !adding && !editing ? (
+          /* The empty state IS the form now. A card saying "no activities
+             yet" next to an Add button asks someone to find the button;
+             a provider with nothing listed has one thing to do. */
+          <ActivityRegisterWizard user={user} onDone={() => void refresh()} />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {activities.map((a) => (

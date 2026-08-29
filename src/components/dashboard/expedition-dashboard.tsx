@@ -1,19 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Save, Check, LogOut, Building2, User as UserIcon, ShieldCheck, Clock, Plus, Trash2, Pencil, Users, Package } from "lucide-react";
+import { Loader2, Save, Check, LogOut, User as UserIcon, ShieldCheck, Clock, Plus, Trash2, Pencil, Users, Package } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AvatarUpload, ImageUpload, MultiImageUpload } from "@/components/ui/image-upload";
 import { type User } from "@/components/auth/auth-context";
 import {
-  getCompanyByOwner, getProByOwner, createCompany, updateCompany, createPro, updatePro,
+  getCompanyByOwner, getProByOwner, updateCompany, updatePro,
   getRoles, getPeaks, getRoutes,
   getTeamMembers, saveTeamMember, deleteTeamMember,
   getPackagesByCompany, savePackage, deletePackage, packagePriceLabel,
   type ExpeditionCompanyRow, type ExpeditionProRow, type ExpeditionRole, type ExpeditionPeak, type ExpeditionRoute,
   type ExpeditionTeamMember, type ExpeditionPackageRow, type PackageGroupTier,
 } from "@/lib/expeditions";
+import { ExpeditionRegisterWizard } from "@/components/dashboard/expedition-register";
 
 const COMPANY_SERVICES = [
   "Complete expedition packages", "Base camp trekking", "Mountain guide services", "Trekking guide services",
@@ -109,7 +110,9 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
       </div>
 
       {!type ? (
-        <ProfileTypePicker email={user.email} onCreated={load} />
+        /* Was ProfileTypePicker, which wrote a row named "My Expedition
+           Company" the moment a card was tapped. */
+        <ExpeditionRegisterWizard user={user} onDone={load} />
       ) : type === "company" ? (
         <>
           <div className="mb-6 flex flex-wrap gap-2">
@@ -148,35 +151,6 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
   );
 }
 
-/* ---------- first-run: pick a profile type ---------- */
-function ProfileTypePicker({ email, onCreated }: { email: string; onCreated: () => void }) {
-  const [busy, setBusy] = React.useState<"company" | "individual" | null>(null);
-  const start = async (t: "company" | "individual") => {
-    setBusy(t);
-    if (t === "company") await createCompany({ owner_email: email, name: "My Expedition Company" });
-    else await createPro({ owner_email: email, full_name: "My Name" });
-    onCreated();
-  };
-  return (
-    <div className="mx-auto max-w-2xl">
-      <p className="mb-4 text-center text-sm text-muted-foreground">Choose how you want to offer your mountaineering services. You can complete your profile next.</p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <button onClick={() => start("company")} disabled={!!busy} className="group rounded-3xl border border-border/70 bg-card p-6 text-left shadow-soft transition-all hover:-translate-y-1 hover:border-gold/50 hover:shadow-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-forest text-gold"><Building2 className="h-6 w-6" /></span>
-          <h3 className="mt-4 font-display text-lg font-bold text-forest">Expedition Company</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Operate full expeditions, manage a team, packages, permits and logistics.</p>
-          {busy === "company" && <Loader2 className="mt-3 h-4 w-4 animate-spin text-forest-600" />}
-        </button>
-        <button onClick={() => start("individual")} disabled={!!busy} className="group rounded-3xl border border-border/70 bg-card p-6 text-left shadow-soft transition-all hover:-translate-y-1 hover:border-gold/50 hover:shadow-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-forest text-gold"><UserIcon className="h-6 w-6" /></span>
-          <h3 className="mt-4 font-display text-lg font-bold text-forest">Individual Professional</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Offer your service — guide, porter, cook, camp staff, photographer and more.</p>
-          {busy === "individual" && <Loader2 className="mt-3 h-4 w-4 animate-spin text-forest-600" />}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 /* ---------- company profile (core fields) ---------- */
 function CompanyForm({ company, peaks, routes, onSaved }: { company: ExpeditionCompanyRow; peaks: ExpeditionPeak[]; routes: ExpeditionRoute[]; onSaved: () => void }) {
