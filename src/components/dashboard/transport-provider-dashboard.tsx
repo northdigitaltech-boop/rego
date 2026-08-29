@@ -45,6 +45,7 @@ import { useAuth, type User } from "@/components/auth/auth-context";
 import { type BookingRow } from "@/lib/bookings";
 import { FormSection, filledCount } from "@/components/dashboard/form-section";
 import { PlaceInput, PlaceListInput, yearOptions } from "@/components/ui/place-input";
+import { TransportRegisterWizard } from "@/components/dashboard/transport-register";
 import {
   getProviderByOwner,
   createProvider,
@@ -281,7 +282,12 @@ export function TransportProviderDashboard({
           and rental vehicles.
         </p>
         <div className="mt-8 max-w-3xl">
-          <ProviderForm user={user} provider={null} onSaved={refresh} />
+          {/* Registering is stepped and asks for eleven things, including one
+              vehicle — a provider with no vehicles is a row an admin cannot
+              approve. Editing an existing profile uses ProviderForm below,
+              which shows everything, because someone changing one price
+              should not be walked through screens. */}
+          <TransportRegisterWizard user={user} onDone={refresh} />
         </div>
       </div>
     );
