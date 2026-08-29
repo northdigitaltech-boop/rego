@@ -52,6 +52,7 @@ import { useUnread } from "@/lib/use-unread";
 import { useAuth, type User } from "@/components/auth/auth-context";
 import { type BookingRow } from "@/lib/bookings";
 import { CancellationNotice } from "@/components/bookings/cancellation-notice";
+import { CompanyRegisterWizard } from "@/components/dashboard/company-register";
 import {
   getCompanyByOwner,
   createCompany,
@@ -291,11 +292,8 @@ export function TourCompanyDashboard({
           and guides.
         </p>
         <div className="mt-8 max-w-3xl">
-          <CompanyForm
-            user={user}
-            company={null}
-            onSaved={refresh}
-          />
+          {/* Stepped for registering; the full form still handles editing. */}
+          <CompanyRegisterWizard user={user} onDone={refresh} />
         </div>
       </div>
     );

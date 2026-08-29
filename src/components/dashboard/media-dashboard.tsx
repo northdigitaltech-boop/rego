@@ -65,6 +65,7 @@ import {
   MEDIA_SERVICE_PRESETS,
   type MediaServiceRow,
 } from "@/lib/media-services";
+import { MediaRegisterWizard } from "@/components/dashboard/media-register";
 import {
   getMediaBookingsByOwner,
   setMediaBookingStatus,
@@ -277,7 +278,8 @@ export function MediaDashboard({
           Create your media profile to start receiving shoot bookings.
         </p>
         <div className="mt-8 max-w-3xl">
-          <ProviderForm user={user} provider={null} onSaved={refresh} />
+          {/* Stepped for registering; the full form still handles editing. */}
+          <MediaRegisterWizard user={user} onDone={refresh} />
         </div>
       </div>
     );

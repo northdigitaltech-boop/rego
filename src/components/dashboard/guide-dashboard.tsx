@@ -68,6 +68,7 @@ import {
   type GuideBookingRow,
   type GuideAvailabilityRow,
 } from "@/lib/guide-bookings";
+import { GuideRegisterWizard } from "@/components/dashboard/guide-register";
 import { GuideProfile } from "@/components/listings/guide-profile";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
@@ -268,7 +269,8 @@ export function GuideDashboard({
           Create your guide profile to start receiving booking requests.
         </p>
         <div className="mt-8 max-w-3xl">
-          <GuideForm user={user} guide={null} onSaved={refresh} />
+          {/* Stepped for registering; GuideForm still handles editing. */}
+          <GuideRegisterWizard user={user} onDone={refresh} />
         </div>
       </div>
     );

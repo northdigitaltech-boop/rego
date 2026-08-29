@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
+import { ImageUpload } from "@/components/ui/image-upload";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -183,6 +184,168 @@ export function RegisterSteps({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ============================================================
+ * The verification step, which is the same everywhere.
+ *
+ * Every provider type asks for the same three things — an ID
+ * number and photo, a licence, and proof the business exists —
+ * and only the column names differ between tables. So the step
+ * is built once and each dashboard says where to put the
+ * answers.
+ *
+ * ALWAYS OPTIONAL
+ *   Document upload is the single biggest drop-off point in
+ *   any signup. Rego needs providers more than it needs
+ *   paperwork from the ones it does not have yet, so this can
+ *   always be skipped, and skipping costs only the Verified
+ *   badge — which is a real thing travellers see, not a
+ *   consolation.
+ * ============================================================ */
+
+export interface VerificationValues {
+  idNumber: string;
+  idPhoto: string;
+  licenceNumber: string;
+  licencePhoto: string;
+  registrationProof: string;
+}
+
+const EMPTY_VERIFICATION: VerificationValues = {
+  idNumber: "",
+  idPhoto: "",
+  licenceNumber: "",
+  licencePhoto: "",
+  registrationProof: "",
+};
+
+/**
+ * State and the rendered step.
+ *
+ * `fields` lets a dashboard drop the ones its table has no column for —
+ * asking a tour guide for a business registration certificate would be a
+ * question with no possible answer.
+ */
+export function useVerificationStep(opts?: {
+  /** What is being verified, e.g. "vehicle", used in the explanation. */
+  noun?: string;
+  fields?: {
+    idNumber?: boolean;
+    idPhoto?: boolean;
+    licenceNumber?: boolean;
+    licencePhoto?: boolean;
+    registrationProof?: boolean;
+  };
+}) {
+  const [v, setV] = React.useState<VerificationValues>(EMPTY_VERIFICATION);
+  const set = (patch: Partial<VerificationValues>) =>
+    setV((x) => ({ ...x, ...patch }));
+
+  const show = {
+    idNumber: true,
+    idPhoto: true,
+    licenceNumber: true,
+    licencePhoto: true,
+    registrationProof: true,
+    ...(opts?.fields ?? {}),
+  };
+
+  const gaveAny = Object.values(v).some((s) => s.trim());
+
+  const step: RegisterStep = {
+    title: "Verification",
+    hint: "Optional. This is what earns the Verified badge on your listing.",
+    skipLabel: "Skip for now",
+    content: (
+      <>
+        <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm leading-relaxed text-forest">
+          Travellers are trusting {opts?.noun ?? "a stranger"} they have never
+          met, and a <strong>Verified</strong> badge is the main thing that
+          tells them somebody checked. Adding these now means your listing can
+          carry it from the day it goes live.
+          <span className="mt-2 block text-muted-foreground">
+            Your listing does not depend on this — it will be reviewed and can
+            go live either way, and you can add these later from your
+            dashboard. These documents are seen only by the Rego team and are
+            never shown publicly.
+          </span>
+        </p>
+
+        {(show.idNumber || show.licenceNumber) && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {show.idNumber && (
+              <VLabel label="ID (CNIC) number">
+                <input
+                  value={v.idNumber}
+                  onChange={(e) => set({ idNumber: e.target.value })}
+                  className="auth-input"
+                  inputMode="numeric"
+                />
+              </VLabel>
+            )}
+            {show.licenceNumber && (
+              <VLabel label="Licence number">
+                <input
+                  value={v.licenceNumber}
+                  onChange={(e) => set({ licenceNumber: e.target.value })}
+                  className="auth-input"
+                />
+              </VLabel>
+            )}
+          </div>
+        )}
+
+        {show.idPhoto && (
+          <VLabel label="Photo of your ID">
+            <ImageUpload value={v.idPhoto} onChange={(u) => set({ idPhoto: u })} />
+          </VLabel>
+        )}
+        {show.licencePhoto && (
+          <VLabel label="Licence, permit or certificate">
+            <ImageUpload
+              value={v.licencePhoto}
+              onChange={(u) => set({ licencePhoto: u })}
+            />
+          </VLabel>
+        )}
+        {show.registrationProof && (
+          <VLabel label="Business registration proof">
+            <ImageUpload
+              value={v.registrationProof}
+              onChange={(u) => set({ registrationProof: u })}
+            />
+          </VLabel>
+        )}
+      </>
+    ),
+  };
+
+  return { step, values: v, gaveAny };
+}
+
+/** The line on the review step saying which way they went. */
+export function verificationSummary(gaveAny: boolean) {
+  return gaveAny
+    ? "documents attached — the team can consider you for the Verified badge."
+    : "skipped. Your listing will still be reviewed and can go live; you can add documents later from your dashboard to earn the Verified badge.";
+}
+
+function VLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-semibold text-forest">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 

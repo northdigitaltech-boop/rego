@@ -65,6 +65,7 @@ import { sendBookingStatusNotification } from "@/lib/messages";
 import { friendlyAreaError } from "@/lib/area-rules";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { cn, formatPrice } from "@/lib/utils";
+import { RestaurantRegisterWizard } from "@/components/dashboard/restaurant-register";
 import {
   ProviderPostJob,
   ProviderMyJobs,
@@ -190,7 +191,8 @@ export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut
       <div className="container-px py-10">
         <h1 className="font-display text-3xl font-bold text-forest">Welcome, {user.name.split(" ")[0]}</h1>
         <p className="mt-1 text-muted-foreground">Create your restaurant profile to start adding your menu and taking table bookings.</p>
-        <div className="mt-8 max-w-3xl"><RestaurantForm user={user} restaurant={null} onSaved={refresh} /></div>
+        <div className="mt-8 max-w-3xl">{/* Stepped for registering; the full form still handles editing. */}
+          <RestaurantRegisterWizard user={user} onDone={refresh} /></div>
       </div>
     );
   }
