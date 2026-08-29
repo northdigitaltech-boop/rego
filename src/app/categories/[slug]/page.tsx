@@ -29,6 +29,7 @@ import { getHomestays } from "@/lib/homestays";
 import { getHostels } from "@/lib/hostels";
 import { categoryDescription, categoryTitle } from "@/lib/seo-copy";
 import { categoryIsEmpty, categoryRedirect } from "@/lib/category-routing";
+import { CategoryIntro } from "@/components/categories/category-intro";
 import {
   getApprovedPackages,
   getApprovedTransports,
@@ -295,6 +296,10 @@ export default async function CategoryPage({
             />
           </Suspense>
         )}
+
+        {/* Written copy, under whichever grid was rendered above. Returns
+            null for categories with nothing written yet. */}
+        <CategoryIntro slug={category.slug} />
       </main>
       <Footer />
     </>
