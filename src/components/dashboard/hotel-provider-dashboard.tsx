@@ -68,6 +68,7 @@ import { type HotelRow, type RoomRow } from "@/lib/supabase";
 import { useUnread } from "@/lib/use-unread";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
+import { StayRegisterWizard } from "@/components/dashboard/stay-register";
 import { cn, formatPrice } from "@/lib/utils";
 import {
   ProviderPostJob,
@@ -520,7 +521,15 @@ export function HotelProviderDashboard({
             />
           )}
 
-          {tab === "add" && (
+          {/* The first one is stepped, because that is a stranger
+              registering. Every one after uses the full form below —
+              an owner adding their third property already knows the
+              questions and does not want them one per screen. */}
+          {tab === "add" && !editingId && hotels.length === 0 && (
+            <StayRegisterWizard kind="hotel" user={user} onDone={() => { refresh(); setTab("hotels"); }} />
+          )}
+
+          {tab === "add" && (editingId || hotels.length > 0) && (
             <form
               onSubmit={save}
               className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-premium sm:p-8"

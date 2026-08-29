@@ -65,6 +65,7 @@ import { setHomestayBookingRoomsStatus } from "@/lib/homestays";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { cn, formatPrice } from "@/lib/utils";
+import { StayRegisterWizard } from "@/components/dashboard/stay-register";
 import {
   ProviderPostJob,
   ProviderMyJobs,
@@ -630,7 +631,15 @@ export function HomestayProviderDashboard({
             />
           )}
 
-          {tab === "add" && (
+          {/* The first one is stepped, because that is a stranger
+              registering. Every one after uses the full form below —
+              an owner adding their third property already knows the
+              questions and does not want them one per screen. */}
+          {tab === "add" && !editingId && homestays.length === 0 && (
+            <StayRegisterWizard kind="homestay" user={user} onDone={() => { refresh(); setTab("homestays"); }} />
+          )}
+
+          {tab === "add" && (editingId || homestays.length > 0) && (
             <HomestayForm
               form={form}
               setForm={setForm}
