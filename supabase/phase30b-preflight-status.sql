@@ -2,118 +2,147 @@
 -- Before phase30b: will the public site still have anything on it?
 -- ============================================================================
 --
--- READ-ONLY. Creates nothing, changes nothing.
+-- Read-only as far as your data is concerned. It builds one TEMP table, which
+-- exists only for this connection and disappears when you close the tab.
 --
--- phase30b gives every listing table this read rule:
+-- WHY THE TEMP TABLE
+--   The obvious way to write this is a DO block full of `raise notice`. The
+--   Supabase SQL editor does not display notices at all — the query succeeds
+--   and every line of output is silently discarded ("Success. No rows
+--   returned."). Results only reach you as ROWS, so the loop collects its
+--   findings into a table and the last statement selects them.
 --
---     status = 'approved' or owner_email = auth.email() or public.is_admin()
+-- WHAT IT IS FOR
+--   phase30b gives every listing table this read rule:
 --
--- Public pages are read with the anon key. An anonymous visitor has no
--- auth.email() and is not an admin, so for them the rule collapses to:
+--       status = 'approved' or owner_email = auth.email() or public.is_admin()
 --
---     status = 'approved'
+--   Public pages are read with the anon key. An anonymous visitor has no
+--   auth.email() and is not an admin, so for them it reduces to
+--   status = 'approved'. That is the intended behaviour — unapproved listings
+--   should not be public — and it is also the one way this can go badly. If
+--   the live listings carry 'pending', 'active', 'Approved' with a capital A,
+--   or null, the lockdown empties the public site, and it will look like a
+--   breakage rather than like a policy doing its job.
 --
--- That is the intended behaviour — unapproved listings should not be public.
--- But it is only safe to apply if the listings that are live today actually
--- carry that exact string. If they are 'pending', 'active', 'Approved' with a
--- capital A, or null, the lockdown empties the site, and it will look like the
--- site broke rather than like a policy did its job.
---
--- Run this first. Every row where visible_to_public is 0 while total is not
--- is a table that would go dark.
+--   Read the `verdict` column. Anything that says WOULD GO DARK must be fixed
+--   before phase30b runs, not after.
 -- ============================================================================
+
+drop table if exists pg_temp.preflight;
+create temp table preflight (
+  sort_key   int,
+  kind       text,
+  table_name text,
+  rows_total bigint,
+  visible    bigint,
+  detail     text,
+  verdict    text
+);
 
 do $$
 declare
   t          text;
   n_total    bigint;
-  n_approved bigint;
-  n_null     bigint;
+  n_ok       bigint;
   vals       text;
-  tables     text[] := array[
+  has_status boolean;
+  listings   text[] := array[
     'hotels','homestays','hostels','tour_companies','tour_packages','transports',
     'tour_guides','media_providers','restaurants','transport_providers',
     'transport_services','rental_vehicles','activities','coworking_spaces',
     'expedition_companies','roadside_providers'
   ];
-begin
-  raise notice '%  %  %  %', rpad('table', 24), lpad('rows', 6), lpad('approved', 9), 'distinct status values';
-  raise notice '%', repeat('-', 78);
-
-  foreach t in array tables loop
-    if to_regclass('public.' || t) is null then
-      continue;                                   -- not in this database
-    end if;
-
-    -- No status column means phase30b grants no public read on this table at
-    -- all (it says so in a notice). Worth seeing here too.
-    if not exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public' and table_name = t and column_name = 'status'
-    ) then
-      execute format('select count(*) from public.%I', t) into n_total;
-      raise notice '%  %  %  NO status COLUMN — phase30b grants no public read',
-        rpad(t, 24), lpad(n_total::text, 6), lpad('-', 9);
-      continue;
-    end if;
-
-    execute format(
-      $q$select count(*), count(*) filter (where status = 'approved'),
-                count(*) filter (where status is null),
-                coalesce(string_agg(distinct coalesce(status, '(null)'), ', '), '(no rows)')
-         from public.%I$q$, t)
-      into n_total, n_approved, n_null, vals;
-
-    raise notice '%  %  %  %',
-      rpad(t, 24), lpad(n_total::text, 6), lpad(n_approved::text, 9), vals;
-
-    if n_total > 0 and n_approved = 0 then
-      raise notice '     ^^ WOULD GO DARK — % row(s), none approved', n_total;
-    end if;
-  end loop;
-end $$;
-
-
--- ----------------------------------------------------------------------------
--- Bookings: can a traveller still create one after the lockdown?
---
--- phase30b's b_insert is `customer_email = auth.email() or public.is_admin()`.
--- The booking flow makes people sign up before booking, so customer_email
--- should already equal the signed-in address. Existing rows whose
--- customer_email does not appear in auth.users are the ones to look at: they
--- were made some other way, and their owners will not be able to read them
--- back.
--- ----------------------------------------------------------------------------
-do $$
-declare
-  t        text;
-  n_total  bigint;
-  n_known  bigint;
-  tables   text[] := array[
+  bookings   text[] := array[
     'bookings','homestay_bookings','hostel_bookings','tour_bookings',
     'transport_bookings','guide_bookings','media_bookings',
     'restaurant_bookings','activity_bookings','coworking_bookings'
   ];
 begin
-  raise notice '';
-  raise notice '%  %  %', rpad('booking table', 24), lpad('rows', 6), lpad('with a known account', 22);
-  raise notice '%', repeat('-', 78);
+  ---------------------------------------------------------------- listings
+  foreach t in array listings loop
+    if to_regclass('public.' || t) is null then
+      insert into preflight values (3, 'listing', t, null, null, null,
+        'not in this database — phase30b skips it');
+      continue;
+    end if;
 
-  foreach t in array tables loop
-    if to_regclass('public.' || t) is null then continue; end if;
+    select exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = t and column_name = 'status'
+    ) into has_status;
+
+    execute format('select count(*) from public.%I', t) into n_total;
+
+    -- No status column: phase30b says so in a notice and grants no public
+    -- read on the table. Worth surfacing, because the effect is the same as
+    -- going dark.
+    if not has_status then
+      insert into preflight values (
+        case when n_total > 0 then 0 else 2 end,
+        'listing', t, n_total, 0, 'no status column',
+        case when n_total > 0
+             then 'WOULD GO DARK — phase30b grants no public read here'
+             else 'empty' end);
+      continue;
+    end if;
+
+    execute format(
+      $q$select count(*) filter (where status = 'approved'),
+                coalesce(string_agg(distinct coalesce(status, '(null)'), ', '), '(no rows)')
+         from public.%I$q$, t)
+      into n_ok, vals;
+
+    insert into preflight values (
+      case when n_total > 0 and n_ok = 0 then 0
+           when n_total = 0              then 2
+           else 1 end,
+      'listing', t, n_total, n_ok, vals,
+      case when n_total = 0        then 'empty — nothing to lose'
+           when n_ok = 0           then 'WOULD GO DARK — no row says approved'
+           when n_ok < n_total     then 'ok — the rest were already not public'
+           else 'ok — all visible' end);
+  end loop;
+
+  ---------------------------------------------------------------- bookings
+  -- phase30b's b_insert is `customer_email = auth.email() or is_admin()`, and
+  -- b_read is the same plus the owner. Rows whose customer_email belongs to no
+  -- account cannot be read back by anyone except an admin or the provider.
+  foreach t in array bookings loop
+    if to_regclass('public.' || t) is null then
+      insert into preflight values (3, 'booking', t, null, null, null,
+        'not in this database — phase30b skips it');
+      continue;
+    end if;
+
     if not exists (
       select 1 from information_schema.columns
       where table_schema = 'public' and table_name = t and column_name = 'customer_email'
     ) then
-      raise notice '%  — no customer_email column, phase30b will skip it', rpad(t, 24);
+      execute format('select count(*) from public.%I', t) into n_total;
+      insert into preflight values (0, 'booking', t, n_total, null,
+        'no customer_email column', 'phase30b SKIPS this table — stays open');
       continue;
     end if;
 
     execute format(
       'select count(*), count(*) filter (where lower(customer_email) in
          (select lower(email) from auth.users)) from public.%I', t)
-      into n_total, n_known;
+      into n_total, n_ok;
 
-    raise notice '%  %  %', rpad(t, 24), lpad(n_total::text, 6), lpad(n_known::text, 22);
+    insert into preflight values (
+      case when n_total > 0 and n_ok < n_total then 1 else 2 end,
+      'booking', t, n_total, n_ok,
+      case when n_total = 0 then '—'
+           else (n_total - n_ok)::text || ' with no matching account' end,
+      case when n_total = 0            then 'empty'
+           when n_ok = n_total         then 'ok — every booking has an account'
+           else 'those rows become admin/provider-only' end);
   end loop;
 end $$;
+
+-- Worst first, so the problems are at the top of the result and you do not
+-- have to scroll to find them.
+select kind, table_name, rows_total, visible, detail, verdict
+from preflight
+order by sort_key, kind, table_name;
