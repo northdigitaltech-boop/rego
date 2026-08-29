@@ -43,6 +43,15 @@ export interface RegisterStep {
    * name is missing while they are still typing it is not help.
    */
   validate?: () => string | null;
+  /**
+   * Wording for a "skip" control, on steps that ask for nothing required.
+   *
+   * A skippable step needs to say so on the button, not only in the text.
+   * Someone looking at a request for their ID card decides in about a second
+   * whether this is a wall; "Skip for now" next to Continue is what tells
+   * them it is not.
+   */
+  skipLabel?: string;
 }
 
 export function RegisterSteps({
@@ -142,15 +151,36 @@ export function RegisterSteps({
           <span />
         )}
 
-        <button
-          type="button"
-          onClick={next}
-          disabled={submitting}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-forest px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-        >
-          {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {last ? (submitting ? "Submitting…" : submitLabel) : "Continue"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {/* Skip sits beside Continue rather than under it. A step that
+              asks for an ID card is judged in about a second; the way out
+              has to be visible in that second or the answer is to close
+              the tab. */}
+          {step.skipLabel && !last && (
+            <button
+              type="button"
+              onClick={() => {
+                setStepError("");
+                setI((n) => n + 1);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              disabled={submitting}
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-forest hover:underline disabled:opacity-50"
+            >
+              {step.skipLabel}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={next}
+            disabled={submitting}
+            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-forest px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {last ? (submitting ? "Submitting…" : submitLabel) : "Continue"}
+          </button>
+        </div>
       </div>
     </div>
   );

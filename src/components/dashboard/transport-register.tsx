@@ -60,9 +60,31 @@ export function TransportRegisterWizard({
   const [route, setRoute] = React.useState("");
   const [image, setImage] = React.useState("");
 
+  /* Verification — every one optional.
+   *
+   * These are what let an admin mark a business Verified, which travellers
+   * see as a badge on the listing. Not a gate: a listing without them is
+   * approved and live like any other, it simply carries no badge. Making
+   * them compulsory would turn the single biggest drop-off point in any
+   * signup into a wall, and Rego needs providers more than it needs
+   * paperwork from the ones it does not have yet. */
+  const [ownerCnic, setOwnerCnic] = React.useState("");
+  const [ownerCnicDoc, setOwnerCnicDoc] = React.useState("");
+  const [licenseNumber, setLicenseNumber] = React.useState("");
+  const [licenseDoc, setLicenseDoc] = React.useState("");
+  const [ownershipDoc, setOwnershipDoc] = React.useState("");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
+
+  const gaveAnyDocs = Boolean(
+    ownerCnic.trim() ||
+      ownerCnicDoc.trim() ||
+      licenseNumber.trim() ||
+      licenseDoc.trim() ||
+      ownershipDoc.trim()
+  );
 
   const submit = async () => {
     setSubmitting(true);
@@ -75,6 +97,14 @@ export function TransportRegisterWizard({
       whatsapp: whatsapp.trim() || null,
       location: location.trim() || null,
       logo: logo.trim() || null,
+      /* Whatever they gave. Blank stays null rather than an empty string, so
+         "not provided" and "provided as nothing" cannot be confused when an
+         admin looks at the row. */
+      owner_cnic: ownerCnic.trim() || null,
+      owner_cnic_doc: ownerCnicDoc.trim() || null,
+      license_number: licenseNumber.trim() || null,
+      license_doc: licenseDoc.trim() || null,
+      ownership_doc: ownershipDoc.trim() || null,
       owner_email: user.email,
     });
 
@@ -233,6 +263,55 @@ export function TransportRegisterWizard({
       ),
     },
     {
+      title: "Verification",
+      hint: "Optional. This is what earns the Verified badge on your listing.",
+      skipLabel: "Skip for now",
+      content: (
+        <>
+          <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm leading-relaxed text-forest">
+            Travellers are booking a stranger&apos;s vehicle in the mountains,
+            and a <strong>Verified</strong> badge is the main thing that tells
+            them somebody checked. Adding these now means your listing can carry
+            it from the day it goes live.
+            <span className="mt-2 block text-muted-foreground">
+              Your listing does not depend on this — it will be reviewed and can
+              go live either way, and you can add these later from your
+              dashboard. These documents are seen only by the Rego team and are
+              never shown publicly.
+            </span>
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <L label="Owner ID (CNIC) number">
+              <input
+                value={ownerCnic}
+                onChange={(e) => setOwnerCnic(e.target.value)}
+                className="auth-input"
+                inputMode="numeric"
+              />
+            </L>
+            <L label="Licence number">
+              <input
+                value={licenseNumber}
+                onChange={(e) => setLicenseNumber(e.target.value)}
+                className="auth-input"
+              />
+            </L>
+          </div>
+
+          <L label="Photo of owner ID">
+            <ImageUpload value={ownerCnicDoc} onChange={setOwnerCnicDoc} />
+          </L>
+          <L label="Licence or permit">
+            <ImageUpload value={licenseDoc} onChange={setLicenseDoc} />
+          </L>
+          <L label="Business registration proof">
+            <ImageUpload value={ownershipDoc} onChange={setOwnershipDoc} />
+          </L>
+        </>
+      ),
+    },
+    {
       title: "Check and submit",
       hint: "Nothing is saved until you submit.",
       content: (
@@ -256,6 +335,15 @@ export function TransportRegisterWizard({
               ["Route", route],
             ]}
           />
+          {/* Says which of the two outcomes they are heading for, since they
+              chose it a screen ago and may not remember choosing. */}
+          <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-forest">
+            <strong>Verification:</strong>{" "}
+            {gaveAnyDocs
+              ? "documents attached — the team can consider you for the Verified badge."
+              : "skipped. Your listing will still be reviewed and can go live; you can add documents later from your dashboard to earn the Verified badge."}
+          </p>
+
           <p className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-forest">
             The Rego team checks new listings before they go live. You can keep
             adding vehicles and details while yours is being reviewed.
