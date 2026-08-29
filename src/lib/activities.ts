@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isUuid } from "@/lib/hotels";
+import type { CancellationFields } from "@/lib/booking-cancellation";
 
 /* ============================================================
  * Activities & Adventures data layer
@@ -90,7 +91,7 @@ export interface ActivityRow {
   updated_at: string;
 }
 
-export interface ActivityBookingRow {
+export interface ActivityBookingRow extends CancellationFields {
   id: string;
   activity_id: string | null;
   activity_title: string | null;

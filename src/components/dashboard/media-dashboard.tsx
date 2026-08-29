@@ -38,6 +38,7 @@ import { PaymentsManager } from "@/components/payments/payments-manager";
 import { MessagesInbox } from "@/components/chat/messages-inbox";
 import { ContactAdminButton } from "@/components/chat/contact-admin-button";
 import { AccountSecurity } from "@/components/account/account-security";
+import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 import { OwnerCrm } from "@/components/crm/owner-crm";
 import { useUnread } from "@/lib/use-unread";
 import { type User } from "@/components/auth/auth-context";
@@ -1041,6 +1042,7 @@ function BookingsPanel({
           {b.notes && (
             <p className="mt-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-forest"><span className="font-semibold">Note:</span> {b.notes}</p>
           )}
+          <CancellationNotice b={b} />
 
           {(b.status === "accepted" || b.status === "completed") && (
             <div className="mt-3 flex flex-col gap-2 rounded-xl border border-border bg-muted/30 p-3 sm:flex-row sm:items-center">

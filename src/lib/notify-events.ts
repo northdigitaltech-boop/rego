@@ -234,3 +234,64 @@ export function notifyNewBooking(opts: {
     )
   );
 }
+
+/* ================= 6. Booking cancelled → provider ================= */
+
+/**
+ * Tells a provider their traveller cancelled.
+ *
+ * Both channels, because the two do different jobs: the in-app notification
+ * is what they see next time they open the dashboard, and the email is what
+ * reaches them if they do not open it for a week. A provider who prepares
+ * for a booking that no longer exists is the failure this prevents, and it
+ * is worth two messages.
+ *
+ * Transactional, so it ignores promotional preferences — as bookings already
+ * do everywhere else in this file.
+ */
+export function notifyBookingCancelled(opts: {
+  ownerEmail: string;
+  listingTitle: string;
+  ref: string;
+  reason: string;
+  note?: string | null;
+  dates?: string | null;
+  customerName?: string | null;
+}): void {
+  if (!opts.ownerEmail) return;
+
+  safe(
+    createNotification({
+      user_email: opts.ownerEmail,
+      type: "booking",
+      title: "Booking cancelled",
+      message: `A traveller has cancelled booking ${opts.ref} — ${opts.listingTitle}.`,
+      priority: "important",
+      action_url: "/dashboard",
+      action_label: "Open your dashboard",
+    })
+  );
+
+  safe(
+    sendEmail(
+      opts.ownerEmail,
+      `Booking cancelled — ${opts.listingTitle}`,
+      emailLayout(
+        `<h1 style="margin:0 0 14px;font-size:20px;color:#0F4C3A">Booking cancelled</h1>
+         <p style="margin:0 0 12px">A traveller has cancelled this booking. No action
+         is needed from you — the dates are free again.</p>
+         ${row("Listing", opts.listingTitle)}
+         ${opts.customerName ? row("Traveller", opts.customerName) : ""}
+         ${opts.dates ? row("Dates", opts.dates) : ""}
+         ${row("Reference", opts.ref)}
+         ${row("Reason given", opts.reason)}
+         ${opts.note ? row("Their note", opts.note) : ""}
+         ${emailButton("View in your dashboard", `${BASE}/dashboard`)}
+         <p style="color:#6b7c75;font-size:13px">Any advance payment or refund is
+         settled directly between you and the traveller — Rego does not process or
+         hold booking payments.</p>`,
+        { preheader: `${opts.ref} — ${opts.listingTitle}` }
+      )
+    )
+  );
+}

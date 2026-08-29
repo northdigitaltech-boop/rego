@@ -38,6 +38,7 @@ import {
 } from "@/lib/activities";
 import { sendEmail } from "@/lib/email";
 import { cn, formatPrice } from "@/lib/utils";
+import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 
 const splitList = (s: string) => s.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean);
 const joinList = (a: string[] | null | undefined) => (a ?? []).join(", ");
@@ -162,6 +163,7 @@ export function ActivitiesManager({
                 <span>People: {b.people}</span>
               </div>
               {b.notes && <p className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">{b.notes}</p>}
+              <CancellationNotice b={b} />
               <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                 {b.customer_phone && <a href={`tel:${b.customer_phone}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-forest hover:bg-muted"><Phone className="h-4 w-4" /> Call</a>}
                 {b.customer_phone && <a href={`https://wa.me/${b.customer_phone.replace(/[^\d]/g, "")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-700"><MessageCircle className="h-4 w-4" /> WhatsApp</a>}

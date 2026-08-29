@@ -38,6 +38,7 @@ import { PaymentSettings } from "@/components/payments/payment-settings";
 import { PaymentsManager } from "@/components/payments/payments-manager";
 import { MessagesInbox } from "@/components/chat/messages-inbox";
 import { ContactAdminButton } from "@/components/chat/contact-admin-button";
+import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 import { AccountSecurity } from "@/components/account/account-security";
 import { OwnerCrm } from "@/components/crm/owner-crm";
 import { PropertyRestaurantManager } from "@/components/dashboard/property-restaurant-manager";
@@ -1448,6 +1449,7 @@ function BookingsPanel({
               <span className="font-semibold">Note:</span> {b.notes}
             </p>
           )}
+          <CancellationNotice b={b} />
 
           <div className="mt-3 flex flex-wrap gap-2">
             {b.status === "pending" && (

@@ -38,6 +38,7 @@ import { AccountSecurity } from "@/components/account/account-security";
 import { OwnerCrm } from "@/components/crm/owner-crm";
 import { PropertyRestaurantManager } from "@/components/dashboard/property-restaurant-manager";
 import { useUnread } from "@/lib/use-unread";
+import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 import { type BookingRow } from "@/lib/bookings";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { friendlyAreaError } from "@/lib/area-rules";
@@ -1506,6 +1507,7 @@ function BookingsPanel({
               <span className="font-semibold">Note:</span> {b.notes}
             </p>
           )}
+          <CancellationNotice b={b} />
 
           <div className="mt-3 flex flex-wrap gap-2">
             {b.status === "pending" && (

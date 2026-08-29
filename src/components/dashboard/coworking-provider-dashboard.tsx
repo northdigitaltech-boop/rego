@@ -38,6 +38,7 @@ import {
 } from "@/lib/coworking";
 import { getReviews, type ReviewRow } from "@/lib/reviews";
 import { sendEmail } from "@/lib/email";
+import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 import { cn } from "@/lib/utils";
 import {
   ProviderPostJob,
@@ -464,6 +465,7 @@ function Inquiries({
           </div>
           {b.duration && <p className="mt-1 text-sm text-muted-foreground">Duration: {b.duration}</p>}
           {b.notes && <p className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">{b.notes}</p>}
+          <CancellationNotice b={b} />
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {b.customer_phone && (

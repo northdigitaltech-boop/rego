@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isUuid } from "@/lib/hotels";
+import type { CancellationFields } from "@/lib/booking-cancellation";
 
 /* ============================================================
  * Co-working Spaces data layer
@@ -70,7 +71,7 @@ export interface CoworkingSpaceRow {
   updated_at: string;
 }
 
-export interface CoworkingBookingRow {
+export interface CoworkingBookingRow extends CancellationFields {
   id: string;
   space_id: string | null;
   space_name: string | null;

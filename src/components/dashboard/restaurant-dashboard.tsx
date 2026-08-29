@@ -58,6 +58,7 @@ import {
   restaurantBookingRef,
   type RestaurantBookingRow,
 } from "@/lib/restaurant-bookings";
+import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 import { RestaurantDetail } from "@/components/listings/restaurant-detail";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
@@ -623,6 +624,7 @@ function BookingsPanel({ bookings, onAct, onChat, unread }: { bookings: Restaura
             <KV k="Time" v={b.time ?? "—"} />
           </div>
           {b.notes && <p className="mt-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-forest"><span className="font-semibold">Note:</span> {b.notes}</p>}
+          <CancellationNotice b={b} />
           <div className="mt-3 flex flex-wrap gap-2">
             {b.status === "pending" && (
               <>

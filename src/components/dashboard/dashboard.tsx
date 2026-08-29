@@ -39,6 +39,15 @@ import {
   bookingRef,
   type BookingRow as DbBooking,
 } from "@/lib/bookings";
+import {
+  CancelBookingButton,
+  type CancellableBooking,
+} from "@/components/bookings/cancel-booking-button";
+import {
+  bookingStatusMeta,
+  cancelledByLabel,
+  type BookingKind,
+} from "@/lib/booking-cancellation";
 import { getHomestayBookingsByCustomer } from "@/lib/homestay-bookings";
 import { getHostelBookingsByCustomer } from "@/lib/hostel-bookings";
 import { getTourBookingsByCustomer } from "@/lib/tour-bookings";
@@ -56,6 +65,22 @@ import { cn, formatPrice, photo } from "@/lib/utils";
 
 type Tab = "overview" | "bookings" | "roadside" | "messages" | "wishlist" | "profile";
 
+/**
+ * A booking as this page holds it: the shared shape, plus which of the eight
+ * tables it came from.
+ *
+ * The cancellation columns are optional because they are — a booking made
+ * before phase93 has none of them, and a booking nobody cancelled never
+ * will. Reading them as "undefined means it was never cancelled" is exactly
+ * right and needs no backfill.
+ */
+type MyBooking = DbBooking & {
+  kind: BookingKind;
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
+};
+
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "bookings", label: "My Bookings", icon: CalendarCheck },
@@ -69,7 +94,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 export function Dashboard() {
   const [tab, setTab] = React.useState<Tab>("overview");
   const drill = useDashboardDrill();
-  const [myBookings, setMyBookings] = React.useState<DbBooking[]>([]);
+  const [myBookings, setMyBookings] = React.useState<MyBooking[]>([]);
   const [chatBooking, setChatBooking] = React.useState<DbBooking | null>(null);
   const { user, ready, logout } = useAuth();
   const router = useRouter();
@@ -164,15 +189,23 @@ export function Dashboard() {
               total_price: 0,
             }) as unknown as DbBooking
         );
-        const all = [
-          ...hotelBookings,
-          ...adaptedHs,
-          ...adaptedHostel,
-          ...adaptedTour,
-          ...adaptedTransport,
-          ...adaptedGuide,
-          ...adaptedMedia,
-          ...adaptedRestaurant,
+        /* Tag each row with the table it came from before the eight lists
+           are merged. Everything above adapts the shapes to look alike,
+           which is what the list needs — but it also erases the only fact
+           that says where a row lives, and cancelling one requires knowing
+           that. Attached here, at the last moment it is still known. */
+        const tag = (rows: DbBooking[], kind: BookingKind): MyBooking[] =>
+          rows.map((b) => ({ ...b, kind }));
+
+        const all: MyBooking[] = [
+          ...tag(hotelBookings, "hotel"),
+          ...tag(adaptedHs, "homestay"),
+          ...tag(adaptedHostel, "hostel"),
+          ...tag(adaptedTour, "tour"),
+          ...tag(adaptedTransport, "transport"),
+          ...tag(adaptedGuide, "guide"),
+          ...tag(adaptedMedia, "media"),
+          ...tag(adaptedRestaurant, "restaurant"),
         ].sort(
           (a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "")
         );
@@ -191,6 +224,29 @@ export function Dashboard() {
     markSeen(b.id);
     setChatBooking(b);
   };
+
+  /* Patch the one row rather than refetching all eight lists. The server has
+     already written the change and returned the timestamp it wrote, so a
+     refetch would cost eight round trips to learn what we were just told. */
+  const handleCancelled = React.useCallback(
+    ({ id, cancelledAt, reason }: { id: string; cancelledAt: string; reason: string }) => {
+      setMyBookings((prev) =>
+        prev.map((b) =>
+          b.id === id
+            ? {
+                ...b,
+                status: "cancelled",
+                previous_status: b.status,
+                cancelled_by: "traveler",
+                cancelled_at: cancelledAt,
+                cancellation_reason: reason,
+              }
+            : b
+        )
+      );
+    },
+    []
+  );
 
   // Open a specific chat from a navbar notification — instantly if already on
   // this page (event), or on arrival from another page (localStorage).
@@ -348,10 +404,20 @@ export function Dashboard() {
         {/* Content */}
         <div>
           {tab === "overview" && (
-            <Overview bookings={myBookings} onChat={openChat} unread={unread} />
+            <Overview
+              bookings={myBookings}
+              onChat={openChat}
+              onCancelled={handleCancelled}
+              unread={unread}
+            />
           )}
           {tab === "bookings" && (
-            <Bookings bookings={myBookings} onChat={openChat} unread={unread} />
+            <Bookings
+              bookings={myBookings}
+              onChat={openChat}
+              onCancelled={handleCancelled}
+              unread={unread}
+            />
           )}
           {tab === "messages" && (
             <MessagesInbox
@@ -405,12 +471,17 @@ function StatCard({
 function Overview({
   bookings,
   onChat,
+  onCancelled,
   unread,
 }: {
-  bookings: DbBooking[];
+  bookings: MyBooking[];
   onChat: (b: DbBooking) => void;
+  onCancelled: (info: { id: string; cancelledAt: string; reason: string }) => void;
   unread: Set<string>;
 }) {
+  /* Cancelled bookings drop out of "total spent" for free: their status is
+     no longer 'accepted'. That is the right answer — money that was never
+     going to be paid should not sit in the traveller's total. */
   const spent = bookings
     .filter((b) => b.status === "accepted")
     .reduce((s, b) => s + b.total_price, 0);
@@ -443,6 +514,7 @@ function Overview({
             <BookingItem
               b={bookings[0]}
               onChat={onChat}
+              onCancelled={onCancelled}
               unread={unread.has(bookings[0].id)}
             />
           </div>
@@ -455,10 +527,12 @@ function Overview({
 function Bookings({
   bookings,
   onChat,
+  onCancelled,
   unread,
 }: {
-  bookings: DbBooking[];
+  bookings: MyBooking[];
   onChat: (b: DbBooking) => void;
+  onCancelled: (info: { id: string; cancelledAt: string; reason: string }) => void;
   unread: Set<string>;
 }) {
   return (
@@ -475,6 +549,7 @@ function Bookings({
               key={b.id}
               b={b}
               onChat={onChat}
+              onCancelled={onCancelled}
               unread={unread.has(b.id)}
             />
           ))}
@@ -487,18 +562,31 @@ function Bookings({
 function BookingItem({
   b,
   onChat,
+  onCancelled,
   unread,
 }: {
-  b: DbBooking;
+  b: MyBooking;
   onChat: (b: DbBooking) => void;
+  onCancelled: (info: { id: string; cancelledAt: string; reason: string }) => void;
   unread: boolean;
 }) {
-  const meta =
-    b.status === "accepted"
-      ? { label: "Confirmed", cls: "bg-forest-50 text-forest-600" }
-      : b.status === "rejected"
-        ? { label: "Rejected", cls: "bg-red-50 text-red-600" }
-        : { label: "Pending", cls: "bg-gold/20 text-gold-700" };
+  /* Was a chain of ternaries ending in "Pending", which meant a cancelled
+     booking displayed as though it were still waiting for the provider.
+     bookingStatusMeta is shared with the provider dashboards so both sides
+     of a booking always call it the same thing. */
+  const meta = bookingStatusMeta(b.status);
+
+  const cancellable: CancellableBooking = {
+    id: b.id,
+    kind: b.kind,
+    reference: bookingRef(b.id),
+    title: b.hotel_title,
+    providerName: b.owner_email,
+    bookedOn: b.created_at ? b.created_at.slice(0, 10) : null,
+    serviceDate: b.check_in,
+    status: b.status,
+  };
+
   return (
     <div className="flex items-center justify-between gap-4 py-4">
       <div className="min-w-0">
@@ -522,6 +610,19 @@ function BookingItem({
         {(b.total_price ?? 0) > 0 && (
           <p className="mt-0.5 text-sm font-semibold text-forest">
             {formatPrice(b.total_price)}
+          </p>
+        )}
+        {/* Only after a cancellation. cancelled_at is null on every booking
+            that predates phase93 and on every booking nobody cancelled, so
+            no backfill was needed for this to read correctly. */}
+        {b.cancelled_at && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {cancelledByLabel(b.cancelled_by)} ·{" "}
+            {new Date(b.cancelled_at).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+            {b.cancellation_reason ? ` · ${b.cancellation_reason}` : ""}
           </p>
         )}
       </div>
@@ -551,6 +652,9 @@ function BookingItem({
         {/* Voucher only appears once the provider has actually accepted —
             a pending request is not something to take to a hotel desk. */}
         <VoucherButton bookingId={b.id} status={b.status} />
+        {/* Renders nothing once the status no longer allows cancelling, so
+            it disappears by itself the moment this booking is cancelled. */}
+        <CancelBookingButton booking={cancellable} onCancelled={onCancelled} />
       </div>
     </div>
   );

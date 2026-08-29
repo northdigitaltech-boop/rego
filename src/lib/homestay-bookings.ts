@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import type { CancellationFields } from "@/lib/booking-cancellation";
 
-export interface HomestayBookingRow {
+export interface HomestayBookingRow extends CancellationFields {
   id: string;
   homestay_id: string | null;
   homestay_title: string;

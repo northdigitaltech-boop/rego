@@ -26,6 +26,7 @@ import {
   Trash2,
   MapPin,
   BadgeCheck,
+  Ban,
   FileText,
   Eye,
   ChevronDown,
@@ -107,6 +108,7 @@ import { AdminListingsManager } from "@/components/dashboard/admin-listings-mana
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
 import { AdminApplications } from "@/components/dashboard/admin-applications";
+import { AdminCancellations } from "@/components/dashboard/admin-cancellations";
 import { AdminServiceRequests } from "@/components/dashboard/admin-service-requests";
 import { AdminJobs } from "@/components/dashboard/admin-jobs";
 import { AdminBroadcast } from "@/components/dashboard/admin-broadcast";
@@ -490,6 +492,7 @@ type Tab =
   | "legal"
   | "careers"
   | "applications"
+  | "cancellations"
   | "notify"
   | "subscription"
   | "expeditions"
@@ -533,6 +536,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "legal", label: "Legal & Policies", icon: FileText },
   { id: "careers", label: "Careers & Jobs", icon: Briefcase },
   { id: "applications", label: "Job Applications", icon: FileText },
+  { id: "cancellations", label: "Cancellations", icon: Ban },
   { id: "notify", label: "Send Notification", icon: Megaphone },
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
@@ -1013,6 +1017,7 @@ export function AdminDashboard() {
           {tab === "service-requests" && <AdminServiceRequests />}
           {tab === "jobs-portal" && <AdminJobs />}
           {tab === "applications" && <AdminApplications />}
+          {tab === "cancellations" && <AdminCancellations />}
           {tab === "notify" && <AdminBroadcast />}
           {tab === "subscription" && <AdminSubscription />}
           {tab === "expeditions" && <AdminExpeditions />}

@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import type { CancellationFields } from "@/lib/booking-cancellation";
 
-export interface MediaBookingRow {
+export interface MediaBookingRow extends CancellationFields {
   id: string;
   provider_id: string | null;
   company_id: string | null;
