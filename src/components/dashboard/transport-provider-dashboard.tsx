@@ -43,6 +43,8 @@ import { OwnerCrm } from "@/components/crm/owner-crm";
 import { useUnread } from "@/lib/use-unread";
 import { useAuth, type User } from "@/components/auth/auth-context";
 import { type BookingRow } from "@/lib/bookings";
+import { FormSection, filledCount } from "@/components/dashboard/form-section";
+import { PlaceInput, PlaceListInput, yearOptions } from "@/components/ui/place-input";
 import {
   getProviderByOwner,
   createProvider,
@@ -538,73 +540,103 @@ function ProviderForm({
         </div>
       )}
 
-      <SectionTitle>Business details</SectionTitle>
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* WHAT A PROVIDER ACTUALLY NEEDS TO BE LISTED
+          Only the name is required by the database, but the form used to
+          show all twenty fields at once, so nobody could tell. These five
+          are what a traveller needs in order to book: who you are, how to
+          reach you, and where you are. Everything else is below, folded. */}
+      <FormSection
+        title="The essentials"
+        subtitle="Enough to get your business listed. You can add the rest any time."
+        required
+      >
         <Field label="Provider / company name" required>
           <input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" placeholder="e.g. Hunza Rides & Rentals" />
         </Field>
-        <Field label="Owner name">
-          <input value={f.owner_name} onChange={(e) => set({ owner_name: e.target.value })} className="auth-input" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Phone"><input value={f.phone} onChange={(e) => set({ phone: e.target.value })} className="auth-input" placeholder="+92 3xx…" /></Field>
+          <Field label="WhatsApp"><input value={f.whatsapp} onChange={(e) => set({ whatsapp: e.target.value })} className="auth-input" placeholder="+92 3xx…" /></Field>
+        </div>
+        <Field label="Base location">
+          {/* Suggests real place names. Free text still saves — a valley
+              this list has never heard of must not block a listing. */}
+          <PlaceInput value={f.location} onChange={(v) => set({ location: v })} placeholder="e.g. Gilgit" />
         </Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Email"><input value={f.email} onChange={(e) => set({ email: e.target.value })} className="auth-input" /></Field>
-        <Field label="Phone"><input value={f.phone} onChange={(e) => set({ phone: e.target.value })} className="auth-input" placeholder="+92 3xx…" /></Field>
-        <Field label="WhatsApp"><input value={f.whatsapp} onChange={(e) => set({ whatsapp: e.target.value })} className="auth-input" placeholder="+92 3xx…" /></Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <span className="mb-1.5 block text-sm font-semibold text-forest">Profile image / logo</span>
+          <ImageUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="About your business"
+        subtitle="Shown on your public page"
+        badge={filledCount([f.owner_name, f.email, f.description, f.service_areas, f.address, f.opening_hours, f.emergency_contact, f.cover_image]).label}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Owner name">
+            <input value={f.owner_name} onChange={(e) => set({ owner_name: e.target.value })} className="auth-input" />
+          </Field>
+          <Field label="Email"><input value={f.email} onChange={(e) => set({ email: e.target.value })} className="auth-input" /></Field>
+        </div>
         <Field label="Business type">
           <select value={f.business_type} onChange={(e) => set({ business_type: e.target.value })} className="auth-input">
             {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </Field>
-        <Field label="Business registration number"><input value={f.reg_number} onChange={(e) => set({ reg_number: e.target.value })} className="auth-input" /></Field>
-        <Field label="License number"><input value={f.license_number} onChange={(e) => set({ license_number: e.target.value })} className="auth-input" /></Field>
-      </div>
-
-      <SectionTitle>Branding</SectionTitle>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <span className="mb-1.5 block text-sm font-semibold text-forest">Profile image / logo</span>
-          <ImageUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
+        <Field label="Service areas">
+          {/* Was a comma-separated text box, which is how the same valley
+              ended up spelled three ways in one column. Chips build the
+              string instead of the provider typing the separator. */}
+          <PlaceListInput value={f.service_areas} onChange={(v) => set({ service_areas: v })} />
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Address"><input value={f.address} onChange={(e) => set({ address: e.target.value })} className="auth-input" /></Field>
+          {area.picker}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Opening hours"><input value={f.opening_hours} onChange={(e) => set({ opening_hours: e.target.value })} className="auth-input" placeholder="9 AM – 9 PM" /></Field>
+          <Field label="Emergency contact"><input value={f.emergency_contact} onChange={(e) => set({ emergency_contact: e.target.value })} className="auth-input" /></Field>
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
           <ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
         </div>
-      </div>
+      </FormSection>
 
-      <SectionTitle>About &amp; coverage</SectionTitle>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Address"><input value={f.address} onChange={(e) => set({ address: e.target.value })} className="auth-input" /></Field>
-        <Field label="Base location"><input value={f.location} onChange={(e) => set({ location: e.target.value })} className="auth-input" placeholder="e.g. Gilgit" /></Field>
-        {area.picker}
-      </div>
-      <Field label="Service areas (comma separated)"><input value={f.service_areas} onChange={(e) => set({ service_areas: e.target.value })} className="auth-input" placeholder="Skardu, Hunza, Gilgit" /></Field>
-      <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Opening hours"><input value={f.opening_hours} onChange={(e) => set({ opening_hours: e.target.value })} className="auth-input" placeholder="9 AM – 9 PM" /></Field>
-        <Field label="Emergency contact"><input value={f.emergency_contact} onChange={(e) => set({ emergency_contact: e.target.value })} className="auth-input" /></Field>
-      </div>
+      <FormSection
+        title="Registration & licence"
+        subtitle="Optional — helps travellers trust a new listing"
+        badge={filledCount([f.reg_number, f.license_number]).label}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Business registration number"><input value={f.reg_number} onChange={(e) => set({ reg_number: e.target.value })} className="auth-input" /></Field>
+          <Field label="License number"><input value={f.license_number} onChange={(e) => set({ license_number: e.target.value })} className="auth-input" /></Field>
+        </div>
+      </FormSection>
 
-      <SectionTitle>Verification documents</SectionTitle>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <FormSection
+        title="Verification documents"
+        subtitle="Seen only by the Rego team, never shown publicly"
+        badge={filledCount([f.owner_cnic, f.license_doc, f.owner_cnic_doc, f.ownership_doc]).label}
+      >
         <Field label="Owner ID (CNIC) number"><input value={f.owner_cnic} onChange={(e) => set({ owner_cnic: e.target.value })} className="auth-input" /></Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <span className="mb-1.5 block text-sm font-semibold text-forest">License / permit</span>
-          <ImageUpload value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-forest">License / permit</span>
+            <ImageUpload value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
+          </div>
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-forest">Owner ID photo</span>
+            <ImageUpload value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
+          </div>
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-forest">Registration proof</span>
+            <ImageUpload value={f.ownership_doc} onChange={(url) => set({ ownership_doc: url })} />
+          </div>
         </div>
-        <div>
-          <span className="mb-1.5 block text-sm font-semibold text-forest">Owner ID photo</span>
-          <ImageUpload value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
-        </div>
-        <div>
-          <span className="mb-1.5 block text-sm font-semibold text-forest">Registration proof</span>
-          <ImageUpload value={f.ownership_doc} onChange={(url) => set({ ownership_doc: url })} />
-        </div>
-      </div>
+      </FormSection>
 
       <Button type="submit" variant="gold" size="lg" className="rounded-lg" disabled={saving}>
         {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : editing ? "Save changes" : "Register provider"}
@@ -779,72 +811,108 @@ function ServiceForm({
     <form onSubmit={save} className="space-y-5 rounded-3xl border border-border/70 bg-card p-6 shadow-premium sm:p-8">
       <FormHeader title={editing ? "Edit transport service" : "Add transport service"} onCancel={onCancel} />
       {error && <ErrorBox>{error}</ErrorBox>}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Service title" required><input value={f.title} onChange={(e) => set({ title: e.target.value })} className="auth-input" placeholder="e.g. Skardu Airport Transfer" /></Field>
-        <Field label="Vehicle type">
-          <select value={f.vehicle_type} onChange={(e) => set({ vehicle_type: e.target.value })} className="auth-input">
-            {SERVICE_VEHICLE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Vehicle name / model"><input value={f.vehicle_name} onChange={(e) => set({ vehicle_name: e.target.value })} className="auth-input" placeholder="Toyota Land Cruiser" /></Field>
-        <Field label="Model year"><input value={f.model_year} onChange={(e) => set({ model_year: e.target.value })} className="auth-input" placeholder="2022" /></Field>
-        <Field label="Vehicle number"><input value={f.vehicle_number} onChange={(e) => set({ vehicle_number: e.target.value })} className="auth-input" /></Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Seating capacity"><input type="number" value={f.seats} onChange={(e) => set({ seats: e.target.value })} className="auth-input" /></Field>
-        <Field label="Fuel type">
-          <select value={f.fuel_type} onChange={(e) => set({ fuel_type: e.target.value })} className="auth-input">
-            {FUEL_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </Field>
-        <label className="flex items-end gap-2 pb-3 text-sm font-medium text-forest">
-          <input type="checkbox" checked={f.ac} onChange={(e) => set({ ac: e.target.checked })} className="h-4 w-4 accent-forest-600" /> Air-conditioned
-        </label>
-      </div>
-      <div className="rounded-xl border border-border bg-forest-50/40 p-4">
-        <label className="flex items-center gap-2 text-sm font-medium text-forest">
-          <input type="checkbox" checked={f.driver_included} onChange={(e) => set({ driver_included: e.target.checked })} className="h-4 w-4 accent-forest-600" /> Driver included
-        </label>
-        {f.driver_included && (
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <Field label="Driver name"><input value={f.driver_name} onChange={(e) => set({ driver_name: e.target.value })} className="auth-input" /></Field>
-            <Field label="Driver contact"><input value={f.driver_contact} onChange={(e) => set({ driver_contact: e.target.value })} className="auth-input" /></Field>
-          </div>
-        )}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* A traveller books on four things: what it is, how many fit, where
+          it goes, and what it costs. The other twenty-odd fields make a
+          listing better but none of them stops it from working, so they
+          start folded. */}
+      <FormSection
+        title="The vehicle"
+        subtitle="Enough for a traveller to decide"
+        required
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Service title" required><input value={f.title} onChange={(e) => set({ title: e.target.value })} className="auth-input" placeholder="e.g. Skardu Airport Transfer" /></Field>
+          <Field label="Vehicle type">
+            <select value={f.vehicle_type} onChange={(e) => set({ vehicle_type: e.target.value })} className="auth-input">
+              {SERVICE_VEHICLE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Seating capacity"><input type="number" value={f.seats} onChange={(e) => set({ seats: e.target.value })} className="auth-input" /></Field>
+          <Field label="Price / day (PKR)"><input type="number" value={f.price_per_day} onChange={(e) => set({ price_per_day: e.target.value })} className="auth-input" /></Field>
+        </div>
         <Field label="Route / service area"><input value={f.route} onChange={(e) => set({ route: e.target.value })} className="auth-input" placeholder="Skardu – Khaplu" /></Field>
-        <Field label="Pickup location"><input value={f.pickup_location} onChange={(e) => set({ pickup_location: e.target.value })} className="auth-input" /></Field>
-        <Field label="Drop-off location"><input value={f.dropoff_location} onChange={(e) => set({ dropoff_location: e.target.value })} className="auth-input" /></Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Field label="Price / day (PKR)"><input type="number" value={f.price_per_day} onChange={(e) => set({ price_per_day: e.target.value })} className="auth-input" /></Field>
-        <Field label="Price / trip"><input type="number" value={f.price_per_trip} onChange={(e) => set({ price_per_trip: e.target.value })} className="auth-input" /></Field>
-        <Field label="Price / km"><input type="number" value={f.price_per_km} onChange={(e) => set({ price_per_km: e.target.value })} className="auth-input" /></Field>
-        <Field label="Waiting charges"><input type="number" value={f.waiting_charges} onChange={(e) => set({ waiting_charges: e.target.value })} className="auth-input" /></Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Luggage capacity"><input value={f.luggage} onChange={(e) => set({ luggage: e.target.value })} className="auth-input" placeholder="e.g. 4 large bags" /></Field>
-        <Field label="Base location"><input value={f.location} onChange={(e) => set({ location: e.target.value })} className="auth-input" /></Field>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Available from"><input type="date" value={f.available_from} onChange={(e) => set({ available_from: e.target.value })} className="auth-input" /></Field>
-        <Field label="Available to"><input type="date" value={f.available_to} min={f.available_from || undefined} onChange={(e) => set({ available_to: e.target.value })} className="auth-input" /></Field>
-      </div>
-      <div>
-        <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
-      </div>
-      <div>
-        <span className="mb-1.5 block text-sm font-semibold text-forest">Service images</span>
-        <MultiImageUpload value={f.images} onChange={(urls) => set({ images: urls })} />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
-        <Field label="Rules &amp; conditions"><textarea rows={3} value={f.rules} onChange={(e) => set({ rules: e.target.value })} className="auth-input resize-none" /></Field>
-      </div>
+        <div>
+          <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
+          <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Vehicle details"
+        badge={filledCount([f.vehicle_name, f.model_year, f.vehicle_number, f.fuel_type, f.luggage]).label}
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Vehicle name / model"><input value={f.vehicle_name} onChange={(e) => set({ vehicle_name: e.target.value })} className="auth-input" placeholder="Toyota Land Cruiser" /></Field>
+          <Field label="Model year">
+            {/* Was free text, which produced "2022", "22" and "2022 model"
+                in one column. */}
+            <select value={f.model_year} onChange={(e) => set({ model_year: e.target.value })} className="auth-input">
+              <option value="">Not specified</option>
+              {yearOptions().map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </Field>
+          <Field label="Vehicle number"><input value={f.vehicle_number} onChange={(e) => set({ vehicle_number: e.target.value })} className="auth-input" /></Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Fuel type">
+            <select value={f.fuel_type} onChange={(e) => set({ fuel_type: e.target.value })} className="auth-input">
+              {FUEL_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </Field>
+          <Field label="Luggage capacity"><input value={f.luggage} onChange={(e) => set({ luggage: e.target.value })} className="auth-input" placeholder="e.g. 4 large bags" /></Field>
+          <label className="flex items-end gap-2 pb-3 text-sm font-medium text-forest">
+            <input type="checkbox" checked={f.ac} onChange={(e) => set({ ac: e.target.checked })} className="h-4 w-4 accent-forest-600" /> Air-conditioned
+          </label>
+        </div>
+        <div className="rounded-xl border border-border bg-forest-50/40 p-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-forest">
+            <input type="checkbox" checked={f.driver_included} onChange={(e) => set({ driver_included: e.target.checked })} className="h-4 w-4 accent-forest-600" /> Driver included
+          </label>
+          {f.driver_included && (
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <Field label="Driver name"><input value={f.driver_name} onChange={(e) => set({ driver_name: e.target.value })} className="auth-input" /></Field>
+              <Field label="Driver contact"><input value={f.driver_contact} onChange={(e) => set({ driver_contact: e.target.value })} className="auth-input" /></Field>
+            </div>
+          )}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Pickup, drop-off and other prices"
+        badge={filledCount([f.pickup_location, f.dropoff_location, f.location, f.price_per_trip, f.price_per_km, f.waiting_charges]).label}
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Pickup location"><PlaceInput value={f.pickup_location} onChange={(v) => set({ pickup_location: v })} /></Field>
+          <Field label="Drop-off location"><PlaceInput value={f.dropoff_location} onChange={(v) => set({ dropoff_location: v })} /></Field>
+          <Field label="Base location"><PlaceInput value={f.location} onChange={(v) => set({ location: v })} /></Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Price / trip"><input type="number" value={f.price_per_trip} onChange={(e) => set({ price_per_trip: e.target.value })} className="auth-input" /></Field>
+          <Field label="Price / km"><input type="number" value={f.price_per_km} onChange={(e) => set({ price_per_km: e.target.value })} className="auth-input" /></Field>
+          <Field label="Waiting charges"><input type="number" value={f.waiting_charges} onChange={(e) => set({ waiting_charges: e.target.value })} className="auth-input" /></Field>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Availability, photos and conditions"
+        badge={filledCount([f.available_from, f.available_to, f.images?.length ? "y" : "", f.description, f.rules]).label}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Available from"><input type="date" value={f.available_from} onChange={(e) => set({ available_from: e.target.value })} className="auth-input" /></Field>
+          <Field label="Available to"><input type="date" value={f.available_to} min={f.available_from || undefined} onChange={(e) => set({ available_to: e.target.value })} className="auth-input" /></Field>
+        </div>
+        <div>
+          <span className="mb-1.5 block text-sm font-semibold text-forest">Service images</span>
+          <MultiImageUpload value={f.images} onChange={(urls) => set({ images: urls })} />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
+          <Field label="Rules &amp; conditions"><textarea rows={3} value={f.rules} onChange={(e) => set({ rules: e.target.value })} className="auth-input resize-none" /></Field>
+        </div>
+      </FormSection>
+
       <SaveButtons saving={saving} editing={editing} onCancel={onCancel} />
     </form>
   );
@@ -1481,14 +1549,6 @@ function Stat({ icon: Icon, label, value, accent }: { icon: typeof Bus; label: s
       </span>
       <p className="mt-3 font-display text-2xl font-bold text-forest">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-b border-border pb-2">
-      <h3 className="font-display text-base font-bold text-forest">{children}</h3>
     </div>
   );
 }
