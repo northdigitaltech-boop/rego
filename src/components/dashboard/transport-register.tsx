@@ -116,6 +116,12 @@ export function TransportRegisterWizard({
 
     const { error: sErr } = await createService({
       provider_id: (created as { id: string }).id,
+      /* The business name is stored on the vehicle too, not just linked by id.
+         That denormalisation is what the public card reads to print "by …",
+         and the dashboard's own add-vehicle form has always written it. This
+         wizard did not, so a vehicle registered here appeared on the site with
+         no owner shown at all — a listing nobody could see the name behind. */
+      provider_name: name.trim(),
       title: title.trim(),
       vehicle_type: vehicleType,
       seats: Number(seats) || null,

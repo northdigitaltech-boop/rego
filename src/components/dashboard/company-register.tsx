@@ -91,6 +91,10 @@ export function CompanyRegisterWizard({
 
     const { error: pErr } = await createPackage({
       company_id: (created as { id: string }).id,
+      /* Same as the vehicle case: the package carries the company name as well
+         as the id, because that copy is what the public card prints as
+         "by …". The dashboard writes it; this wizard did not. */
+      company_name: name.trim(),
       title: title.trim(),
       duration: duration.trim() || null,
       price_per_person: Number(price) || 0,
