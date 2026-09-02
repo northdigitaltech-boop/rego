@@ -110,13 +110,13 @@ export function HotelCarousel({
         onKeyDown={onKeyDown}
         className="no-scrollbar flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto scroll-smooth pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600/40"
       >
-        {items.map((l, i) => (
+        {items.map((l) => (
           <div
             key={l.id}
             data-slide
             className="flex w-full flex-none snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)]"
           >
-            <ListingCard listing={l} index={i} hidePrice={hidePrice} className="h-full w-full" />
+            <ListingCard listing={l} hidePrice={hidePrice} className="h-full w-full" />
           </div>
         ))}
       </div>

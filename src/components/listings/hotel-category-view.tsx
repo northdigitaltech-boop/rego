@@ -81,8 +81,8 @@ export function HotelCategoryView({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((l, i) => (
-              <ListingCard key={l.id} listing={l} index={i} />
+            {filtered.map((l) => (
+              <ListingCard key={l.id} listing={l} />
             ))}
           </div>
         )}

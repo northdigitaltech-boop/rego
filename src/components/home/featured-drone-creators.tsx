@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Star, MapPin, Award, Layers, ChevronRight, Plane } from "lucide-react";
 
 import {
@@ -15,7 +14,6 @@ import { Reveal } from "@/components/ui/reveal";
 import { photo } from "@/lib/utils";
 import { hasRating } from "@/components/ui/rating";
 
-const MotionLink = motion.create(Link);
 
 interface Creator {
   provider: MediaProviderRow;
@@ -29,7 +27,6 @@ function score(p: MediaProviderRow): number {
 }
 
 export function FeaturedDroneCreators() {
-  const reduce = useReducedMotion();
   const [creators, setCreators] = React.useState<Creator[]>([]);
 
   React.useEffect(() => {
@@ -77,8 +74,8 @@ export function FeaturedDroneCreators() {
         </Reveal>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          {creators.map((c, i) => (
-            <CreatorCard key={c.provider.id} creator={c} index={i} />
+          {creators.map((c) => (
+            <CreatorCard key={c.provider.id} creator={c} />
           ))}
         </div>
       </div>
@@ -86,25 +83,20 @@ export function FeaturedDroneCreators() {
   );
 }
 
-function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
-  const reduce = useReducedMotion();
+function CreatorCard({ creator }: { creator: Creator; }) {
   const { provider: p, portfolio } = creator;
   const preview = portfolio.slice(0, 3);
   const avatar = photo(p.logo || p.cover_image || "", 200);
 
   return (
-    <MotionLink
+    <Link
       href={`/listings/${p.id}`}
-      initial={{ opacity: 0, y: reduce ? 0 : 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: reduce ? 0 : 0.45, delay: reduce ? 0 : index * 0.07 }}
       className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"
     >
       {/* portfolio preview */}
       <div className="relative grid h-32 grid-cols-3 gap-0.5 bg-forest-50">
         {preview.length > 0 ? (
-          preview.map((item, idx) => (
+          preview.map((item) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={item.id}
@@ -179,6 +171,6 @@ function CreatorCard({ creator, index }: { creator: Creator; index: number }) {
           View Profile <ChevronRight className="h-4 w-4" />
         </span>
       </div>
-    </MotionLink>
+    </Link>
   );
 }

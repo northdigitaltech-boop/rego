@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Star,
   Heart,
@@ -163,8 +162,8 @@ export function GuideCategoryView({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sorted.map((g, i) => (
-              <GuideCard key={g.id} guide={g} index={i} typeLabel={typeOf(g)} />
+            {sorted.map((g) => (
+              <GuideCard key={g.id} guide={g} typeLabel={typeOf(g)} />
             ))}
           </div>
         )}
@@ -194,7 +193,7 @@ function Select({
   );
 }
 
-function GuideCard({ guide, index, typeLabel }: { guide: TourGuideRow; index: number; typeLabel: string }) {
+function GuideCard({ guide, typeLabel }: { guide: TourGuideRow; typeLabel: string }) {
   const { isWished, toggle } = useWishlist();
   const wished = isWished(guide.id);
 
@@ -213,13 +212,8 @@ function GuideCard({ guide, index, typeLabel }: { guide: TourGuideRow; index: nu
   };
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.06 }}
-      whileHover={{ y: -8 }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+    <article
+      className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
       <Link href={`/listings/${guide.id}`} className="absolute inset-0 z-10" aria-label={guide.name} />
       <div className="relative h-48 overflow-hidden">
@@ -299,6 +293,6 @@ function GuideCard({ guide, index, typeLabel }: { guide: TourGuideRow; index: nu
           </Link>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

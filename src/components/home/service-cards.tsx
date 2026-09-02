@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Star, MapPin, Users2, CarFront, UtensilsCrossed, Route } from "lucide-react";
 
 import { type Listing } from "@/lib/data";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { ListingCard } from "@/components/home/listing-card";
 import { cn, formatPrice, photo } from "@/lib/utils";
+import { Reveal } from "@/components/ui/reveal";
 
 /* ============================================================
  * Per-service card styles. Same visual family (radius, shadows, palette),
@@ -21,18 +21,21 @@ import { cn, formatPrice, photo } from "@/lib/utils";
 
 export type ServiceCardVariant = "default" | "person" | "brand" | "spec" | "journey" | "food";
 
+/* Wrap used to compute a framer-motion delay from index. Reveal takes the
+   same index and staggers with a CSS transition-delay instead. */
 function Wrap({ index, children, className }: { index: number; children: React.ReactNode; className?: string }) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.07 }}
-      whileHover={{ y: -8 }}
-      className={cn("group relative", className)}
-    >
-      {children}
-    </motion.article>
+    <Reveal index={index}>
+      <article
+        className={cn(
+          "motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2",
+          "group relative h-full",
+          className
+        )}
+      >
+        {children}
+      </article>
+    </Reveal>
   );
 }
 
@@ -231,7 +234,7 @@ export function ServiceCard({
   if (v === "spec") return <SpecCard listing={listing} index={index} hidePrice={hidePrice} />;
   if (v === "journey") return <JourneyCard listing={listing} index={index} hidePrice={hidePrice} />;
   if (v === "food") return <FoodCard listing={listing} index={index} hidePrice={hidePrice} />;
-  return <ListingCard listing={listing} index={index} hidePrice={hidePrice} />;
+  return <ListingCard listing={listing} hidePrice={hidePrice} />;
 }
 
 /** Grid column classes tuned per card form (and how many items exist, so a

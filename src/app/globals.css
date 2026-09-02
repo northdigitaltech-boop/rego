@@ -358,8 +358,9 @@ summary:focus-visible,
  * had to fetch — competing with the hero image, which is the LCP element.
  * A fade and a slide do not need an animation library.
  *
- * Everything below the fold still uses framer-motion, which is now in a
- * deferred chunk where it costs nothing on first paint.
+ * The rest of the site has since followed: framer-motion is gone from the
+ * project entirely. Scroll entrances now come from src/components/ui/reveal.tsx
+ * — one shared IntersectionObserver toggling the CSS transitions below.
  */
 .rise {
   animation: riseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;

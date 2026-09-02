@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Star,
   Heart,
@@ -147,8 +146,8 @@ export function MediaCategoryView({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sorted.map((p, i) => (
-              <MediaCard key={p.id} provider={p} index={i} />
+            {sorted.map((p) => (
+              <MediaCard key={p.id} provider={p} />
             ))}
           </div>
         )}
@@ -178,7 +177,7 @@ function Select({
   );
 }
 
-function MediaCard({ provider, index }: { provider: MediaProviderRow; index: number }) {
+function MediaCard({ provider }: { provider: MediaProviderRow; }) {
   const { isWished, toggle } = useWishlist();
   const wished = isWished(provider.id);
   const img = provider.cover_image || provider.logo || "";
@@ -199,13 +198,8 @@ function MediaCard({ provider, index }: { provider: MediaProviderRow; index: num
   };
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.06 }}
-      whileHover={{ y: -8 }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+    <article
+      className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
       <Link href={`/listings/${provider.id}`} className="absolute inset-0 z-10" aria-label={provider.name} />
       <div className="relative h-44 overflow-hidden">
@@ -270,6 +264,6 @@ function MediaCard({ provider, index }: { provider: MediaProviderRow; index: num
           </Link>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

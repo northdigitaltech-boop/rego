@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import {
   Search, ShieldCheck, Star, MapPin, Mountain, TriangleAlert, Building2, User as UserIcon, ChevronRight,
 } from "lucide-react";
@@ -13,7 +12,6 @@ import {
   type ExpeditionCompanyRow, type ExpeditionProRow, type ExpeditionRole, type ExpeditionPeak, type ExpeditionRoute,
 } from "@/lib/expeditions";
 
-const MotionLink = motion.create(Link);
 
 type Kind = "all" | "companies" | "individuals";
 
@@ -26,7 +24,6 @@ export function ExpeditionsBrowser({
   peaks: ExpeditionPeak[];
   routes: ExpeditionRoute[];
 }) {
-  const reduce = useReducedMotion();
   const [kind, setKind] = React.useState<Kind>("all");
   const [role, setRole] = React.useState("");
   const [peak, setPeak] = React.useState("");
@@ -105,8 +102,8 @@ export function ExpeditionsBrowser({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {showCo && coShown.map((c, i) => <CompanyCard key={c.id} c={c} i={i} reduce={!!reduce} />)}
-          {showPro && proShown.map((p, i) => <ProCard key={p.id} p={p} i={i} roles={roles} reduce={!!reduce} />)}
+          {showCo && coShown.map((c) => <CompanyCard key={c.id} c={c} />)}
+          {showPro && proShown.map((p) => <ProCard key={p.id} p={p} roles={roles} />)}
         </div>
       )}
     </div>
@@ -122,11 +119,9 @@ function Badges({ verified, featured }: { verified: boolean; featured: boolean }
   );
 }
 
-function CompanyCard({ c, i, reduce }: { c: ExpeditionCompanyRow; i: number; reduce: boolean }) {
+function CompanyCard({ c }: { c: ExpeditionCompanyRow }) {
   return (
-    <MotionLink href={`/expeditions/company/${c.id}`}
-      initial={{ opacity: 0, y: reduce ? 0 : 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: reduce ? 0 : 0.4, delay: reduce ? 0 : i * 0.04 }}
+    <Link href={`/expeditions/company/${c.id}`}
       className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2">
       <div className="relative h-36 overflow-hidden bg-forest-50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -143,15 +138,13 @@ function CompanyCard({ c, i, reduce }: { c: ExpeditionCompanyRow; i: number; red
         </div>
         <span className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-forest px-3 py-2 text-sm font-semibold text-white">View company <ChevronRight className="h-4 w-4" /></span>
       </div>
-    </MotionLink>
+    </Link>
   );
 }
 
-function ProCard({ p, i, roles, reduce }: { p: ExpeditionProRow; i: number; roles: ExpeditionRole[]; reduce: boolean }) {
+function ProCard({ p, roles }: { p: ExpeditionProRow; roles: ExpeditionRole[] }) {
   return (
-    <MotionLink href={`/expeditions/pro/${p.id}`}
-      initial={{ opacity: 0, y: reduce ? 0 : 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: reduce ? 0 : 0.4, delay: reduce ? 0 : i * 0.04 }}
+    <Link href={`/expeditions/pro/${p.id}`}
       className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2">
       <div className="relative h-36 overflow-hidden bg-forest-50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -168,6 +161,6 @@ function ProCard({ p, i, roles, reduce }: { p: ExpeditionProRow; i: number; role
         </div>
         <span className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-forest px-3 py-2 text-sm font-semibold text-white">View profile <ChevronRight className="h-4 w-4" /></span>
       </div>
-    </MotionLink>
+    </Link>
   );
 }

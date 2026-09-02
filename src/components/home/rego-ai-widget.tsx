@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 
 import { RegoAiChat } from "@/components/home/rego-ai-chat";
@@ -52,21 +51,18 @@ export function RegoAiWidget() {
             Ask Rego AI
           </span>
           <span className="relative grid h-12 w-12 place-items-center rounded-full bg-gradient-forest text-gold shadow-lg ring-2 ring-white/40 sm:h-14 sm:w-14">
-            <motion.span
-              aria-hidden
-              className="absolute inset-0 rounded-full bg-gold/40"
-              animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.5, ease: "easeOut" }}
-            />
+            {/* animate-ping: same pulse, no library. */}
+            <span aria-hidden className="absolute inset-0 rounded-full bg-gold/40 motion-safe:animate-ping" />
             <Sparkles className="relative h-6 w-6 sm:h-7 sm:w-7" />
           </span>
         </button>
       </div>
 
       {/* Popup */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
+      {/* Was AnimatePresence — now a CSS fade, for the same reason as the
+          help line: one exit animation is not worth 111 KB on every page. */}
+      {open && (
+          <div
             /* Anchored to the VISIBLE viewport, so the keyboard can't scroll
                the dialog out of view on iOS. */
             style={
@@ -74,22 +70,15 @@ export function RegoAiWidget() {
                 ? { top: vp.offsetTop, height: vp.height, bottom: "auto" }
                 : undefined
             }
-            className="fixed inset-x-0 top-0 z-[120] h-[100dvh] flex items-stretch justify-center overflow-hidden bg-forest-900/60 backdrop-blur-sm sm:items-center sm:p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            className="fixed inset-x-0 top-0 z-[120] h-[100dvh] flex items-stretch justify-center overflow-hidden bg-forest-900/60 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 sm:items-center sm:p-4"
             onClick={() => setOpen(false)}
             role="dialog"
             aria-modal="true"
             aria-labelledby="rego-ai-title"
           >
-            <motion.div
+            <div
               onClick={(e) => e.stopPropagation()}
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              transition={{ type: "spring", damping: 26, stiffness: 280 }}
-              className="flex h-full w-full max-w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-3xl"
+              className="motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200 flex h-full w-full max-w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-3xl"
             >
               {/* header */}
               <div className="flex shrink-0 items-center justify-between gap-3 bg-gradient-forest px-5 py-4 text-white">
@@ -118,10 +107,9 @@ export function RegoAiWidget() {
                   <RegoAiChat onNavigate={() => setOpen(false)} />
                 </Suspense>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+      )}
     </>
   );
 }

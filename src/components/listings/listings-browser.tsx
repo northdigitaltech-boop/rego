@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
 import { SlidersHorizontal, X, Search } from "lucide-react";
 
 import { ServiceCard } from "@/components/home/service-cards";
@@ -37,7 +36,6 @@ export function ListingsBrowser({
   hideHeader = false,
 }: ListingsBrowserProps = {}) {
   const params = useSearchParams();
-  const reduce = useReducedMotion();
   const queryCategory = (params.get("category") as CategorySlug | null) ?? undefined;
   const queryLocation = params.get("location") ?? undefined;
 
@@ -290,8 +288,7 @@ export function ListingsBrowser({
             )}
 
             {results.length > 0 ? (
-              <motion.div
-                layout={!reduce}
+              <div
                 className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3"
               >
                 {results.map((listing, i) => (
@@ -300,7 +297,7 @@ export function ListingsBrowser({
                   // are used on the homepage where each section is one service.)
                   <ServiceCard key={listing.id} listing={listing} index={i} variant="default" />
                 ))}
-              </motion.div>
+              </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-border bg-muted/40 py-20 text-center">
                 <p className="font-display text-lg font-semibold text-forest">
@@ -325,10 +322,7 @@ export function ListingsBrowser({
             className="absolute inset-0 bg-forest-900/50"
             onClick={() => setFiltersOpen(false)}
           />
-          <motion.div
-            initial={reduce ? { x: 0 } : { x: "-100%" }}
-            animate={{ x: 0 }}
-            transition={reduce ? { duration: 0 } : { type: "tween", duration: 0.3 }}
+          <div
             className="absolute inset-y-0 left-0 w-[85%] max-w-sm overflow-y-auto bg-white p-6"
           >
             <div className="mb-5 flex items-center justify-between">
@@ -349,7 +343,7 @@ export function ListingsBrowser({
             >
               Show {results.length} results
             </Button>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

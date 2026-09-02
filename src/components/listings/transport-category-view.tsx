@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Star,
   Heart,
@@ -176,8 +175,8 @@ export function TransportCategoryView({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {shown.map((item, i) => (
-              <TransportCard key={item.id} item={item} index={i} />
+            {shown.map((item) => (
+              <TransportCard key={item.id} item={item} />
             ))}
           </div>
         )}
@@ -186,7 +185,7 @@ export function TransportCategoryView({
   );
 }
 
-function TransportCard({ item, index }: { item: TransportCardItem; index: number }) {
+function TransportCard({ item }: { item: TransportCardItem; }) {
   const { isWished, toggle } = useWishlist();
   const wished = isWished(item.id);
   const isRental = item.listingType === "rental";
@@ -207,13 +206,8 @@ function TransportCard({ item, index }: { item: TransportCardItem; index: number
   };
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.07 }}
-      whileHover={{ y: -8 }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+    <article
+      className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
       <Link href={`/listings/${item.id}`} className="absolute inset-0 z-10" aria-label={item.title} />
       <div className="relative h-44 overflow-hidden">
@@ -316,6 +310,6 @@ function TransportCard({ item, index }: { item: TransportCardItem; index: number
           </Link>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

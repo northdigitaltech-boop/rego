@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,11 +28,7 @@ export function PartnerCta() {
           <div className="absolute inset-0 bg-gradient-to-r from-forest via-forest/90 to-forest/60" />
 
           <div className="relative grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-2 lg:p-16">
-            <motion.div
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+            <div
             >
               <span className="inline-block rounded-full bg-gold/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-gold">
                 Become a partner
@@ -57,13 +52,9 @@ export function PartnerCta() {
                   How it works
                 </Button>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.ul
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+            <ul
               className="grid gap-3"
             >
               {perks.map((perk) => (
@@ -77,7 +68,7 @@ export function PartnerCta() {
                   <span className="font-medium">{perk}</span>
                 </li>
               ))}
-            </motion.ul>
+            </ul>
           </div>
         </div>
       </div>

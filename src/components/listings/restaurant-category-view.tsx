@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Star,
   Heart,
@@ -138,7 +137,7 @@ export function RestaurantCategoryView({
           <div className="rounded-3xl border border-dashed border-border bg-muted/40 py-20 text-center text-muted-foreground">No restaurants match your filters.</div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {shown.map((r, i) => <RestaurantCard key={r.id} r={r} index={i} />)}
+            {shown.map((r) => <RestaurantCard key={r.id} r={r} />)}
           </div>
         )}
       </div>
@@ -161,7 +160,7 @@ function Select({ label, value, onChange, options }: { label: string; value: str
   );
 }
 
-function RestaurantCard({ r, index }: { r: RestaurantRow; index: number }) {
+function RestaurantCard({ r }: { r: RestaurantRow; }) {
   const { isWished, toggle } = useWishlist();
   const wished = isWished(r.id);
   const open = isOpenNow(r.opening_hours, r.closing_hours);
@@ -182,13 +181,8 @@ function RestaurantCard({ r, index }: { r: RestaurantRow; index: number }) {
   };
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.06 }}
-      whileHover={{ y: -8 }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
+    <article
+      className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
       <Link href={`/listings/${r.id}`} className="absolute inset-0 z-10" aria-label={r.name} />
       <div className="relative h-44 overflow-hidden">
@@ -226,6 +220,6 @@ function RestaurantCard({ r, index }: { r: RestaurantRow; index: number }) {
           <Link href={`/listings/${r.id}#book`} className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5">Book Table</Link>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

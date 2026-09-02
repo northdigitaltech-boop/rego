@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Star,
   MapPin,
@@ -191,11 +190,8 @@ export function ListingDetail({ listing }: { listing: Listing }) {
 
         {/* Gallery */}
         <div className="mt-6 grid gap-3 lg:grid-cols-[2fr_1fr]">
-          <motion.div
+          <div
             key={activeImg}
-            initial={{ opacity: 0.4 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
             className="relative h-72 overflow-hidden rounded-2xl shadow-premium sm:h-[420px]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -204,7 +200,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               alt={listing.title}
               className="h-full w-full object-cover"
             />
-          </motion.div>
+          </div>
           <div className="grid grid-cols-4 gap-3 lg:grid-cols-1">
             {gallery.map((src, i) => (
               <button
@@ -363,8 +359,8 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               Similar listings
             </h2>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {similar.map((l, i) => (
-                <ListingCard key={l.id} listing={l} index={i} />
+              {similar.map((l) => (
+                <ListingCard key={l.id} listing={l} />
               ))}
             </div>
           </div>

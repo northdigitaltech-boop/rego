@@ -10,7 +10,6 @@ import {
   isTurnstileEnabled,
   type TurnstileHandle,
 } from "@/components/auth/turnstile";
-import { motion } from "framer-motion";
 import {
   Mail,
   Lock,
@@ -336,10 +335,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       {/* Form panel */}
       <div className="flex items-start justify-center bg-background px-6 pb-10 pt-0 lg:items-center lg:px-6 lg:py-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+        <div
           className="w-full max-w-md"
         >
           {/* Mobile: full-width green header — back link (white) + logo */}
@@ -861,7 +857,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </p>
             </>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -167,8 +167,8 @@ function Grid({
         <p className="mt-3 rounded-2xl border border-dashed border-border bg-muted/40 py-8 text-center text-sm text-muted-foreground">{empty}</p>
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((l, i) => (
-            <ListingCard key={l.id} listing={l} index={i} />
+          {items.map((l) => (
+            <ListingCard key={l.id} listing={l} />
           ))}
         </div>
       )}

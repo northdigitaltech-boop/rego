@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Star, Heart, Clock, Users, CalendarDays, Car, Fuel, Gauge, Luggage,
 } from "lucide-react";
@@ -26,25 +25,18 @@ const FACT_ICONS: Record<ListingFact["icon"], typeof Clock> = {
 
 export function ListingCard({
   listing,
-  index = 0,
   hidePrice = false,
   className,
 }: {
   listing: Listing;
-  index?: number;
   hidePrice?: boolean;
   className?: string;
 }) {
   const { isWished, toggle } = useWishlist();
   const wished = isWished(listing.id);
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.07 }}
-      whileHover={{ y: -8 }}
-      className={cn(
+    <article
+      className={cn("motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2", 
         "group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg",
         className
       )}
@@ -186,6 +178,6 @@ export function ListingCard({
           </Link>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

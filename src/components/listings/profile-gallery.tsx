@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Images, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { photo } from "@/lib/utils";
@@ -98,9 +97,7 @@ export function ProfileGallery({ images, title }: { images: string[]; title: str
         )}
       </div>
 
-      <AnimatePresence>
         {open && <Lightbox images={imgs} index={idx} setIndex={setIdx} onClose={() => setOpen(false)} title={title} />}
-      </AnimatePresence>
     </>
   );
 }
@@ -167,9 +164,7 @@ export function GalleryGrid({
           );
         })}
       </div>
-      <AnimatePresence>
         {open && <Lightbox images={imgs} index={idx} setIndex={setIdx} onClose={() => setOpen(false)} title={title} />}
-      </AnimatePresence>
     </>
   );
 }
@@ -187,7 +182,6 @@ function Lightbox({
   onClose: () => void;
   title: string;
 }) {
-  const reduce = useReducedMotion();
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const go = React.useCallback(
     (d: number) => setIndex((index + d + images.length) % images.length),
@@ -210,15 +204,11 @@ function Lightbox({
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-forest-900";
 
   return (
-    <motion.div
+    <div
       role="dialog"
       aria-modal="true"
       aria-label={`${title} photo gallery`}
       className="fixed inset-0 z-[130] flex flex-col bg-forest-900/90 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: reduce ? 0 : 0.2 }}
     >
       <div className="flex items-center justify-between px-4 py-3 text-white">
         <span className="text-sm font-medium">
@@ -257,6 +247,6 @@ function Lightbox({
           </button>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }

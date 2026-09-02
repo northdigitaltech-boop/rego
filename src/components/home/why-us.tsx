@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import { ShieldCheck, BadgePercent, Users, Lock, Headset, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ const benefits = [
 ];
 
 export function WhyUs() {
-  const reduce = useReducedMotion();
   return (
     <section id="why" className="bg-forest-50/60 py-12 sm:py-16">
       <div className="container-px">
@@ -45,15 +43,11 @@ export function WhyUs() {
         <div className="grid items-stretch gap-8 lg:grid-cols-2">
           {/* Benefits */}
           <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-            {benefits.map((b, i) => {
+            {benefits.map((b) => {
               const Icon = b.icon;
               return (
-                <motion.div
+                <div
                   key={b.title}
-                  initial={{ opacity: 0, y: reduce ? 0 : 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: reduce ? 0 : 0.5, delay: reduce ? 0 : i * 0.08 }}
                   className="flex items-start gap-3"
                 >
                   <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-forest text-gold shadow-premium">
@@ -67,17 +61,13 @@ export function WhyUs() {
                       {b.description}
                     </p>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
 
           {/* Plan trip card */}
-          <motion.div
-            initial={{ opacity: 0, x: reduce ? 0 : 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: reduce ? 0 : 0.6 }}
+          <div
             className="relative overflow-hidden rounded-3xl shadow-premium-lg ring-1 ring-black/5"
           >
             <div
@@ -109,7 +99,7 @@ export function WhyUs() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

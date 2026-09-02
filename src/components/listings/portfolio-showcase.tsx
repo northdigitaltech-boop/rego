@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
   MapPin,
@@ -96,8 +95,8 @@ function PortfolioCard({ p, onOpen }: { p: MediaPortfolioRow; onOpen: () => void
   const isVideo = p.type === "video" || p.type === "reel" || !!p.video_url;
   const thumb = photo(p.url || (p.gallery && p.gallery[0]) || "");
   return (
-    <motion.button
-      layout
+    <button
+
       onClick={onOpen}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-left shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg"
     >
@@ -150,7 +149,7 @@ function PortfolioCard({ p, onOpen }: { p: MediaPortfolioRow; onOpen: () => void
           View project <ArrowRight className="h-4 w-4" />
         </span>
       </div>
-    </motion.button>
+    </button>
   );
 }
 
@@ -185,10 +184,7 @@ function ProjectViewer({
 
   return (
     <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm sm:p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 24, scale: 0.98 }}
+      <div
         className="relative my-auto w-full max-w-3xl overflow-hidden rounded-3xl bg-card shadow-premium-lg"
       >
         <button
@@ -297,7 +293,7 @@ function ProjectViewer({
             </Button>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -375,18 +371,19 @@ export function PortfolioShowcase({
       </div>
 
       {/* grid */}
-      <motion.div layout className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <AnimatePresence mode="popLayout">
-          {filtered.map((p) => (
-            <PortfolioCard key={p.id} p={p} onOpen={() => setOpen(p)} />
-          ))}
-        </AnimatePresence>
-      </motion.div>
+      {/* Was AnimatePresence mode="popLayout", which animated cards
+          reflowing when the filter changed. React's keyed reconciliation
+          already keeps the right card in the right place; the animation was
+          the only thing lost, and it was not worth a 111 KB import. */}
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {filtered.map((p) => (
+          <PortfolioCard key={p.id} p={p} onOpen={() => setOpen(p)} />
+        ))}
+      </div>
       {filtered.length === 0 && (
         <p className="mt-4 text-sm text-muted-foreground">No projects in this category yet.</p>
       )}
 
-      <AnimatePresence>
         {open && (
           <ProjectViewer
             p={open}
@@ -395,7 +392,6 @@ export function PortfolioShowcase({
             onRequestSimilar={onRequestSimilar}
           />
         )}
-      </AnimatePresence>
     </section>
   );
 }

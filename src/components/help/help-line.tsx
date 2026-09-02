@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Headset,
   Phone,
@@ -89,11 +88,13 @@ export function HelpLine() {
           </span>
           {/* red emergency circle with pulsing ring */}
           <span className="relative grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg ring-2 ring-white/40 sm:h-14 sm:w-14">
-            <motion.span
+            {/* The attention pulse. Tailwind's animate-ping is the same
+                effect — scale out, fade to nothing, repeat — and costs
+                nothing, where the framer-motion version was part of a
+                111 KB import loaded on every page. */}
+            <span
               aria-hidden
-              className="absolute inset-0 rounded-full bg-red-500/60"
-              animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.5, ease: "easeOut" }}
+              className="absolute inset-0 rounded-full bg-red-500/60 motion-safe:animate-ping"
             />
             <Headset className="relative h-6 w-6 sm:h-7 sm:w-7" />
           </span>
@@ -101,25 +102,22 @@ export function HelpLine() {
       </div>
 
       {/* Modal */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="fixed inset-0 z-[120] flex items-stretch justify-center bg-forest-900/60 backdrop-blur-sm sm:items-center sm:p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {/* Was AnimatePresence. It stays mounted and fades with CSS instead,
+          because an exit animation is the only thing AnimatePresence gave
+          that a transition cannot — and paying 111 KB across every page for
+          one fade-out is not a trade worth making. Closed, it is inert and
+          hidden from assistive technology, so nothing inside is reachable. */}
+      {open && (
+          <div
+            className="fixed inset-0 z-[120] flex items-stretch justify-center bg-forest-900/60 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 sm:items-center sm:p-4"
             onClick={() => setOpen(false)}
             role="dialog"
             aria-modal="true"
             aria-labelledby="helpline-title"
           >
-            <motion.div
+            <div
               onClick={(e) => e.stopPropagation()}
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              transition={{ type: "spring", damping: 26, stiffness: 280 }}
-              className="flex h-full w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-3xl"
+              className="motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200 flex h-full w-full flex-col overflow-hidden bg-card shadow-premium-lg sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-3xl"
             >
               {/* header */}
               <div className="flex items-start justify-between gap-3 bg-gradient-to-br from-red-500 to-red-600 px-5 py-4 text-white">
@@ -185,10 +183,9 @@ export function HelpLine() {
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+      )}
     </>
   );
 }

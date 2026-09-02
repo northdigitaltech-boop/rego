@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Star, ChevronRight } from "lucide-react";
 
 import { getFeaturedReviews, type ReviewRow } from "@/lib/reviews";
@@ -14,7 +13,6 @@ import { photo } from "@/lib/utils";
  * itself rather than showing invented testimonials.
  */
 export function Testimonials() {
-  const reduce = useReducedMotion();
   const [reviews, setReviews] = React.useState<ReviewRow[] | null>(null);
 
   React.useEffect(() => {
@@ -46,16 +44,12 @@ export function Testimonials() {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {reviews.map((r, i) => {
+          {reviews.map((r) => {
             const name = r.customer_name?.trim() || "Rego traveller";
             const stars = Math.max(1, Math.min(5, Math.round(Number(r.rating) || 5)));
             return (
-              <motion.figure
+              <figure
                 key={r.id}
-                initial={{ opacity: 0, y: reduce ? 0 : 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: reduce ? 0 : 0.5, delay: reduce ? 0 : i * 0.08 }}
                 className="flex flex-col rounded-3xl border border-border/70 bg-card p-6 shadow-premium transition-shadow hover:shadow-premium-lg"
               >
                 <div className="flex items-center gap-1">
@@ -86,7 +80,7 @@ export function Testimonials() {
                     <p className="text-xs text-muted-foreground">Verified traveller</p>
                   </div>
                 </figcaption>
-              </motion.figure>
+              </figure>
             );
           })}
         </div>
