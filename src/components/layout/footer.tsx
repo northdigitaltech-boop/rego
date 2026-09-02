@@ -35,7 +35,6 @@ const quickLinks = [
 const topDestinations = [
   { label: "Skardu", href: "/destinations/skardu" },
   { label: "Hunza Valley", href: "/destinations/hunza" },
-  { label: "Naran Valley", href: "/destinations/naran" },
   { label: "Deosai Plains", href: "/destinations/deosai" },
   { label: "Fairy Meadows", href: "/destinations/fairy-meadows" },
 ];
