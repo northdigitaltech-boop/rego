@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -63,6 +64,10 @@ export function MediaRegisterWizard({
     fields: { registrationProof: false },
   });
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("photographers");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -72,6 +77,7 @@ export function MediaRegisterWizard({
     setError("");
 
     const { data: created, error: pErr } = await createMediaProvider({
+      ...area.payload,
       name: name.trim(),
       service_type: serviceType,
       phone: phone.trim() || null,
@@ -140,6 +146,7 @@ export function MediaRegisterWizard({
           <L label="Where are you based?">
             <PlaceInput value={city} onChange={setCity} placeholder="e.g. Skardu" />
           </L>
+          {area.picker}
           <L label="Languages you speak">
             <input value={languages} onChange={(e) => setLanguages(e.target.value)} className="auth-input" placeholder="English, Urdu, Balti" />
           </L>

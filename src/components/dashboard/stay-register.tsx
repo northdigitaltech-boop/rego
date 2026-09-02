@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -94,6 +95,11 @@ export function StayRegisterWizard({
 }) {
   const c = COPY[kind];
 
+  /* Structured area, alongside the free-text town above. The service slug
+     follows `kind`: hotels, homestays and hostels are three categories in
+     service_categories, and an admin may open an area to one and not another. */
+  const area = useAreaSelection(`${kind}s`);
+
   const [title, setTitle] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [address, setAddress] = React.useState("");
@@ -122,6 +128,7 @@ export function StayRegisterWizard({
        starting price, because that is the number the public cards print
        under the name — leaving it at zero shows "PKR 0 / night". */
     const base = {
+      ...area.payload,
       title: title.trim(),
       location: location.trim(),
       address: address.trim() || null,
@@ -239,6 +246,7 @@ export function StayRegisterWizard({
               placeholder="e.g. Skardu"
             />
           </L>
+          {area.picker}
           <L label="Address">
             <input
               value={address}

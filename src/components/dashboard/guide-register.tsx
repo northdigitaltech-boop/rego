@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -59,6 +60,10 @@ export function GuideRegisterWizard({
     fields: { registrationProof: false },
   });
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("guides");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -68,6 +73,7 @@ export function GuideRegisterWizard({
     setError("");
 
     const { data: created, error: gErr } = await createGuide({
+      ...area.payload,
       name: name.trim(),
       phone: phone.trim() || null,
       whatsapp: whatsapp.trim() || null,
@@ -134,6 +140,7 @@ export function GuideRegisterWizard({
           <L label="Where are you based?">
             <PlaceInput value={location} onChange={setLocation} placeholder="e.g. Skardu" />
           </L>
+          {area.picker}
           <L label="Languages you speak">
             <input
               value={languages}

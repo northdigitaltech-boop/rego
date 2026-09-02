@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput, PlaceListInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -59,6 +60,10 @@ export function CompanyRegisterWizard({
 
   const ver = useVerificationStep({ noun: "a company they found online" });
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("travel-companies");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -68,6 +73,7 @@ export function CompanyRegisterWizard({
     setError("");
 
     const { data: created, error: cErr } = await createCompany({
+      ...area.payload,
       name: name.trim(),
       owner_name: ownerName.trim() || null,
       phone: phone.trim() || null,
@@ -90,6 +96,7 @@ export function CompanyRegisterWizard({
     }
 
     const { error: pErr } = await createPackage({
+      ...area.payload,
       company_id: (created as { id: string }).id,
       /* Same as the vehicle case: the package carries the company name as well
          as the id, because that copy is what the public card prints as
@@ -138,6 +145,7 @@ export function CompanyRegisterWizard({
           <L label="Office location">
             <PlaceInput value={office} onChange={setOffice} placeholder="e.g. Gilgit" />
           </L>
+          {area.picker}
           <L label="Areas you operate in">
             <PlaceListInput value={areas} onChange={setAreas} />
           </L>

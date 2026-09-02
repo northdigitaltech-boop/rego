@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -60,6 +61,10 @@ export function RestaurantRegisterWizard({
     fields: { licenceNumber: false, registrationProof: false },
   });
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("restaurants");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -69,6 +74,7 @@ export function RestaurantRegisterWizard({
     setError("");
 
     const { data: created, error: rErr } = await createRestaurant({
+      ...area.payload,
       name: name.trim(),
       owner_name: ownerName.trim() || null,
       phone: phone.trim() || null,
@@ -133,6 +139,7 @@ export function RestaurantRegisterWizard({
           <L label="Town or city">
             <PlaceInput value={city} onChange={setCity} placeholder="e.g. Skardu" />
           </L>
+          {area.picker}
           <L label="Address">
             <input value={address} onChange={(e) => setAddress(e.target.value)} className="auth-input" placeholder="Street, landmark" />
           </L>

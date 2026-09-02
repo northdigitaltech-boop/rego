@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -52,6 +53,10 @@ export function CoworkingRegisterWizard({
   const [hotDesk, setHotDesk] = React.useState("");
   const [privateOffice, setPrivateOffice] = React.useState("");
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("coworking");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -61,6 +66,7 @@ export function CoworkingRegisterWizard({
     setError("");
 
     const { error: e } = await createCoworking({
+      ...area.payload,
       name: name.trim(),
       owner_name: ownerName.trim() || null,
       phone: phone.trim() || null,
@@ -112,6 +118,7 @@ export function CoworkingRegisterWizard({
           <L label="Town or city">
             <PlaceInput value={city} onChange={setCity} placeholder="e.g. Gilgit" />
           </L>
+          {area.picker}
           <L label="Address">
             <input value={address} onChange={(e) => setAddress(e.target.value)} className="auth-input" placeholder="Street, landmark, floor" />
           </L>

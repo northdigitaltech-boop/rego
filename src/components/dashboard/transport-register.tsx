@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -74,6 +75,10 @@ export function TransportRegisterWizard({
   const [licenseDoc, setLicenseDoc] = React.useState("");
   const [ownershipDoc, setOwnershipDoc] = React.useState("");
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("transport");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -92,6 +97,7 @@ export function TransportRegisterWizard({
 
     /* The provider first, because the vehicle needs its id. */
     const { data: created, error: pErr } = await createProvider({
+      ...area.payload,
       name: name.trim(),
       phone: phone.trim() || null,
       whatsapp: whatsapp.trim() || null,
@@ -115,6 +121,7 @@ export function TransportRegisterWizard({
     }
 
     const { error: sErr } = await createService({
+      ...area.payload,
       provider_id: (created as { id: string }).id,
       /* The business name is stored on the vehicle too, not just linked by id.
          That denormalisation is what the public card reads to print "by …",
@@ -196,6 +203,7 @@ export function TransportRegisterWizard({
               placeholder="e.g. Gilgit"
             />
           </L>
+          {area.picker}
           <L label="Logo or photo of your business">
             <ImageUpload value={logo} onChange={setLogo} />
           </L>

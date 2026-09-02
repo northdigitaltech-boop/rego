@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -65,6 +66,10 @@ export function ActivityRegisterWizard({
 
   const isIndoor = (INDOOR_SLUGS as readonly string[]).includes(category);
 
+  /* Structured area, alongside the free-text place above. Renders
+     nothing until the market module is switched on. */
+  const area = useAreaSelection("activities");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -74,6 +79,7 @@ export function ActivityRegisterWizard({
     setError("");
 
     const { error: e } = await createActivity({
+      ...area.payload,
       title: title.trim(),
       category,
       activity_kind: isIndoor ? "indoor" : "outdoor",
@@ -142,6 +148,7 @@ export function ActivityRegisterWizard({
           <L label="Where does it happen?">
             <PlaceInput value={location} onChange={setLocation} placeholder="e.g. Skardu" />
           </L>
+          {area.picker}
           <L label="Where do people meet you?">
             <input
               value={meetingPoint}

@@ -5,6 +5,7 @@ import { Building2, UserRound } from "lucide-react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -62,6 +63,18 @@ export function ExpeditionRegisterWizard({
   const [role, setRole] = React.useState("");
   const [homeVillage, setHomeVillage] = React.useState("");
 
+  /* Structured area, alongside the free-text city above.
+
+     COMPANIES ONLY, AND THAT IS DELIBERATE.
+     phase72 added location_id to a list of listing tables, and that list says
+     'expedition_pros'. The real table is expedition_professionals, so the
+     to_regclass guard skipped it silently and the column was never created.
+     phase95 adds it. Until that has run in the database, sending location_id
+     for an individual would fail the insert and stop a porter registering at
+     all — so the picker is shown to companies only, and the individual branch
+     is wired once phase95 is confirmed. */
+  const area = useAreaSelection("expeditions");
+
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const [done, setDone] = React.useState(false);
@@ -72,6 +85,7 @@ export function ExpeditionRegisterWizard({
 
     if (kind === "company") {
       const { error: e } = await createCompany({
+        ...area.payload,
         owner_email: user.email,
         name: name.trim(),
         city: city.trim() || null,
@@ -166,6 +180,7 @@ export function ExpeditionRegisterWizard({
               <L label="Office city">
                 <PlaceInput value={city} onChange={setCity} placeholder="e.g. Skardu" />
               </L>
+              {area.picker}
               <L label="Office address">
                 <input value={address} onChange={(e) => setAddress(e.target.value)} className="auth-input" />
               </L>
