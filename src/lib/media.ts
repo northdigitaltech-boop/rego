@@ -252,6 +252,40 @@ export async function getPortfolioByProvider(
   return (data as MediaPortfolioRow[]) ?? [];
 }
 
+/**
+ * The same read for several providers at once.
+ *
+ * The homepage shows the top four media creators with a preview of each
+ * one's work. Calling getPortfolioByProvider in a loop meant four separate
+ * requests where one `in (...)` does the job — four round trips to Supabase
+ * before that section can render, on a connection that may be a phone on
+ * mobile data in Gilgit.
+ *
+ * Returns a map keyed by provider_id so the caller keeps the grouping the
+ * per-provider version gave it for free. Providers with nothing in their
+ * portfolio are simply absent; the caller should default to [].
+ */
+export async function getPortfolioForProviders(
+  providerIds: string[]
+): Promise<Record<string, MediaPortfolioRow[]>> {
+  const ids = providerIds.filter(isUuid);
+  if (!isSupabaseConfigured || ids.length === 0) return {};
+  const { data } = await supabase
+    .from("media_portfolio")
+    .select("*")
+    .in("provider_id", ids)
+    .order("created_at", { ascending: false });
+
+  const byProvider: Record<string, MediaPortfolioRow[]> = {};
+  for (const row of (data as MediaPortfolioRow[]) ?? []) {
+    /* provider_id is nullable in the schema; a row without one belongs to
+       nobody and cannot be shown under a creator. */
+    if (!row.provider_id) continue;
+    (byProvider[row.provider_id] ??= []).push(row);
+  }
+  return byProvider;
+}
+
 export type MediaPortfolioInput = Partial<
   Omit<MediaPortfolioRow, "id" | "created_at">
 > & { url: string; provider_id: string };

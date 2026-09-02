@@ -21,6 +21,37 @@ interface RecItem {
 
 const SEEN_KEY = "rego_reco_seen";
 
+/* ------------------------------------------------------------------
+ * One request, however many bells.
+ *
+ * The navbar renders this component twice — once for the desktop bar
+ * and once inside the mobile bottom navigation. Only one of the two is
+ * ever visible, but both mount, so a plain per-instance fetch meant
+ * /api/recommendations went out twice on every single page load. The
+ * response is identical for everyone, so the second call bought
+ * nothing and cost a round trip.
+ *
+ * The promise is kept for the life of the page, so a later mount —
+ * a route change, say — reuses the answer instead of asking again.
+ * ------------------------------------------------------------------ */
+let recsPromise: Promise<RecItem[]> | null = null;
+
+function loadRecommendations(): Promise<RecItem[]> {
+  recsPromise ??= (async () => {
+    try {
+      const res = await fetch("/api/recommendations");
+      const data = await res.json();
+      return data?.ok ? ((data.items ?? []) as RecItem[]) : [];
+    } catch {
+      /* Cleared so a later mount can retry rather than inheriting a
+         failure caused by one bad moment on the network. */
+      recsPromise = null;
+      return [];
+    }
+  })();
+  return recsPromise;
+}
+
 /** Read the set of recommendation IDs the user has already seen. */
 function readSeen(): Set<string> {
   try {
@@ -54,22 +85,15 @@ export function RecommendationsBell({
   const [items, setItems] = React.useState<RecItem[]>([]);
   const [unseen, setUnseen] = React.useState(0);
 
-  // Fetch once on mount (cached server-side for everyone).
+  // Shared across every mounted bell — see loadRecommendations above.
   React.useEffect(() => {
     let active = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/recommendations");
-        const data = await res.json();
-        if (!active || !data?.ok) return;
-        const list: RecItem[] = data.items ?? [];
-        setItems(list);
-        const seen = readSeen();
-        setUnseen(list.filter((i) => !seen.has(i.id)).length);
-      } catch {
-        /* ignore — bell just stays empty */
-      }
-    })();
+    loadRecommendations().then((list) => {
+      if (!active || list.length === 0) return;
+      setItems(list);
+      const seen = readSeen();
+      setUnseen(list.filter((i) => !seen.has(i.id)).length);
+    });
     return () => {
       active = false;
     };

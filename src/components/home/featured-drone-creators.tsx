@@ -6,7 +6,7 @@ import { Star, MapPin, Award, Layers, ChevronRight, Plane } from "lucide-react";
 
 import {
   getApprovedMediaProviders,
-  getPortfolioByProvider,
+  getPortfolioForProviders,
   type MediaProviderRow,
   type MediaPortfolioRow,
 } from "@/lib/media";
@@ -34,12 +34,12 @@ export function FeaturedDroneCreators() {
     (async () => {
       const providers = await getApprovedMediaProviders();
       const top = [...providers].sort((a, b) => score(b) - score(a)).slice(0, 4);
-      const withPortfolio = await Promise.all(
-        top.map(async (provider) => ({
-          provider,
-          portfolio: await getPortfolioByProvider(provider.id),
-        }))
-      );
+      /* One request for all four portfolios, not one each. */
+      const byProvider = await getPortfolioForProviders(top.map((p) => p.id));
+      const withPortfolio = top.map((provider) => ({
+        provider,
+        portfolio: byProvider[provider.id] ?? [],
+      }));
       if (alive) setCreators(withPortfolio.filter((c) => c.portfolio.length > 0 || c.provider.featured));
     })();
     return () => {

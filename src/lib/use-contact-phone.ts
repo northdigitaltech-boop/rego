@@ -30,6 +30,13 @@ import { siteConfig } from "@/lib/site";
 /** Cached per page load — the navbar mounts on every route. */
 let cached: { dial: string; display: string } | null = null;
 
+/* The cache above is filled when the request RESOLVES, which is too late
+   to stop a second one: the navbar and the footer both mount in the same
+   tick, both see `cached` still null, and both ask Supabase for the same
+   row. Holding the in-flight promise — not just its answer — makes the
+   second caller wait on the first request instead of starting another. */
+let inFlight: Promise<void> | null = null;
+
 function spaced(raw: string): string {
   const digits = raw.replace(/[^\d+]/g, "");
   // +923161290604 → +92 316 1290604
@@ -48,16 +55,23 @@ export function useContactPhone(): { dial: string; display: string } {
   React.useEffect(() => {
     if (cached) return;
     let alive = true;
-    getContactContent()
+
+    inFlight ??= getContactContent()
       .then((c) => {
-        if (!alive || !c.phone) return;
-        const next = { dial: c.phone.replace(/\s+/g, ""), display: spaced(c.phone) };
-        cached = next;
-        setPhone(next);
+        if (!c.phone) return;
+        cached = { dial: c.phone.replace(/\s+/g, ""), display: spaced(c.phone) };
       })
       /* A failed read keeps the siteConfig fallback. A helpline that
-         disappears is worse than one that is briefly out of date. */
-      .catch(() => {});
+         disappears is worse than one that is briefly out of date.
+         Clearing inFlight lets a later mount try again. */
+      .catch(() => {
+        inFlight = null;
+      });
+
+    inFlight.then(() => {
+      if (alive && cached) setPhone(cached);
+    });
+
     return () => {
       alive = false;
     };
