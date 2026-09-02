@@ -39,7 +39,12 @@ export function CoveragePicker({
   serviceSlug: string;
   /** Selected location ids. */
   value: string[];
-  onChange: (locationIds: string[]) => void;
+  /**
+   * Ids for the relational table, names for the existing free-text
+   * `service_areas` column. Both, because the text column is what every
+   * listing card renders today and dropping it would blank them all.
+   */
+  onChange: (locationIds: string[], names: string[]) => void;
   className?: string;
   label?: string;
   hint?: string;
@@ -72,7 +77,11 @@ export function CoveragePicker({
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    onChange([...next]);
+    const ids = [...next];
+    /* Names in the same order as ids, read from the loaded areas rather than
+       remembered separately — one source, so they cannot drift apart. */
+    const byId = new Map(areas.map((a) => [a.id, a.name]));
+    onChange(ids, ids.map((i) => byId.get(i) ?? "").filter(Boolean));
   };
 
   /* Only the levels worth ticking. Offering "Gilgit-Baltistan" alongside

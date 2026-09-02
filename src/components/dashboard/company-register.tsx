@@ -3,8 +3,10 @@
 import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
-import { PlaceInput, PlaceListInput } from "@/components/ui/place-input";
+import { PlaceInput } from "@/components/ui/place-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { CoveragePicker } from "@/components/dashboard/coverage-picker";
+import { setCoverage } from "@/lib/service-coverage";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -16,7 +18,6 @@ import {
   L,
   ReviewFooter,
   Summary,
-  toList,
 } from "@/components/dashboard/register-fields";
 import { type User } from "@/components/auth/auth-context";
 import { createCompany, createPackage } from "@/lib/tour-companies";
@@ -46,7 +47,11 @@ export function CompanyRegisterWizard({
   const [phone, setPhone] = React.useState("");
   const [whatsapp, setWhatsapp] = React.useState("");
   const [office, setOffice] = React.useState("");
-  const [areas, setAreas] = React.useState("");
+  /* Ids for service_locations, names for the existing service_areas text
+     column. Both are kept: the text column is what listing cards render
+     today, so dropping it would blank every one of them. */
+  const [coverageIds, setCoverageIds] = React.useState<string[]>([]);
+  const [coverageNames, setCoverageNames] = React.useState<string[]>([]);
   const [logo, setLogo] = React.useState("");
 
   const [title, setTitle] = React.useState("");
@@ -79,7 +84,7 @@ export function CompanyRegisterWizard({
       phone: phone.trim() || null,
       whatsapp: whatsapp.trim() || null,
       office_address: office.trim() || null,
-      service_areas: toList(areas),
+      service_areas: coverageNames,
       logo: logo.trim() || null,
       owner_cnic: ver.values.idNumber.trim() || null,
       owner_cnic_doc: ver.values.idPhoto.trim() || null,
@@ -94,6 +99,16 @@ export function CompanyRegisterWizard({
       setError(cErr?.message ?? "Could not save your company. Please try again.");
       return;
     }
+
+    /* After the company exists, because the rows point at its id. A failure
+       here must not lose the registration — the company and its package are
+       saved either way, and coverage is editable from the dashboard. */
+    const coverageProblem = await setCoverage(
+      "tour_companies",
+      (created as { id: string }).id,
+      coverageIds,
+      "service_area"
+    );
 
     const { error: pErr } = await createPackage({
       ...area.payload,
@@ -115,6 +130,11 @@ export function CompanyRegisterWizard({
       setError(
         "Your company was saved, but the package could not be added. You can add it from your dashboard in a moment."
       );
+    } else if (coverageProblem) {
+      /* Second in priority: a missing package is worse than missing service
+         areas, and only one message fits. Both are fixable from the
+         dashboard, and the registration itself succeeded either way. */
+      setError(coverageProblem);
     }
     setDone(true);
   };
@@ -125,7 +145,14 @@ export function CompanyRegisterWizard({
     {
       title: "Your company",
       hint: "How travellers will find and contact you.",
-      validate: () => (name.trim() ? null : "Please enter your company name."),
+      validate: () => {
+        if (!name.trim()) return "Please enter your company name.";
+        if (!office.trim()) return "Please enter your office address or a map link.";
+        /* Compulsory only when the picker is actually offering areas. A hard
+           requirement on a field that renders nothing would stop registration
+           entirely the first time the areas fail to load. */
+        return area.requireArea("area");
+      },
       content: (
         <>
           <L label="Company name" required>
@@ -142,13 +169,31 @@ export function CompanyRegisterWizard({
               <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="auth-input" placeholder="+92 3xx…" inputMode="tel" />
             </L>
           </div>
-          <L label="Office location">
-            <PlaceInput value={office} onChange={setOffice} placeholder="e.g. Gilgit" />
+          {/* Was a place-name autocomplete, which produced "Gilgit" and left a
+              traveller no way to actually reach the office. A full address or
+              a map link is what someone needs to turn up at the door. */}
+          <L label="Office address or map link" required>
+            <input
+              value={office}
+              onChange={(e) => setOffice(e.target.value)}
+              className="auth-input"
+              placeholder="Shop 4, Airport Road, Skardu — or a Google Maps link"
+            />
           </L>
           {area.picker}
-          <L label="Areas you operate in">
-            <PlaceListInput value={areas} onChange={setAreas} />
-          </L>
+          {/* Where they WORK, as opposed to the office above. This is what a
+              traveller filters by, so an Islamabad company running Skardu
+              tours ticks Skardu here. Renders nothing until areas exist. */}
+          <CoveragePicker
+            serviceSlug="travel-companies"
+            value={coverageIds}
+            onChange={(ids, names) => {
+              setCoverageIds(ids);
+              setCoverageNames(names);
+            }}
+            label="Areas you operate in"
+            className="mt-3"
+          />
           <L label="Company logo">
             <ImageUpload value={logo} onChange={setLogo} />
           </L>
@@ -198,7 +243,7 @@ export function CompanyRegisterWizard({
               ["Contact", ownerName],
               ["Phone", phone],
               ["Office", office],
-              ["Areas", areas],
+              ["Areas you operate in", coverageNames.join(", ")],
             ]}
           />
           <Summary

@@ -43,6 +43,15 @@ export interface AreaSelection {
   setLocationId: (id: string | null) => void;
   /** Clear after a successful save. */
   reset: () => void;
+  /** True once the picker has areas on screen. False if it rendered nothing. */
+  hasOptions: boolean;
+  /**
+   * For a wizard step's validate(). Returns a message only when the picker is
+   * actually showing options and nothing was chosen — so a form can make the
+   * area compulsory without that promise turning into "nobody can register"
+   * the first time the areas fail to load.
+   */
+  requireArea: (label?: string) => string | null;
 }
 
 export function useAreaSelection(
@@ -61,14 +70,20 @@ export function useAreaSelection(
     }
   }, [initial]);
 
+  const [optionCount, setOptionCount] = React.useState(0);
+  const handleReady = React.useCallback((n: number) => setOptionCount(n), []);
+
   const picker = (
     <AreaPicker
       serviceSlug={serviceSlug}
       value={locationId}
       onChange={setLocationId}
+      onReady={handleReady}
       className="mt-3"
     />
   );
+
+  const hasOptions = optionCount > 0;
 
   return {
     picker,
@@ -76,5 +91,10 @@ export function useAreaSelection(
     locationId,
     setLocationId,
     reset: () => setLocationId(null),
+    hasOptions,
+    requireArea: (label = "area") =>
+      hasOptions && !locationId
+        ? `Please choose the ${label} this is in.`
+        : null,
   };
 }

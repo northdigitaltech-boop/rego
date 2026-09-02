@@ -56,12 +56,20 @@ export function AreaPicker({
   value,
   onChange,
   className,
+  onReady,
 }: {
   /** Category slug, e.g. "hotels". Service-level rules use this. */
   serviceSlug: string;
   value: string | null;
   onChange: (locationId: string | null) => void;
   className?: string;
+  /**
+   * Fires with how many top-level options loaded, so a form can require the
+   * area ONLY when there is one to choose. Without this, "compulsory" would
+   * block registration entirely on any day the areas fail to load — and this
+   * component's whole design is that it disappears rather than breaks.
+   */
+  onReady?: (optionCount: number) => void;
 }) {
   const [areas, setAreas] = React.useState<AreaOption[]>([]);
   const [cfg, setCfg] = React.useState<EnforcementConfig | null>(null);
@@ -106,6 +114,17 @@ export function AreaPicker({
     seeded.current = value ?? null;
     setPath(selectionPath(areas, value ?? null));
   }, [areas, value]);
+
+  /* Reported after render decisions are made, so it reflects what the provider
+     can actually see rather than what was fetched. */
+  const readyRef = React.useRef(-1);
+  React.useEffect(() => {
+    if (loading) return;
+    const count = failed || !cfg ? 0 : buildLevels(areas, []).length === 0 ? 0 : areas.length;
+    if (readyRef.current === count) return;
+    readyRef.current = count;
+    onReady?.(count);
+  }, [loading, failed, cfg, areas, onReady]);
 
   const choose = (levelIndex: number, id: string | null) => {
     const next = pathAfterChange(path, levelIndex, id);
