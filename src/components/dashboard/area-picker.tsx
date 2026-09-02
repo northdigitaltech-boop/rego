@@ -13,6 +13,7 @@ import {
   buildLevels,
   deepestSelected,
   levelLabel,
+  orphanContext,
   pathAfterChange,
   selectionPath,
 } from "@/lib/area-tree";
@@ -151,11 +152,17 @@ export function AreaPicker({
                 ? `Choose a ${levelLabel(level.options).toLowerCase()}`
                 : `${levelLabel(level.options)} \u2014 not specified`}
             </option>
-            {level.options.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
+            {level.options.map((a) => {
+              /* An area whose parent is closed appears here rather than under
+                 that parent. Saying where it is stops "Kachura" being a
+                 guess. */
+              const where = orphanContext(a, areas);
+              return (
+                <option key={a.id} value={a.id}>
+                  {where ? `${a.name} \u2014 in ${where}` : a.name}
+                </option>
+              );
+            })}
           </select>
         ))}
       </div>

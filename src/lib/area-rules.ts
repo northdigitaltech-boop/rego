@@ -66,47 +66,74 @@ export async function getEnforcementConfig(): Promise<EnforcementConfig> {
  * that service, so a closed area never appears as an option in the first
  * place. Resolution happens in the database via resolve_location_flag, so
  * this list agrees with the trigger by construction rather than by luck.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY THIS IS ONE RPC AND NOT A SELECT INTERSECTED WITH AN RPC
+ *
+ * It used to read public.locations directly and keep the rows the RPC also
+ * returned. The RPC part was fine. The select was not: it runs as the
+ * signed-in user, and the read policy on locations is `is_public is true` on
+ * the row itself, with no inheritance — correct for a public boundary, and
+ * no migration has ever set that column on any location.
+ *
+ * So for anyone who is not an admin the select returned nothing, the
+ * intersection was empty, and the picker rendered nothing at all. It looked
+ * correct in testing because an admin session reads the whole tree. A bug
+ * that behaves for the person checking it is the expensive kind.
+ *
+ * areas_open_for_listings_tree (phase97) returns the same rows as the
+ * original function with the parent links attached, computed server-side
+ * where the permission question has already been answered properly.
+ * ---------------------------------------------------------------------------
  */
 export async function getSubmittableAreas(serviceSlug: string): Promise<AreaOption[]> {
   if (!isSupabaseConfigured) return [];
 
-  const { data } = await supabase
-    .from("locations")
-    .select("id, name, location_type, depth, parent_id, path_slugs, is_public")
-    .order("depth")
-    .order("display_order");
-
-  interface Raw {
+  interface TreeRow {
     id: string;
     name: string;
+    path: string | null;
+    parent_id: string | null;
     location_type: string;
     depth: number;
-    parent_id: string | null;
-    path_slugs: string[] | null;
   }
-  const rows = (data as unknown as Raw[] | null) ?? [];
-  if (rows.length === 0) return [];
 
-  /* One RPC per area would be an N+1. Ask the database to resolve them all in
-     a single call instead. */
-  const { data: allowed } = await supabase.rpc("areas_open_for_listings", {
+  const { data, error } = await supabase.rpc("areas_open_for_listings_tree", {
     p_service: serviceSlug,
   });
 
-  const open = new Set(
-    ((allowed as { id: string }[]) ?? []).map((a) => a.id)
-  );
-
-  return rows
-    .filter((r) => open.has(r.id))
-    .map((r) => ({
+  if (!error) {
+    return ((data as TreeRow[] | null) ?? []).map((r) => ({
       id: r.id,
       name: r.name,
       location_type: r.location_type,
       depth: r.depth,
       parent_id: r.parent_id,
-      path: (r.path_slugs ?? []).join(" / "),
+      path: r.path ?? "",
     }));
+  }
+
+  /* phase97 has not been run yet. Fall back to the older function, which
+     exists since phase76 and returns the same rows without the parent links.
+     Everything still works — the picker just cannot nest, so it shows one
+     list. That is the behaviour before this change, which is the right thing
+     to degrade to rather than showing an empty form field. */
+  const { data: flat } = await supabase.rpc("areas_open_for_listings", {
+    p_service: serviceSlug,
+  });
+
+  return ((flat as { id: string; name: string; path: string | null }[] | null) ?? []).map(
+    (r) => ({
+      id: r.id,
+      name: r.name,
+      /* Unknown without the tree function. "area" keeps every row at one
+         level, which is exactly what the flat fallback should look like. */
+      location_type: "area",
+      depth: 0,
+      parent_id: null,
+      path: r.path ?? "",
+    })
+  );
 }
 
 /**

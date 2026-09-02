@@ -116,6 +116,37 @@ export function deepestSelected(path: string[]): string | null {
 }
 
 /**
+ * Where an orphaned option actually is, for the dropdown label.
+ *
+ * An area whose parent is closed is shown at the top level (see the note at
+ * the head of this file). On its own that reads as though the area has no
+ * parent, and "Kachura" alone is not enough to pick between two places with
+ * similar names — or to be confident it is the right one at all.
+ *
+ * Returns the name of the parent it would have been nested under, taken from
+ * path_slugs, which is maintained by the database trigger. Slugs are all we
+ * have here — `getSubmittableAreas` does not fetch ancestor names — so
+ * "baltistan-division" becomes "Baltistan Division". That is a display guess
+ * about capitalisation only, never about which place it is.
+ *
+ * null when the option is a genuine root, or when there is nothing to add.
+ */
+export function orphanContext(a: AreaOption, areas: AreaOption[]): string | null {
+  if (!a.parent_id) return null;
+  if (areas.some((x) => x.id === a.parent_id)) return null;
+
+  const parts = a.path.split(" / ").filter(Boolean);
+  // Last part is this location itself; the one before it is its parent.
+  const parent = parts.length >= 2 ? parts[parts.length - 2] : null;
+  if (!parent) return null;
+
+  return parent
+    .split("-")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+/**
  * Label for a level, from the kind of place it offers.
  *
  * Read off the data rather than assumed from position, because the tree is not
