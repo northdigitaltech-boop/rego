@@ -311,5 +311,18 @@ renders nothing when anything is wrong — so the worst realistic outcome is tha
 the area field is invisible and registration works as it did last week. That is
 an argument for shipping it, not a substitute for testing it.
 
-**Run first, before deploying:** `phase95-expedition-pros-location.sql`, then
-`check-location-system.sql` to confirm the ground truth.
+**Order of operations.** Correcting an earlier draft of this line, which said
+phase95 must run before deploying. It must not — nothing in this code sends
+`location_id` to `expedition_professionals`, precisely because that branch was
+left unwired. The code and the SQL are independent, in either order:
+
+1. **`check-location-system.sql`** — read-only. Run it first, because it
+   decides how much of the rest matters. If `locations` is empty, the picker
+   renders nothing and this whole pass is inert until the tree is seeded.
+2. **Deploy.** Safe on its own.
+3. **`phase95-expedition-pros-location.sql`** — whenever. It unblocks wiring
+   the individual-expedition branch later; it changes nothing today.
+
+Still outstanding from earlier work, unrelated to locations:
+`phase93-booking-cancellation.sql`, `phase86-blog-author-privacy.sql`,
+`phase94-provider-name-backfill.sql`.
