@@ -36,13 +36,17 @@ const nextConfig = {
     ];
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "framer-motion"],
-    // `optimizeCss` is DISABLED on purpose. It would inline critical CSS and
-    // remove the ~510ms render-blocking stylesheet, but on Next 15.5 the
-    // pages-router runtime (used to prerender /404 and /500) still requires
-    // the old `critters` module — installing `beasties` alone fails the build
-    // with "Cannot find module 'critters'". Re-enable only after verifying a
-    // full `npm run build` passes locally.
+    // framer-motion was removed from the project; the entry is gone with it.
+    optimizePackageImports: ["lucide-react"],
+    // `optimizeCss` is DISABLED on purpose, and measurement now says leaving
+    // it off costs almost nothing. On the live homepage both stylesheets
+    // finish at 552ms and 559ms, while first paint is at 1044ms — the CSS is
+    // not what the browser is waiting for. What it waits for is ~996 KB of
+    // JavaScript, the last of which lands at 836ms. Inlining critical CSS
+    // would buy back a few milliseconds at best and risks the old build
+    // failure (Next 15.5's pages-router prerender of /404 and /500 wants
+    // `critters`, which is why it is still a dependency). Spend the effort on
+    // the JavaScript instead.
     // optimizeCss: true,
   },
 };

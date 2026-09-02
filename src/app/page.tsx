@@ -15,7 +15,7 @@ import {
   EventsSection,
   PlatformStats,
 } from "@/components/home/curated-sections";
-import { FeaturedDroneCreators } from "@/components/home/featured-drone-creators";
+import { DeferredCreators } from "@/components/home/deferred-creators";
 import { RoadsideProviderGrid } from "@/components/home/roadside-grid";
 import { EventsGrid } from "@/components/home/events-grid";
 import { ActivitiesGrid } from "@/components/home/activities-grid";
@@ -217,7 +217,7 @@ export default async function Home() {
         />
 
         {/* Featured drone & media creators */}
-        <FeaturedDroneCreators />
+        <DeferredCreators />
 
         {/* Activities (below drone creators) — real approved activities,
             falls back to the curated tiles until providers add some. */}
