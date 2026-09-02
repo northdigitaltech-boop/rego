@@ -454,6 +454,29 @@ async function post(body: unknown): Promise<MarketApiResult> {
   }
 }
 
+export interface SyncAttractionsResult extends MarketApiResult {
+  added?: number;
+  restored?: number;
+  deactivated?: number;
+  skipped?: boolean;
+  message?: string;
+}
+
+/**
+ * Copy a destination's attractions into the location tree.
+ *
+ * Called after the Destinations screen saves them, so an admin types
+ * "Shangrila Lake" once rather than there and again under Skardu — two lists
+ * maintained by hand disagree, and they disagree quietly.
+ *
+ * Attractions removed from the destination are deactivated, never deleted: a
+ * provider may already have said they run tours there, and dropping that
+ * because someone edited a blurb is not a trade anyone agreed to.
+ */
+export function syncAttractions(destinationId: string): Promise<SyncAttractionsResult> {
+  return post({ action: "sync_attractions", destinationId }) as Promise<SyncAttractionsResult>;
+}
+
 /** Set or clear one flag on one location. `null` resets it to inherited. */
 export function setLocationFlag(
   locationId: string,

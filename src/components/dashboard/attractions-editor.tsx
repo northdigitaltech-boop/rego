@@ -12,6 +12,7 @@ import {
   ATTRACTION_TYPES, parseAttractions, suggestedFor, type Attraction,
 } from "@/lib/attractions";
 import { updateDestinationAttractions, type DestinationRow } from "@/lib/destinations";
+import { syncAttractions } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 
 const BLANK: Attraction = { name: "", type: "", blurb: "", image: "" };
@@ -83,7 +84,42 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
       return;
     }
     setItems(clean);
-    setNote({ ok: true, text: `Saved ${clean.length} attraction${clean.length === 1 ? "" : "s"}.` });
+
+    /* Mirror them into the location tree, so provider forms can offer them as
+       places served. Done after the save above rather than instead of it: the
+       destination page reads this column, and it is the copy that matters if
+       the two ever disagree.
+
+       A failure here is reported but does not undo the save — the attractions
+       are on the destination page either way, and a provider not yet being
+       able to tick "Shangrila Lake" is a smaller problem than losing the
+       eight rows just typed. */
+    const sync = await syncAttractions(row.id);
+
+    const saved = `Saved ${clean.length} attraction${clean.length === 1 ? "" : "s"}.`;
+
+    if (!sync.ok) {
+      setNote({
+        ok: true,
+        text: `${saved} They are not in the area list yet: ${sync.error ?? "the sync failed."}`,
+      });
+      return;
+    }
+    if (sync.skipped) {
+      setNote({ ok: true, text: `${saved} ${sync.message ?? ""}`.trim() });
+      return;
+    }
+
+    const bits: string[] = [];
+    if (sync.added) bits.push(`${sync.added} added to the area list`);
+    if (sync.restored) bits.push(`${sync.restored} restored`);
+    if (sync.deactivated) {
+      bits.push(
+        `${sync.deactivated} hidden from the area list (kept, in case a provider had chosen them)`
+      );
+    }
+
+    setNote({ ok: true, text: bits.length ? `${saved} ${bits.join(", ")}.` : saved });
   };
 
   return (

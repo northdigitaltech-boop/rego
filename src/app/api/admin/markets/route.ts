@@ -97,6 +97,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rego.services";
    administrative level we did not anticipate must not require a migration —
    but the API still refuses anything outside this list, so a typo cannot
    quietly create a level that nothing renders. */
+/* Must stay in step with LOCATION_TYPES in src/lib/markets.ts. They were out
+   of step: attraction and landmark were added to the picker there and not
+   here, so the admin could choose "Attraction" and the API would refuse it. */
 const LOCATION_TYPES = new Set([
   "country",
   "region",
@@ -104,6 +107,8 @@ const LOCATION_TYPES = new Set([
   "district",
   "city",
   "area",
+  "attraction",
+  "landmark",
 ]);
 
 const MAX_BULK = 200;
@@ -675,6 +680,162 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json({ ok: true, id: created.id });
+    }
+
+    /* ============================================================
+     * Attractions saved on a destination, mirrored into the tree.
+     *
+     * WHY THIS EXISTS
+     *   Attractions are edited in one place — the Destinations screen, on the
+     *   destination they belong to. Asking an admin to type Shangrila Lake
+     *   there and then type it again under Skardu in Market & Area Management
+     *   is how the two lists come to disagree, and the disagreement is silent.
+     *
+     *   So the destination editor stays the only place attractions are
+     *   written by hand, and this copies them into locations so the coverage
+     *   picker can offer them.
+     *
+     * WHY REMOVED ONES ARE DEACTIVATED AND NOT DELETED
+     *   A provider may already have ticked "we run tours to Shangrila Lake".
+     *   service_locations references locations with ON DELETE RESTRICT, so a
+     *   delete would fail anyway — and even if it succeeded, quietly removing
+     *   a provider's stated coverage because an admin edited a blurb is not a
+     *   trade anyone agreed to. Deactivating keeps the link and takes it out
+     *   of the pickers.
+     * ============================================================ */
+    case "sync_attractions": {
+      const destinationId = String(body.destinationId ?? "");
+      if (!destinationId) return bad("Missing destination.");
+
+      const { data: dest } = await sb
+        .from("destinations")
+        .select("id, name, slug, location_id, attractions")
+        .eq("id", destinationId)
+        .maybeSingle();
+
+      if (!dest) return bad("Destination not found.", 404);
+
+      const d = dest as {
+        id: string;
+        name: string;
+        slug: string;
+        location_id: string | null;
+        attractions: unknown;
+      };
+
+      if (!d.location_id) {
+        /* Not an error. phase75 attached most destinations to a location, but
+           one added since then has none, and saying so is more use than
+           failing. */
+        return NextResponse.json({
+          ok: true,
+          skipped: true,
+          message: `"${d.name}" is not linked to an area yet, so its attractions were not added to the location list. Link it in Market & Area Management first.`,
+        });
+      }
+
+      const { data: parent } = await sb
+        .from("locations")
+        .select("id, market_id, country_code")
+        .eq("id", d.location_id)
+        .maybeSingle();
+
+      if (!parent) return bad("The area this destination points at no longer exists.", 404);
+      const p = parent as { id: string; market_id: string; country_code: string };
+
+      const list = Array.isArray(d.attractions)
+        ? (d.attractions as { name?: unknown }[])
+        : [];
+
+      /* Same rule as the database CHECK. A name that slugifies to nothing —
+         punctuation only — is skipped rather than rejected, so one odd row
+         does not stop the other seven being saved. */
+      const wanted = new Map<string, string>();
+      for (const a of list) {
+        const name = String(a?.name ?? "").trim();
+        if (!name || name.length > 120) continue;
+        const slug = name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        if (!slug || slug.length > 80) continue;
+        if (!wanted.has(slug)) wanted.set(slug, name);
+      }
+
+      const { data: existingRows } = await sb
+        .from("locations")
+        .select("id, slug, name, is_active")
+        .eq("parent_id", p.id)
+        .eq("location_type", "attraction");
+
+      const existing = (existingRows as
+        | { id: string; slug: string; name: string; is_active: boolean | null }[]
+        | null) ?? [];
+      const bySlug = new Map(existing.map((e) => [e.slug, e]));
+
+      let added = 0;
+      let restored = 0;
+      let deactivated = 0;
+
+      for (const [slug, name] of wanted) {
+        const found = bySlug.get(slug);
+        if (found) {
+          /* Reactivate if it had been removed and put back, and follow a
+             rename. Never touch its flags — an admin may have made this
+             attraction public deliberately. */
+          if (found.is_active === false || found.name !== name) {
+            await sb
+              .from("locations")
+              .update({
+                name,
+                is_active: found.is_active === false ? null : found.is_active,
+                updated_by: caller.user.id,
+              })
+              .eq("id", found.id);
+            if (found.is_active === false) restored++;
+          }
+          continue;
+        }
+
+        const { error } = await sb.from("locations").insert({
+          market_id: p.market_id,
+          parent_id: p.id,
+          location_type: "attraction",
+          name,
+          slug,
+          country_code: p.country_code ?? "PK",
+          created_by: caller.user.id,
+          updated_by: caller.user.id,
+        });
+        /* 23505 means a sibling already has this slug — a district and an
+           attraction of the same name, say. Skipping is right: the place is
+           already in the tree under another type. */
+        if (!error) added++;
+        else if (error.code !== "23505") return bad(error.message, 500);
+      }
+
+      for (const e of existing) {
+        if (wanted.has(e.slug)) continue;
+        if (e.is_active === false) continue;
+        await sb
+          .from("locations")
+          .update({ is_active: false, updated_by: caller.user.id })
+          .eq("id", e.id);
+        deactivated++;
+      }
+
+      if (added || restored || deactivated) {
+        await audit({
+          action: "location.sync_attractions",
+          entityType: "location",
+          entityId: p.id,
+          entityLabel: d.name,
+          before: null,
+          after: { added, restored, deactivated, destination: d.slug },
+        });
+      }
+
+      return NextResponse.json({ ok: true, added, restored, deactivated });
     }
 
     default:
