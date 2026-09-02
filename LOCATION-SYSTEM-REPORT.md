@@ -1,10 +1,10 @@
 # Centralised location system — audit and integration report
 
 **Date:** 2 September 2026
-**Scope of this pass:** audit, then provider-form integration.
-Traveler search, SEO destination pages, attractions and the location
-request system are **not** built in this pass — their state is reported
-below so the next pass starts from facts.
+**Scope:** audit → provider-form integration → admin completion.
+Traveler **search and filters**, the richer attraction fields, and the
+location request system are **not** built. Their state is reported below so
+the next pass starts from facts rather than from this document's optimism.
 
 ---
 
@@ -30,7 +30,7 @@ thing the brief rules out most firmly. Everything below extends what is there.
 | Real Gilgit-Baltistan tree | Yes — 3 divisions, 11 districts, areas | `phase74`, `77`, `81` |
 | Listings attached to locations | Yes | `phase75` |
 | Server-side enforcement | Yes, **ships disabled** | `phase76` |
-| Admin UI | Yes, **behind a feature flag** | `market-areas.tsx` |
+| Admin UI | Yes — flag now removed, see §8 | `market-areas.tsx` |
 | Admin API | Yes | `/api/admin/markets` |
 | Provider picker | Yes, flat | `area-picker.tsx` |
 
@@ -86,8 +86,14 @@ policy touched.
 | `tests/area-tree.test.ts` | **New.** 30 assertions. |
 | `supabase/phase95-…sql`, `supabase/check-location-system.sql` | **New.** See §1. |
 
-No traveler-facing file, no API, no booking logic, no auth, no SEO route was
-touched in this pass.
+| `src/lib/markets.ts` | `FLAG_STATUS` / `FLAG_EFFECT` / `FLAG_NOT_YET`, the inheritance note, and `attraction` + `landmark` types. |
+| `src/components/dashboard/market-areas.tsx` | Per-flag "In effect" / "Not wired up yet" badge. |
+| `src/components/dashboard/admin-dashboard.tsx` | Feature gate removed. |
+| `supabase/phase96-ajk-region.sql` | **New.** AJK, hidden. |
+
+No traveler-facing page, no API route, no booking logic, no auth and no SEO
+route was modified. Existing SEO behaviour is unchanged — it already read
+these flags (§7).
 
 ---
 
@@ -115,9 +121,9 @@ hierarchy skips them; Gilgit-Baltistan really has them, and phase74 exists
 because an earlier placeholder did not. The cascading picker reads the levels
 off the data rather than assuming a fixed sequence, so this costs nothing.
 
-**Azad Jammu & Kashmir is not seeded.** KPK exists only because Naran and
-Kaghan needed a factually correct parent. Adding AJK is one `upsert_location`
-call and is not done in this pass.
+**Azad Jammu & Kashmir is now seeded** by `phase96-ajk-region.sql` — region
+only, every flag NULL. KPK existed already, but only because Naran and Kaghan
+needed a factually correct parent, not as a deliberate market.
 
 ---
 
@@ -152,9 +158,20 @@ The provider picker calls `areas_open_for_listings(service)`, which uses that
 same function — so **the list a provider sees and the rule the trigger enforces
 agree by construction, not by two pieces of code being kept in step by hand.**
 
-**KPK and AJK are hidden today by inheritance**, not by a hardcoded exclusion:
-nothing above them sets `is_public`, so it resolves false. That is also why
-nothing needs rewriting to open them later (§10).
+**KPK and AJK are hidden by two independent mechanisms**, neither of which is
+a hardcoded exclusion:
+
+1. Nothing above them sets `is_public`, so the resolver returns false.
+2. More importantly, the RLS read policy is `is_public is true` **on the row
+   itself** — it does not inherit, because an undecided location must not reach
+   the public site through a bug in a recursive resolver.
+
+The second is the real boundary, and it has a consequence that is not obvious:
+**setting a region public does not make the districts inside it readable.**
+Each area a traveller should reach needs its own explicit `is_public = true`.
+Two different meanings of "public", on purpose. The admin UI now says this on
+the Visible-on-website row, because it is the first thing that will look
+broken.
 
 ---
 
