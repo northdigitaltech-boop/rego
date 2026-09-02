@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ShieldCheck, BadgePercent, Users, Lock, Headset, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -88,8 +89,13 @@ export function WhyUs() {
                 Everything you need for an unforgettable journey.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-5">
-                <Button variant="gold" size="lg" className="rounded-lg">
-                  Plan My Trip
+                {/* This said "Plan My Trip" and did nothing at all — no href,
+                    no handler. It now opens Rego AI, which is the thing on the
+                    site that actually plans a trip. The chat is left empty on
+                    purpose: the traveller says what they want in their own
+                    words rather than being handed a question they didn't ask. */}
+                <Button variant="gold" size="lg" className="rounded-lg" asChild>
+                  <Link href="/rego-ai">Plan My Trip</Link>
                 </Button>
                 <button type="button" className="flex items-center gap-2 rounded-lg text-sm font-semibold text-white transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-white/15 backdrop-blur">
