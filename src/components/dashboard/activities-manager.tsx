@@ -216,7 +216,13 @@ function ActivityForm({
   const [kind, setKind] = React.useState<"outdoor" | "indoor">(initialKind);
 
   // Owns its own state, so no existing field or reset changes.
-  const area = useAreaSelection("activities");
+  const area = useAreaSelection(
+    "activities",
+    /* Re-seeds the picker when an existing activity is opened for editing, so
+       its saved area shows instead of an empty dropdown. Cast because
+       location_id was added by phase72 and is not in the row type. */
+    (activity as { location_id?: string | null } | null)?.location_id ?? null
+  );
   const [f, setF] = React.useState({
     title: activity?.title ?? "",
     category:

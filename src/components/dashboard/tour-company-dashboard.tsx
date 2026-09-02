@@ -475,7 +475,17 @@ function CompanyForm({
 }) {
   const editing = !!company;
   // Owns its own state, so no existing field or reset changes.
-  const area = useAreaSelection("travel-companies");
+  /* Second argument re-seeds the picker when an existing listing is opened for
+     editing. Without it the area dropdowns came up blank on a listing that has
+     an area, which reads as "no area set" when one is. Nothing was lost by
+     that — an untouched picker contributes no key to the update payload, so
+     the stored value survived — but a provider could not see or change it.
+     The cast is because location_id was added to the table by phase72 and is
+     not in the hand-written row type. */
+  const area = useAreaSelection(
+    "travel-companies",
+    (company as { location_id?: string | null } | null)?.location_id ?? null
+  );
   const [f, setF] = React.useState({
     name: company?.name ?? "",
     owner_name: company?.owner_name ?? user.name,

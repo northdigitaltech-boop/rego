@@ -210,7 +210,16 @@ export function HomestayProviderDashboard({
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [form, setForm] = React.useState({ ...empty });
   // Owns its own state so no existing form field or reset has to change.
-  const area = useAreaSelection("homestays");
+    /* Derived from editingId rather than passed in, because this dashboard keeps
+     the list and edits in place. Re-seeds the picker when an existing listing
+     is opened, so its saved area shows instead of an empty dropdown. The cast
+     is because location_id was added by phase72 and is not in the row type. */
+  const area = useAreaSelection(
+    "homestays",
+    (homestays.find((x) => x.id === editingId) as
+      | { location_id?: string | null }
+      | undefined)?.location_id ?? null
+  );
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
   const [bookings, setBookings] = React.useState<HomestayBookingRow[]>([]);

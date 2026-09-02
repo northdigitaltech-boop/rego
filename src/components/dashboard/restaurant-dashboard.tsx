@@ -289,7 +289,17 @@ export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut
 function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant: RestaurantRow | null; onSaved: () => void }) {
   const editing = !!restaurant;
   // Owns its own state, so no existing field, reset or type changes.
-  const area = useAreaSelection("restaurants");
+  /* Second argument re-seeds the picker when an existing listing is opened for
+     editing. Without it the area dropdowns came up blank on a listing that has
+     an area, which reads as "no area set" when one is. Nothing was lost by
+     that — an untouched picker contributes no key to the update payload, so
+     the stored value survived — but a provider could not see or change it.
+     The cast is because location_id was added to the table by phase72 and is
+     not in the hand-written row type. */
+  const area = useAreaSelection(
+    "restaurants",
+    (restaurant as { location_id?: string | null } | null)?.location_id ?? null
+  );
   const [f, setF] = React.useState({
     name: restaurant?.name ?? "",
     owner_name: restaurant?.owner_name ?? user.name,
