@@ -56,13 +56,31 @@ export function AreaPicker({
   value,
   onChange,
   className,
+  required: requiredByForm = false,
   onReady,
 }: {
   /** Category slug, e.g. "hotels". Service-level rules use this. */
   serviceSlug: string;
   value: string | null;
-  onChange: (locationId: string | null) => void;
+  /**
+   * The second argument is the chosen option itself. Optional, so the callers
+   * that only want the id are unaffected — but a form that requires an area
+   * needs to know WHICH level was chosen: "Pakistan" satisfies "something was
+   * selected" and answers nothing.
+   */
+  onChange: (locationId: string | null, option?: AreaOption) => void;
   className?: string;
+  /**
+   * The form insists on an area, regardless of the admin-wide setting.
+   *
+   * There are two separate reasons an area can be mandatory and they were not
+   * both represented: market_enforcement.require_location_id is a global
+   * decision an admin makes, and this is one form deciding for itself. Only
+   * the first existed, so a wizard could block on a missing area while the
+   * label beside it read "(optional)" — the form contradicting itself, which
+   * is worse than either answer.
+   */
+  required?: boolean;
   /**
    * Fires with how many top-level options loaded, so a form can require the
    * area ONLY when there is one to choose. Without this, "compulsory" would
@@ -129,14 +147,15 @@ export function AreaPicker({
   const choose = (levelIndex: number, id: string | null) => {
     const next = pathAfterChange(path, levelIndex, id);
     setPath(next);
-    onChange(deepestSelected(next));
+    const deepest = deepestSelected(next);
+    onChange(deepest, areas.find((a) => a.id === deepest));
   };
 
   // Nothing set up yet, or something went wrong -> render nothing at all.
   if (loading || failed || !cfg) return null;
   if (areas.length === 0) return null;
 
-  const required = cfg.requireLocationId;
+  const required = requiredByForm || cfg.requireLocationId;
   const levels = buildLevels(areas, path);
   if (levels.length === 0) return null;
 

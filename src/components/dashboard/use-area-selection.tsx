@@ -56,7 +56,9 @@ export interface AreaSelection {
 
 export function useAreaSelection(
   serviceSlug: string,
-  initial?: string | null
+  initial?: string | null,
+  /** `required` makes the picker say so, and requireArea() enforce it. */
+  opts?: { required?: boolean }
 ): AreaSelection {
   const [locationId, setLocationId] = React.useState<string | null>(initial ?? null);
 
@@ -70,6 +72,7 @@ export function useAreaSelection(
     }
   }, [initial]);
 
+  const [selectedType, setSelectedType] = React.useState<string | null>(null);
   const [optionCount, setOptionCount] = React.useState(0);
   const handleReady = React.useCallback((n: number) => setOptionCount(n), []);
 
@@ -77,8 +80,12 @@ export function useAreaSelection(
     <AreaPicker
       serviceSlug={serviceSlug}
       value={locationId}
-      onChange={setLocationId}
+      onChange={(id, option) => {
+        setLocationId(id);
+        setSelectedType(option?.location_type ?? null);
+      }}
       onReady={handleReady}
+      required={opts?.required ?? false}
       className="mt-3"
     />
   );
@@ -92,9 +99,16 @@ export function useAreaSelection(
     setLocationId,
     reset: () => setLocationId(null),
     hasOptions,
-    requireArea: (label = "area") =>
-      hasOptions && !locationId
-        ? `Please choose the ${label} this is in.`
-        : null,
+    requireArea: (label = "area") => {
+      if (!hasOptions) return null;
+      if (!locationId) return `Please choose the ${label} this is in.`;
+      /* "Pakistan" and "Gilgit-Baltistan" pass "something was chosen" and
+         answer nothing useful — a listing filed under a whole country cannot
+         be found by anyone looking for a place. Keep going down. */
+      if (selectedType === "country" || selectedType === "region") {
+        return "Please choose a district or town, not just the region.";
+      }
+      return null;
+    },
   };
 }

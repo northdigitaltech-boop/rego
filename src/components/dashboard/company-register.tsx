@@ -67,7 +67,7 @@ export function CompanyRegisterWizard({
 
   /* Structured area, alongside the free-text place above. Renders
      nothing until the market module is switched on. */
-  const area = useAreaSelection("travel-companies");
+  const area = useAreaSelection("travel-companies", null, { required: true });
 
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
