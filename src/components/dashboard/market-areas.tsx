@@ -17,6 +17,10 @@ import {
   SERVICE_FLAGS,
   FLAG_LABELS,
   FLAG_HELP,
+  FLAG_STATUS,
+  FLAG_EFFECT,
+  FLAG_NOT_YET,
+  PUBLIC_IS_NOT_INHERITED,
   applyToChildren,
   bulkSetFlag,
   childrenOf,
@@ -587,13 +591,34 @@ function Availability({
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="flex items-center gap-2 font-semibold text-forest">
+                <p className="flex flex-wrap items-center gap-2 font-semibold text-forest">
                   {FLAG_LABELS[flag]}
                   <OriginBadge origin={isOverride ? "override_location" : origin} />
+                  <EffectBadge flag={flag} />
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                   {FLAG_HELP[flag]}
                 </p>
+                {/* What this switch does, or does not do, right now. Without
+                    this an admin can turn off Bookings and reasonably believe
+                    bookings have stopped. They have not. */}
+                <p
+                  className={cn(
+                    "mt-1 text-xs leading-relaxed",
+                    FLAG_STATUS[flag] === "live"
+                      ? "text-muted-foreground"
+                      : "text-amber-700"
+                  )}
+                >
+                  {FLAG_STATUS[flag] === "live"
+                    ? FLAG_EFFECT[flag]
+                    : FLAG_NOT_YET[flag]}
+                </p>
+                {flag === "is_public" && (
+                  <p className="mt-1 rounded-lg bg-amber-50 p-2 text-xs leading-relaxed text-amber-900">
+                    {PUBLIC_IS_NOT_INHERITED}
+                  </p>
+                )}
               </div>
 
               <div className="flex shrink-0 items-center gap-1">
@@ -976,6 +1001,29 @@ function BulkBar({
 /* ------------------------------------------------------------------ */
 /* Small shared bits                                                   */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Whether this switch currently changes anything.
+ *
+ * Deliberately louder than OriginBadge: getting inheritance wrong is a
+ * misconfiguration, but believing a dead switch is live is how an admin
+ * closes bookings for an area and finds out weeks later that they never
+ * stopped.
+ */
+function EffectBadge({ flag }: { flag: AreaFlag }) {
+  const live = FLAG_STATUS[flag] === "live";
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+        live ? "bg-forest-50 text-forest-600" : "bg-amber-100 text-amber-800"
+      )}
+      title={live ? FLAG_EFFECT[flag] : FLAG_NOT_YET[flag]}
+    >
+      {live ? "In effect" : "Not wired up yet"}
+    </span>
+  );
+}
 
 function OriginBadge({ origin }: { origin: string }) {
   const inherited = origin === "inherited";

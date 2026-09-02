@@ -499,12 +499,20 @@ type Tab =
   | "markets"
   | "users";
 
-/* Market & Area Management is behind a flag while Phases 4-6 are unfinished.
-   The tab reads and writes real settings, but nothing on the public site or
-   in the provider forms consumes them yet — so leaving it visible by default
-   would invite an admin to disable an area and reasonably expect that to stop
-   bookings. It does not, yet. Set NEXT_PUBLIC_MARKET_ADMIN=1 to show it. */
-const MARKET_ADMIN_ENABLED = process.env.NEXT_PUBLIC_MARKET_ADMIN === "1";
+/* Market & Area Management used to be hidden behind NEXT_PUBLIC_MARKET_ADMIN.
+   The reason was sound: the tab read and wrote real settings that nothing
+   consumed, so an admin could disable an area and reasonably expect bookings
+   to stop. They did not.
+
+   That is no longer the whole picture. Active, Visible on website and New
+   listings now drive the area list in every provider registration and listing
+   form; SEO and Coming soon drive the sitemap and per-service destination
+   pages. Four switches are still stored-only — Provider registration,
+   Bookings, Manual approval and Featured — and each of those now says so on
+   its own row, in amber, rather than looking identical to the live ones.
+
+   A switch that lies is worth hiding. A switch that says what it does is
+   worth showing, so this is no longer gated. */
 
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -540,9 +548,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "notify", label: "Send Notification", icon: Megaphone },
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
-  ...(MARKET_ADMIN_ENABLED
-    ? [{ id: "markets" as Tab, label: "Market & Area Management", icon: Globe }]
-    : []),
+  { id: "markets", label: "Market & Area Management", icon: Globe },
   { id: "users", label: "Users", icon: Users },
 ];
 

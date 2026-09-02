@@ -74,6 +74,84 @@ export const FLAG_HELP: Record<AreaFlag, string> = {
     "Allows the page into the sitemap and permits indexing — only if it also has real content.",
 };
 
+/* ============================================================
+ * Which of these switches actually DO something today.
+ *
+ * WHY THIS EXISTS
+ *   Every flag reads and saves. Only some of them are consumed
+ *   by anything. An admin who turns off "Bookings" for an area
+ *   and expects bookings to stop would be wrong, and nothing on
+ *   the screen told them so. That is worse than not offering the
+ *   switch: it is a control that lies.
+ *
+ *   This is checked against the code, not assumed. If you wire a
+ *   flag up, change its entry here in the same commit.
+ * ============================================================ */
+export type FlagStatus = "live" | "stored";
+
+export const FLAG_STATUS: Record<AreaFlag, FlagStatus> = {
+  is_active: "live",
+  is_public: "live",
+  listings_enabled: "live",
+  seo_enabled: "live",
+  coming_soon: "live",
+  onboarding_enabled: "stored",
+  booking_enabled: "stored",
+  manual_approval_required: "stored",
+  is_featured: "stored",
+};
+
+/** Where a live flag takes effect, so the badge can say something useful. */
+export const FLAG_EFFECT: Partial<Record<AreaFlag, string>> = {
+  is_active:
+    "Used by the area list in provider forms, and by the sitemap and indexing decisions.",
+  is_public:
+    "Two separate gates. Travellers can only read a location whose own is_public is explicitly true — see the note about inheritance. Also used by provider forms, the sitemap and indexing.",
+  listings_enabled:
+    "Used by the area list in provider registration and listing forms, per service.",
+  seo_enabled: "Used by the sitemap and by per-service destination pages.",
+  coming_soon: "Used by the sitemap and by per-service destination pages.",
+};
+
+/** Why a stored flag is not live yet, so nobody has to go and find out. */
+export const FLAG_NOT_YET: Partial<Record<AreaFlag, string>> = {
+  onboarding_enabled:
+    "Saved, but nothing reads it. Provider registration is gated by New listings instead.",
+  booking_enabled:
+    "Saved, but nothing reads it. Turning this off does NOT stop bookings being taken in this area.",
+  manual_approval_required:
+    "Saved, but nothing reads it. Listings here still follow the normal approval rules.",
+  is_featured:
+    "Saved, but no public rail or homepage section reads it yet.",
+};
+
+/* ------------------------------------------------------------------
+ * The trap that catches everyone once.
+ *
+ * There are two different meanings of "public" in this system, and
+ * they disagree on purpose:
+ *
+ *   • resolve_location_flag() INHERITS. A NULL on Skardu resolves to
+ *     whatever Gilgit-Baltistan says. This is what the provider form
+ *     list and the enforcement trigger use.
+ *
+ *   • The row-level security read policy does NOT inherit. It is
+ *     `is_public is true` on the row itself, because an undecided
+ *     location must not leak to the public site through a bug in a
+ *     recursive resolver. That is the right call for a security
+ *     boundary.
+ *
+ * The consequence is not obvious and is not written down anywhere
+ * else: setting Gilgit-Baltistan public does NOT make Skardu
+ * readable by a traveller. Each location a traveller should reach
+ * needs its own explicit Visible-on-website = On.
+ * ------------------------------------------------------------------ */
+export const PUBLIC_IS_NOT_INHERITED =
+  "Travellers can only load a location that is explicitly set to On here. " +
+  "Unlike the other switches, Visible on website does not inherit for reading: " +
+  "turning it on for a region does not turn it on for the districts inside it. " +
+  "Set it on each area you want travellers to reach.";
+
 export type FlagOrigin = "override_service" | "override_location" | "inherited";
 
 export interface LocationRow {
@@ -424,6 +502,18 @@ export const LOCATION_TYPES = [
   "district",
   "city",
   "area",
+  /* Attractions and landmarks are locations, not a separate table.
+     location_type is free text in the database precisely so a level can be
+     added without a migration, and an attraction genuinely behaves like one:
+     it has a parent, coordinates, a slug, SEO, and the same visibility flags.
+     Giving it its own table would mean duplicating all of that, and the brief
+     is explicit about not creating parallel systems.
+
+     They are last in the list because suggestChildType never proposes them —
+     an admin adds an attraction on purpose, and a district full of accidental
+     landmarks is worse than one with none. */
+  "attraction",
+  "landmark",
 ] as const;
 export type LocationType = (typeof LOCATION_TYPES)[number];
 
@@ -434,6 +524,8 @@ export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
   district: "District",
   city: "City / Town",
   area: "Area / Destination",
+  attraction: "Attraction",
+  landmark: "Landmark",
 };
 
 /**
