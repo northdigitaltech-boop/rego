@@ -219,48 +219,78 @@ district is what gets saved. Precision is welcome, not required.
 
 ## 7. Traveler integration
 
-**Not done in this pass.** Reported for accuracy:
+**This section was wrong in the first draft and is corrected here.** I wrote
+that the traveller side was untouched. It is not.
 
-- Traveler search, filters, category pages and `/destinations` still read the
+Already location-driven:
+
+- `/destinations/[slug]/[service]` decides indexing through `decideIndexable()`,
+  which consumes `is_public`, `is_active`, `seo_enabled` and `coming_soon`.
+- `sitemap.ts` uses the same function, so the sitemap already respects those
+  four flags.
+- `/destinations/[slug]` layers `location_seo` metadata over the older
+  `destinations` data.
+
+Still not location-driven:
+
+- Traveller **search and filters**, and the category pages, which read the
   free-text columns.
-- `location_seo` and `location_nearby` exist and are unused by public routes.
-- Because KPK/AJK resolve to not-public, they cannot leak through any query
-  that goes through `resolve_location_flag` — but the public site does not go
-  through it yet, so that protection is currently unexercised rather than
-  proven.
+- `location_nearby` exists and nothing public reads it.
+
+**KPK and AJK cannot leak**, and the reason is stronger than inheritance — see
+§4. The RLS read policy tests the row's own `is_public`, so an undecided
+location is unreadable regardless of what any resolver does.
 
 ---
 
 ## 8. Admin controls
 
-Exists and is **hidden behind `NEXT_PUBLIC_MARKET_ADMIN=1`**. The reason is in
-the code and is a good one:
+**Now open.** The `NEXT_PUBLIC_MARKET_ADMIN` gate is removed.
 
-> the tab reads and writes real settings, but nothing on the public site or in
-> the provider forms consumes them yet — so leaving it visible by default would
-> invite an admin to disable an area and reasonably expect that to stop
-> bookings. It does not, yet.
+It was there because the tab read and wrote settings nothing consumed. That is
+now true of only four of the nine flags, and rather than hide all of them or
+show them identically, each row states which it is:
 
-After this pass that is **half untrue**: provider forms now consume the
-listing flags. Closing an area now does stop it appearing in registration and
-dashboard pickers. It still does not stop bookings, and the enforcement trigger
-in phase76 still ships disabled, so **the flag should stay on until §7 and the
-trigger are done.**
+| Flag | Status | Consumed by |
+|---|---|---|
+| Active | **In effect** | Provider forms, sitemap, indexing |
+| Visible on website | **In effect** | RLS read, provider forms, sitemap, indexing |
+| New listings | **In effect** | Provider forms, per service |
+| SEO / indexable | **In effect** | Sitemap, per-service destination pages |
+| Coming soon | **In effect** | Sitemap, per-service destination pages |
+| Provider registration | Not wired up | — |
+| Bookings | Not wired up | — |
+| Manual approval required | Not wired up | — |
+| Featured destination | Not wired up | — |
 
----
+The four unwired ones carry an amber badge and a sentence saying what they do
+*not* do — "Turning this off does NOT stop bookings being taken in this area".
+`FLAG_STATUS` sits beside the labels in `markets.ts`, so wiring a flag up and
+correcting its badge are one edit rather than two.
+
+**The enforcement trigger (phase76) still ships disabled.** Closing an area
+keeps it out of provider pickers, which is an honest gate for an honest
+provider; it is not a guarantee against a direct REST call.
 
 ## 9. Attractions
 
-**Not built.** `LOCATION_TYPES` stops at `area`; there is no `attraction` or
-`landmark` type, and no attractions table. Attraction content today lives in
-`src/lib/attractions.ts` as a hardcoded map.
+**Partly done.** `attraction` and `landmark` are now location types.
 
-Because `location_type` is free text, adding `attraction` needs no schema
-migration — only the type list, the admin UI's labels, and a decision about
-whether attractions are locations or a table of their own. That decision is
-worth making deliberately rather than in passing.
+They are locations rather than a separate table, deliberately: an attraction
+has a parent, coordinates, a slug, SEO and the same visibility flags, and
+`location_type` is free text precisely so a level costs no migration. A
+separate table would duplicate all of that, which the brief rules out.
 
----
+An admin can now place Baltit Fort under Karimabad and give it SEO through the
+existing editor. `suggestChildType` still never proposes these, so a district
+does not fill with accidental landmarks — an attraction is added on purpose.
+
+**Not done:** the richer attraction fields the brief lists (entry fee, opening
+hours, best time to visit, road access, parking, gallery). Those do not fit the
+locations table and are the argument for a companion table keyed by
+`location_id` — worth designing deliberately rather than in passing.
+`src/lib/attractions.ts` still holds the current hardcoded content and is
+untouched.
 
 ## 10. Future expansion
 
@@ -271,8 +301,13 @@ is_active = true, is_public = true,
 onboarding_enabled = true, listings_enabled = true, booking_enabled = true
 ```
 
-Everything below inherits, because every descendant is `NULL`. No code change,
-no migration, no redeploy. AJK is the same once seeded. So is a new province,
+Everything below inherits for the resolver — **but not for reading**. Because
+the RLS policy does not inherit (§4), each area a traveller should reach also
+needs its own explicit `is_public = true`. No code change, no migration, no
+redeploy either way.
+
+**AJK is now seeded** by `phase96-ajk-region.sql`, region only, every flag
+NULL — hidden by the same rule that hides KPK. So is a new province,
 or a new country — a market row plus a country location.
 
 ---
