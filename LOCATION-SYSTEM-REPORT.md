@@ -1,0 +1,315 @@
+# Centralised location system — audit and integration report
+
+**Date:** 2 September 2026
+**Scope of this pass:** audit, then provider-form integration.
+Traveler search, SEO destination pages, attractions and the location
+request system are **not** built in this pass — their state is reported
+below so the next pass starts from facts.
+
+---
+
+## 0. The finding that changed the plan
+
+**Most of the requested system already exists in this repository.** It was
+built as "Market & Area Management, Phase 1 of 6" and never finished.
+
+Creating a new `locations` table would have been a duplicate system — the one
+thing the brief rules out most firmly. Everything below extends what is there.
+
+| Brief asks for | Already present | Where |
+|---|---|---|
+| Hierarchical `locations` table | Yes | `phase72-market-areas.sql` |
+| `parent_id`, depth, ancestors, path | Yes — maintained by trigger, cycles rejected | same |
+| Visibility flags | Yes, and **stronger than specified** — see §4 | same |
+| Indexes (parent, type, slug, public) | Yes, incl. a GIN index on `ancestors` | same |
+| Per-location SEO | Yes — `location_seo` | same |
+| Nearby | Yes — `location_nearby` | same |
+| Per-area, per-service settings | Yes — `location_service_settings` | same |
+| Audit log | Yes — `market_audit_logs` | same |
+| `location_id` on listing tables | Yes, 18 tables (one typo — see §1) | same |
+| Real Gilgit-Baltistan tree | Yes — 3 divisions, 11 districts, areas | `phase74`, `77`, `81` |
+| Listings attached to locations | Yes | `phase75` |
+| Server-side enforcement | Yes, **ships disabled** | `phase76` |
+| Admin UI | Yes, **behind a feature flag** | `market-areas.tsx` |
+| Admin API | Yes | `/api/admin/markets` |
+| Provider picker | Yes, flat | `area-picker.tsx` |
+
+What was genuinely missing: the **registration wizards**, which were written
+before this module existed and had never been connected.
+
+---
+
+## 1. Database changes
+
+Two files, both additive, both with a rollback, both tested in PGlite.
+
+### `phase95-expedition-pros-location.sql` — a bug fix
+
+`phase72` adds `location_id` and `market_id` to listing tables by looping over
+a list of table names. The list says `expedition_pros`; the table is
+`expedition_professionals`. The loop is guarded:
+
+```sql
+if to_regclass('public.' || t) is not null then
+```
+
+so the name that does not resolve is skipped rather than raising. **The guard
+is what made the typo silent.** phase72 reported success, and that one table
+never got the columns — through phase74, 75, 76, 77 and 81, none of which
+touch it either.
+
+phase95 adds `location_id uuid` and `market_id uuid` (nullable, no default, no
+backfill) plus the same partial index every other listing table has.
+
+### `check-location-system.sql` — read-only
+
+Not a migration. Reports whether each table, column and backfill is actually
+present in the database being queried. Counts go through `query_to_xml`, not
+plain subqueries, because Postgres resolves table names at parse time — a
+`CASE` around a subquery on a missing table does not protect anything.
+
+### Not changed
+
+No column renamed, no table dropped, no data overwritten, no existing RLS
+policy touched.
+
+---
+
+## 2. Files changed
+
+| File | Why |
+|---|---|
+| `src/lib/area-tree.ts` | **New.** Pure logic for turning the flat list of open areas into cascading levels. |
+| `src/components/dashboard/area-picker.tsx` | One `<select>` → cascading selects. Same props, so existing callers are unaffected. |
+| 9 × `*-register.tsx` | The registration wizards now carry an area. |
+| 11 × provider dashboards | Pass the listing's saved `location_id` so the picker is populated when editing. |
+| `tests/area-tree.test.ts` | **New.** 30 assertions. |
+| `supabase/phase95-…sql`, `supabase/check-location-system.sql` | **New.** See §1. |
+
+No traveler-facing file, no API, no booking logic, no auth, no SEO route was
+touched in this pass.
+
+---
+
+## 3. Location hierarchy
+
+Unchanged from phase72 — a self-referencing tree with `parent_id`, and a
+trigger maintaining `depth`, `ancestors[]` and `path_slugs[]`. Depth is not
+capped and `location_type` is free text, so a country with an administrative
+level Pakistan does not have needs no migration.
+
+Currently seeded:
+
+```
+Pakistan  (country)
+├── Gilgit-Baltistan  (region)
+│   ├── Gilgit Division    → Gilgit, Ghizer, Hunza, Nagar
+│   ├── Baltistan Division → Skardu, Shigar, Kharmang, Ghanche, Roundu
+│   └── Diamer Division    → Diamer, Astore
+└── Khyber Pakhtunkhwa  (region)
+    └── Hazara Division    → Mansehra   (where Naran and Kaghan sit)
+```
+
+Note the **divisions** between region and district. The brief's example
+hierarchy skips them; Gilgit-Baltistan really has them, and phase74 exists
+because an earlier placeholder did not. The cascading picker reads the levels
+off the data rather than assuming a fixed sequence, so this costs nothing.
+
+**Azad Jammu & Kashmir is not seeded.** KPK exists only because Naran and
+Kaghan needed a factually correct parent. Adding AJK is one `upsert_location`
+call and is not done in this pass.
+
+---
+
+## 4. Visibility controls
+
+The brief asks for four `boolean` flags. The existing schema has **nine**, and
+each is a **nullable** boolean with three meanings:
+
+```
+NULL   = inherit from the nearest ancestor that has an explicit value
+true   = explicitly enabled here
+false  = explicitly disabled here
+```
+
+This is better than what was asked for, and worth keeping: a plain
+`boolean not null default true` cannot tell "an admin chose this" from "nobody
+has decided yet", so "reset to inherited" becomes impossible to express. Here
+it is `SET col = NULL`.
+
+Mapping:
+
+| Brief | Schema |
+|---|---|
+| `is_active` | `is_active` |
+| `show_publicly` | `is_public` |
+| `allow_provider_listing` | `onboarding_enabled`, `listings_enabled` |
+| `allow_traveler_search` | `is_public` (+ `seo_enabled` for indexing) |
+| `allow_booking` | `booking_enabled` |
+
+Resolution is done in the database by `resolve_location_flag(id, flag, service)`.
+The provider picker calls `areas_open_for_listings(service)`, which uses that
+same function — so **the list a provider sees and the rule the trigger enforces
+agree by construction, not by two pieces of code being kept in step by hand.**
+
+**KPK and AJK are hidden today by inheritance**, not by a hardcoded exclusion:
+nothing above them sets `is_public`, so it resolves false. That is also why
+nothing needs rewriting to open them later (§10).
+
+---
+
+## 5. Existing data compatibility
+
+- Free-text `location` / `city` / `destination` / `address` columns are
+  **untouched**. They are still what every listing card renders.
+- `useAreaSelection().payload` is `{}` when no area is chosen. Spreading `{}`
+  adds no key, so a save with no area selected writes exactly the bytes it
+  wrote before.
+- Because of that, an untouched picker on an **edit** contributes nothing to
+  the update — an existing `location_id` cannot be wiped by a provider who
+  ignores the field.
+- `AreaPicker` renders **nothing** if Supabase is unconfigured, the tables are
+  absent, the query fails, or no areas are open. Every form then behaves
+  exactly as it does today.
+
+---
+
+## 6. Provider integration
+
+**Registration wizards — new in this pass.** All nine:
+
+| Wizard | Service slug | Written to |
+|---|---|---|
+| transport | `transport` | `transport_providers`, `transport_services` |
+| travel company | `travel-companies` | `tour_companies`, `tour_packages` |
+| guide | `guides` | `tour_guides` |
+| media / drone | `photographers` | `media_providers` |
+| restaurant | `restaurants` | `restaurants` |
+| stay | `hotels` / `homestays` / `hostels` (from `kind`) | the matching table |
+| coworking | `coworking` | `coworking_spaces` |
+| activity | `activities` | `activities` |
+| expedition | `expeditions` | `expedition_companies` **only** — see below |
+
+**Individual expedition professionals are deliberately not wired.** Their table
+is the one phase72's typo missed. Sending `location_id` before phase95 has run
+would fail the insert and stop a porter registering at all — and Vercel deploys
+on push while SQL is run by hand, so the two can arrive in either order. The
+branch is wired once phase95 is confirmed.
+
+**Provider dashboards — corrected in this pass.** All eleven were *already*
+wired; I initially reported otherwise, having grepped for `location_id`, which
+lives inside the hook rather than in the files calling it. What was missing was
+the `initial` argument, so editing an existing listing showed empty dropdowns.
+Fixed in all eleven.
+
+**The picker itself** changed from one `<select>` listing every area — indented
+with `" ".repeat(...)` inside the `<option>`, which never rendered, because HTML
+collapses leading whitespace there — to Region → Division → District → Area.
+
+The interesting case is not the happy path. Openness is inherited but
+overridable, so an admin may close a district and leave one area inside it
+open. That area arrives with a parent that is not in the list. Grouping by
+`depth` would orphan it; following parent links and treating a missing parent
+as "I am a root" shows it one level up instead of dropping it from a form.
+
+A provider who stops at the district has still said something true, so the
+district is what gets saved. Precision is welcome, not required.
+
+---
+
+## 7. Traveler integration
+
+**Not done in this pass.** Reported for accuracy:
+
+- Traveler search, filters, category pages and `/destinations` still read the
+  free-text columns.
+- `location_seo` and `location_nearby` exist and are unused by public routes.
+- Because KPK/AJK resolve to not-public, they cannot leak through any query
+  that goes through `resolve_location_flag` — but the public site does not go
+  through it yet, so that protection is currently unexercised rather than
+  proven.
+
+---
+
+## 8. Admin controls
+
+Exists and is **hidden behind `NEXT_PUBLIC_MARKET_ADMIN=1`**. The reason is in
+the code and is a good one:
+
+> the tab reads and writes real settings, but nothing on the public site or in
+> the provider forms consumes them yet — so leaving it visible by default would
+> invite an admin to disable an area and reasonably expect that to stop
+> bookings. It does not, yet.
+
+After this pass that is **half untrue**: provider forms now consume the
+listing flags. Closing an area now does stop it appearing in registration and
+dashboard pickers. It still does not stop bookings, and the enforcement trigger
+in phase76 still ships disabled, so **the flag should stay on until §7 and the
+trigger are done.**
+
+---
+
+## 9. Attractions
+
+**Not built.** `LOCATION_TYPES` stops at `area`; there is no `attraction` or
+`landmark` type, and no attractions table. Attraction content today lives in
+`src/lib/attractions.ts` as a hardcoded map.
+
+Because `location_type` is free text, adding `attraction` needs no schema
+migration — only the type list, the admin UI's labels, and a decision about
+whether attractions are locations or a table of their own. That decision is
+worth making deliberately rather than in passing.
+
+---
+
+## 10. Future expansion
+
+To open KPK, an admin sets on the KPK row:
+
+```
+is_active = true, is_public = true,
+onboarding_enabled = true, listings_enabled = true, booking_enabled = true
+```
+
+Everything below inherits, because every descendant is `NULL`. No code change,
+no migration, no redeploy. AJK is the same once seeded. So is a new province,
+or a new country — a market row plus a country location.
+
+---
+
+## 11. Testing
+
+**What was actually run.** Being precise, because some of it could not be.
+
+Passed:
+
+- **30 assertions** against the *compiled* `area-tree` module: the closed-parent
+  gap, re-seeding when editing, an area that has since closed, a cycle in the
+  data, level labelling, and reset-children-on-parent-change.
+- **PGlite** on `phase95` — columns added nullable, partial index created,
+  re-run clean, rollback exact, guard fires on a database without the table.
+- **PGlite** on `check-location-system.sql` against a database with only some
+  tables present, so the TABLE MISSING and COLUMN MISSING branches ran.
+- **PGlite** on `phase94` (the earlier provider-name backfill) across every
+  branch including refusing to revert a hand-edited row.
+- `tsc --noEmit` clean after every step.
+- `eslint` on all touched files — unchanged from `HEAD`, verified by stashing
+  and re-running rather than by assuming.
+
+**Not run, and needs to be:**
+
+- `npm test` — the vitest 4 / rolldown native binding is Windows-installed, so
+  the suite cannot run from this environment. `tests/area-tree.test.ts` is
+  written and has never executed under vitest.
+- `npm run build`.
+- **Every flow in the brief's list 1–15 and 16–30.** None has been exercised in
+  a browser. In particular nobody has yet watched a real provider register with
+  the cascading picker on a phone.
+
+The design assumption that makes this acceptable to ship is that the picker
+renders nothing when anything is wrong — so the worst realistic outcome is that
+the area field is invisible and registration works as it did last week. That is
+an argument for shipping it, not a substitute for testing it.
+
+**Run first, before deploying:** `phase95-expedition-pros-location.sql`, then
+`check-location-system.sql` to confirm the ground truth.
