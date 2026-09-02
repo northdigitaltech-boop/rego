@@ -146,6 +146,53 @@ export function orphanContext(a: AreaOption, areas: AreaOption[]): string | null
     .join(" ");
 }
 
+/** Plain name for one location type. */
+export function typeLabel(t: string): string {
+  switch (t) {
+    case "country":    return "Country";
+    case "region":     return "Region / Province";
+    case "division":   return "Division";
+    case "district":   return "District";
+    case "city":       return "City / Town";
+    case "area":       return "Area";
+    case "village":    return "Village";
+    case "attraction": return "Attraction";
+    case "landmark":   return "Landmark";
+    default:           return "Area";
+  }
+}
+
+/**
+ * A level split into groups, one per location type, in tree order.
+ *
+ * WHY A LEVEL CAN HOLD MORE THAN ONE TYPE
+ *   It should not, and when the data is right it does not — every child of
+ *   Gilgit-Baltistan is a division. But rows can be mis-parented: districts
+ *   seeded directly under the region before divisions existed sit beside them
+ *   and read as peers, which is how "Gilgit Division, Skardu, Baltistan
+ *   Division, Gilgit" ends up in one flat list.
+ *
+ *   Hiding the odd ones out would be worse than showing them — a provider in
+ *   a mis-parented district could then not choose it at all. Grouping says
+ *   what each one is without dropping any, and the groups disappear by
+ *   themselves once the tree is repaired.
+ */
+export function groupByType(options: AreaOption[]): { label: string; options: AreaOption[] }[] {
+  const order: string[] = [];
+  const groups = new Map<string, AreaOption[]>();
+  for (const o of options) {
+    if (!groups.has(o.location_type)) {
+      groups.set(o.location_type, []);
+      order.push(o.location_type);
+    }
+    groups.get(o.location_type)!.push(o);
+  }
+  /* One type is the normal case: no groups, so the dropdown looks exactly as
+     it did. */
+  if (order.length <= 1) return [];
+  return order.map((t) => ({ label: typeLabel(t), options: groups.get(t)! }));
+}
+
 /**
  * Label for a level, from the kind of place it offers.
  *
@@ -154,15 +201,11 @@ export function orphanContext(a: AreaOption, areas: AreaOption[]): string | null
  * country entered later may not. A level holding a mix falls back to "Area".
  */
 export function levelLabel(options: AreaOption[]): string {
-  const types = new Set(options.map((o) => o.location_type));
-  if (types.size !== 1) return "Area";
-  switch ([...types][0]) {
-    case "country":  return "Country";
-    case "region":   return "Region / Province";
-    case "division": return "Division";
-    case "district": return "District";
-    case "city":     return "City / Town";
-    case "area":     return "Area";
-    default:         return "Area";
-  }
+  const types = [...new Set(options.map((o) => o.location_type))];
+  if (types.length === 0) return "Area";
+  if (types.length === 1) return typeLabel(types[0]);
+  /* Mixed. Naming both beats calling it "Area", which was a guess that
+     happened to be wrong for a level holding divisions and districts. */
+  if (types.length === 2) return `${typeLabel(types[0])} or ${typeLabel(types[1]).toLowerCase()}`;
+  return "Place";
 }

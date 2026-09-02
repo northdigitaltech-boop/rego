@@ -12,6 +12,7 @@ import {
 import {
   buildLevels,
   deepestSelected,
+  groupByType,
   levelLabel,
   orphanContext,
   pathAfterChange,
@@ -190,17 +191,32 @@ export function AreaPicker({
                 ? `Choose a ${levelLabel(level.options).toLowerCase()}`
                 : `${levelLabel(level.options)} \u2014 not specified`}
             </option>
-            {level.options.map((a) => {
+            {(() => {
               /* An area whose parent is closed appears here rather than under
                  that parent. Saying where it is stops "Kachura" being a
                  guess. */
-              const where = orphanContext(a, areas);
-              return (
-                <option key={a.id} value={a.id}>
-                  {where ? `${a.name} \u2014 in ${where}` : a.name}
-                </option>
-              );
-            })}
+              const opt = (a: AreaOption) => {
+                const where = orphanContext(a, areas);
+                return (
+                  <option key={a.id} value={a.id}>
+                    {where ? `${a.name} \u2014 in ${where}` : a.name}
+                  </option>
+                );
+              };
+
+              /* Empty unless this level holds more than one kind of place,
+                 which only happens when something is mis-parented. Then a
+                 division and a district are not peers and should not read as
+                 peers — so they get headings instead of being hidden. */
+              const groups = groupByType(level.options);
+              if (groups.length === 0) return level.options.map(opt);
+
+              return groups.map((g) => (
+                <optgroup key={g.label} label={g.label}>
+                  {g.options.map(opt)}
+                </optgroup>
+              ));
+            })()}
           </select>
         ))}
       </div>
