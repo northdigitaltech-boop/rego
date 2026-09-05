@@ -5,6 +5,7 @@ import { createHash } from "crypto";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
+import { absoluteUrl } from "@/lib/site";
 
 /* ============================================================
  * Team management — the only write path.
@@ -25,10 +26,16 @@ import { enforceIpBlock } from "@/lib/ip-block";
  * ---------------------------------------------------------------------------
  * WHAT THIS ROUTE REFUSES TO DO
  *
- * It cannot grant a permission that does not exist, cannot make someone an
- * admin, and cannot create an auth user. The first two are the whole point of
- * phase104; the third is because a second signup path is a second place for
- * an email to be wrong.
+ * It cannot grant a permission that does not exist and it cannot make someone
+ * an admin. That is the whole point of phase104.
+ *
+ * It CAN create an account, by invitation. An earlier version refused to,
+ * on the grounds that it would be "a second signup path" — which was wrong.
+ * inviteUserByEmail() is Supabase's own invite mechanism on the same auth
+ * system: one auth.users row, one password, the same /reset-password screen
+ * a forgotten password already uses. There is no second path. What the
+ * refusal actually produced was an admin telling a colleague to go and sign
+ * up, then waiting to be told they had, then coming back here.
  * ============================================================ */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -59,6 +66,11 @@ function bad(error: string, status = 400) {
 }
 
 const STATUSES = new Set(["active", "suspended", "disabled"]);
+
+/* Checked before an invitation is sent, not after. A typo in an address that
+   nobody owns produces an auth user that can never sign in, and it is easier
+   to refuse it here than to explain it later. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(req: Request) {
   const blocked = await enforceIpBlock(req);
@@ -143,58 +155,56 @@ export async function POST(req: Request) {
 
   switch (action) {
     /* ================================================================
-     * Turn an existing REGO account into a staff member.
+     * Add a team member. Either the person already has a Rego account,
+     * or they are invited by email and set their own password.
      * ================================================================ */
     case "add_member": {
       const email = String(body.email ?? "").trim().toLowerCase();
       const departmentId = String(body.departmentId ?? "");
       const roleId = String(body.roleId ?? "");
+      const fullName = String(body.fullName ?? "").trim();
 
       if (!email) return bad("Email is required.");
+      if (!EMAIL_RE.test(email)) return bad("That does not look like an email address.");
       if (!departmentId) return bad("Choose a department.");
       if (!roleId) return bad("Choose a role.");
 
-      /* The account must already exist. Creating auth users here would be a
-         second signup path — a second password flow and a second place for an
-         email to be typed wrong. They sign up the way everyone does. */
       const { data: person } = await sb
         .from("profiles")
         .select("id, email, role")
         .ilike("email", email)
         .maybeSingle();
 
-      if (!person) {
-        return bad(
-          `No REGO account for ${email}. Ask them to sign up first, then add them here.`,
-          404
-        );
-      }
+      const p = person as { id: string; role: string | null } | null;
 
-      const p = person as { id: string; email: string | null; role: string | null };
+      if (p) {
+        /* An admin is Super Admin. Making them staff as well would give one
+           person two authorisation paths and make "who approved this"
+           ambiguous in the audit trail. */
+        if (p.role === "admin") {
+          return bad(
+            "That account is an admin. Super Admin is a separate authority from staff — a person should be one or the other."
+          );
+        }
 
-      /* An admin is Super Admin. Making them staff as well would give one
-         person two authorisation paths and make "who approved this" ambiguous
-         in the audit trail. */
-      if (p.role === "admin") {
-        return bad(
-          "That account is an admin. Super Admin is a separate authority from staff — a person should be one or the other."
-        );
-      }
+        const { data: already } = await sb
+          .from("staff_members")
+          .select("id, employee_code")
+          .eq("profile_id", p.id)
+          .maybeSingle();
 
-      const { data: already } = await sb
-        .from("staff_members")
-        .select("id, employee_code")
-        .eq("profile_id", p.id)
-        .maybeSingle();
-
-      if (already) {
-        return bad(
-          `${email} is already on the team as ${(already as { employee_code: string }).employee_code}.`
-        );
+        if (already) {
+          return bad(
+            `${email} is already on the team as ${(already as { employee_code: string }).employee_code}.`
+          );
+        }
       }
 
       /* Server-generated and immutable. Attribution points at this, never at
-         a name — people share names, change them, and leave. */
+         a name — people share names, change them, and leave.
+
+         Generated BEFORE the invite on purpose: if code generation fails, no
+         account has been created yet and there is nothing left behind. */
       const { data: codeRow, error: codeErr } = await sb.rpc("next_employee_code", {
         p_department_id: departmentId,
       });
@@ -203,10 +213,48 @@ export async function POST(req: Request) {
       }
       const employeeCode = String(codeRow);
 
+      /* ---- the invite, when there is no account yet ----
+         handle_new_user() fires on auth.users and writes the profiles row in
+         the same transaction, so by the time this returns the profile the
+         foreign key needs already exists. Role is left at its default: a
+         staff member's authority comes from staff_members, not from
+         profiles.role, and writing anything else here would be a second
+         place for permissions to live. */
+      let profileId: string;
+      let invitedNow = false;
+
+      if (p) {
+        profileId = p.id;
+      } else {
+        const { data: invite, error: inviteErr } = await sb.auth.admin.inviteUserByEmail(
+          email,
+          {
+            redirectTo: absoluteUrl("/reset-password?welcome=1"),
+            data: fullName ? { full_name: fullName } : undefined,
+          }
+        );
+
+        if (inviteErr || !invite?.user) {
+          /* The common one is an auth user that exists without a profiles row
+             — rare, but it reads as "already registered" and the admin needs
+             to know the difference between that and a bounced email. */
+          const msg = inviteErr?.message ?? "Could not send the invitation.";
+          return bad(
+            /already.*registered|already been registered/i.test(msg)
+              ? `${email} already has a Rego account but no profile record. Ask them to sign in once, then add them here.`
+              : `Could not invite ${email}: ${msg}`,
+            500
+          );
+        }
+
+        profileId = invite.user.id;
+        invitedNow = true;
+      }
+
       const { data: created, error } = await sb
         .from("staff_members")
         .insert({
-          profile_id: p.id,
+          profile_id: profileId,
           employee_code: employeeCode,
           /* Defaults to the employee code: unique by construction, and a
              friendlier alias can be set later without risking a collision
@@ -223,14 +271,25 @@ export async function POST(req: Request) {
         .select("id, employee_code, referral_code")
         .single();
 
-      if (error) return bad(error.message, 500);
+      if (error) {
+        /* If the invite went out and this failed, the account exists and the
+           person may already have the email. Deleting it would be worse: they
+           would click a dead link. A retry finds the profile and takes the
+           existing-account path, so say that plainly. */
+        return bad(
+          invitedNow
+            ? `The invitation to ${email} was sent, but adding them to the team failed: ${error.message}. Try adding them again — the account now exists.`
+            : error.message,
+          500
+        );
+      }
 
       await audit({
-        action: "staff.add",
+        action: invitedNow ? "staff.add_invited" : "staff.add",
         entityId: created.id,
         entityLabel: `${employeeCode} · ${email}`,
         before: null,
-        after: { email, department_id: departmentId, role_id: roleId },
+        after: { email, department_id: departmentId, role_id: roleId, invited: invitedNow },
       });
 
       return NextResponse.json({
@@ -238,6 +297,10 @@ export async function POST(req: Request) {
         id: created.id,
         employeeCode: created.employee_code,
         referralCode: created.referral_code,
+        /* So the screen can say what actually happened rather than one
+           message that is half wrong either way. */
+        invited: invitedNow,
+        email,
       });
     }
 

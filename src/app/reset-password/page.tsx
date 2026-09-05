@@ -21,6 +21,17 @@ export default function ResetPasswordPage() {
   const [busy, setBusy] = React.useState(false);
   const [hasSession, setHasSession] = React.useState<boolean | null>(null);
 
+  /* An invited person is not resetting anything — they have never had a
+     password. Same screen, same session handling, honest wording.
+
+     Read from window rather than useSearchParams: that hook would opt this
+     route out of static rendering and require a Suspense boundary, to read one
+     flag that only ever exists in a browser. */
+  const [welcome, setWelcome] = React.useState(false);
+  React.useEffect(() => {
+    setWelcome(new URLSearchParams(window.location.search).get("welcome") === "1");
+  }, []);
+
   // Supabase auto-detects the recovery token in the URL and establishes a
   // temporary session; confirm one exists before showing the form.
   React.useEffect(() => {
@@ -53,7 +64,11 @@ export default function ResetPasswordPage() {
     setBusy(true);
     try {
       await resetPassword("", "", password);
-      setFlash("Password updated! Please sign in with your new password.");
+      setFlash(
+        welcome
+          ? "Your password is set. Sign in to get started."
+          : "Password updated! Please sign in with your new password."
+      );
       await supabase.auth.signOut();
       router.push("/signin");
     } catch (err) {
@@ -75,15 +90,28 @@ export default function ResetPasswordPage() {
         </Link>
 
         <div className="rounded-3xl border border-border bg-card p-6 shadow-premium-lg sm:p-8">
-          <h1 className="font-display text-2xl font-bold text-forest">Set a new password</h1>
+          <h1 className="font-display text-2xl font-bold text-forest">
+            {welcome ? "Choose your password" : "Set a new password"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter and confirm your new password below.
+            {welcome
+              ? "Your Rego account is ready. Pick a password and you are in."
+              : "Enter and confirm your new password below."}
           </p>
 
           {hasSession === false ? (
             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              This reset link is invalid or has expired. Please request a new reset link from the{" "}
-              <Link href="/signin" className="font-semibold underline">sign-in page</Link>.
+              {welcome ? (
+                <>
+                  This invitation link is invalid or has expired. Ask whoever added
+                  you to send it again.
+                </>
+              ) : (
+                <>
+                  This reset link is invalid or has expired. Please request a new reset link from the{" "}
+                  <Link href="/signin" className="font-semibold underline">sign-in page</Link>.
+                </>
+              )}
             </div>
           ) : (
             <form onSubmit={submit} className="mt-5 space-y-4">

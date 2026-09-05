@@ -178,6 +178,9 @@ export interface StaffApiResult {
   id?: string;
   employeeCode?: string;
   referralCode?: string;
+  /** True when the account did not exist and an invitation email was sent. */
+  invited?: boolean;
+  email?: string;
 }
 
 async function post(body: unknown): Promise<StaffApiResult> {
@@ -217,8 +220,18 @@ async function post(body: unknown): Promise<StaffApiResult> {
  *   the system to be correct, and inventing it now would be the third login
  *   route in a product with one.
  */
+/**
+ * Add a team member.
+ *
+ * If the email already has a Rego account they are attached to it. If it does
+ * not, the server sends a Supabase invitation and the person sets their own
+ * password — nobody ever types a password on someone else's behalf. Check
+ * `invited` on the result to know which happened.
+ */
 export function addStaffMember(input: {
   email: string;
+  /** Only used if the invitation creates the account. */
+  fullName?: string;
   departmentId: string;
   roleId: string;
   jobTitle?: string;

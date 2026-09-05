@@ -301,6 +301,7 @@ function AddMember({
   onAdded: () => void;
 }) {
   const [email, setEmail] = React.useState("");
+  const [fullName, setFullName] = React.useState("");
   const [departmentId, setDepartmentId] = React.useState("");
   const [roleId, setRoleId] = React.useState("");
   const [jobTitle, setJobTitle] = React.useState("");
@@ -322,6 +323,7 @@ function AddMember({
     setBusy(true);
     const res = await addStaffMember({
       email: email.trim(),
+      fullName: fullName.trim() || undefined,
       departmentId,
       roleId,
       jobTitle: jobTitle.trim() || undefined,
@@ -332,9 +334,15 @@ function AddMember({
     if (!res.ok) return setNote({ ok: false, text: res.error ?? "Could not add them." });
     setNote({
       ok: true,
-      text: `Added as ${res.employeeCode}. Their referral code is ${res.referralCode}.`,
+      /* Two different things happened and the admin needs to know which. If an
+         invitation went out, there is a person waiting on an email; if it did
+         not, there is nothing to wait for. */
+      text: res.invited
+        ? `Invitation sent to ${email.trim()}. They are ${res.employeeCode}, referral code ${res.referralCode} — they can use the portal once they open the email and set a password.`
+        : `Added as ${res.employeeCode}. Their referral code is ${res.referralCode}.`,
     });
     setEmail("");
+    setFullName("");
     setJobTitle("");
     setPhone("");
     onAdded();
@@ -347,20 +355,33 @@ function AddMember({
           <UserPlus className="h-5 w-5" /> Add a team member
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          They need a REGO account first. Ask them to sign up normally, then add them
-          here — one account, one password, one place for an address to be wrong.
+          If they already have a Rego account, they are added straight away. If they
+          do not, we email them an invitation and they set their own password — so
+          nobody types a password for somebody else.
         </p>
       </div>
 
-      <Field label="Their email" required>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          type="email"
-          placeholder="name@example.com"
-          className="auth-input"
-        />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Their email" required>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder="name@example.com"
+            className="auth-input"
+          />
+        </Field>
+        {/* Only used when the invitation creates the account — an existing
+            profile keeps the name its owner chose. */}
+        <Field label="Their name">
+          <input
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="auth-input"
+            placeholder="Used only if we create the account"
+          />
+        </Field>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Department" required>
