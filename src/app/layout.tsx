@@ -9,6 +9,7 @@ import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { IosSplash } from "@/components/pwa/ios-splash";
 
@@ -177,6 +178,21 @@ export default function RootLayout({
             metric Google actually measures. Renders nothing at all when
             NEXT_PUBLIC_GA_ID is unset. */}
         <GoogleAnalytics />
+
+        {/* Real-user Core Web Vitals, reported to Vercel.
+            Vercel's dashboard had Speed Insights switched on and no script to
+            report to it, so it sat empty and warned that nothing had been
+            collected for seven days — which read as an outage and was not one.
+
+            It earns its place right now for a specific reason: framer-motion
+            was removed from this project for performance and that change has
+            never been measured on a real device. Lighthouse is one machine,
+            once. This is what actually happens on a phone on mobile data in
+            Gilgit.
+
+            Loads after the page is interactive, like GoogleAnalytics above,
+            and does nothing outside Vercel. */}
+        <SpeedInsights />
       </body>
     </html>
   );
