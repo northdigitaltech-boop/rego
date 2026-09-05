@@ -6,6 +6,7 @@ import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
 import { absoluteUrl } from "@/lib/site";
+import { sendStaffInvite, isSmtpConfigured } from "@/lib/staff-invite";
 
 /* ============================================================
  * Team management — the only write path.
@@ -214,31 +215,45 @@ export async function POST(req: Request) {
       const employeeCode = String(codeRow);
 
       /* ---- the invite, when there is no account yet ----
+
+         generateLink CREATES the account and returns a one-time link but
+         sends nothing. inviteUserByEmail would have Supabase send it, and on
+         a project without custom SMTP that fails outright — the built-in
+         service is rate-limited and in practice only reaches project members.
+         So Rego sends it, through the same SMTP that sends booking mail.
+
          handle_new_user() fires on auth.users and writes the profiles row in
-         the same transaction, so by the time this returns the profile the
-         foreign key needs already exists. Role is left at its default: a
-         staff member's authority comes from staff_members, not from
-         profiles.role, and writing anything else here would be a second
-         place for permissions to live. */
+         the same transaction, so the profile the foreign key needs exists by
+         the time this returns. Role is left at its default: a staff member's
+         authority comes from staff_members, and writing anything into
+         profiles.role would be a second place for permissions to live. */
       let profileId: string;
       let invitedNow = false;
+      let inviteLink = "";
 
       if (p) {
         profileId = p.id;
       } else {
-        const { data: invite, error: inviteErr } = await sb.auth.admin.inviteUserByEmail(
+        if (!isSmtpConfigured) {
+          /* Refuse BEFORE creating the account. An account nobody can be told
+             about is worse than a clear no. */
+          return bad(
+            `${email} has no Rego account, and email is not configured on this server, so no invitation can be sent. Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD, or ask them to sign up first.`,
+            503
+          );
+        }
+
+        const { data: link, error: linkErr } = await sb.auth.admin.generateLink({
+          type: "invite",
           email,
-          {
+          options: {
             redirectTo: absoluteUrl("/reset-password?welcome=1"),
             data: fullName ? { full_name: fullName } : undefined,
-          }
-        );
+          },
+        });
 
-        if (inviteErr || !invite?.user) {
-          /* The common one is an auth user that exists without a profiles row
-             — rare, but it reads as "already registered" and the admin needs
-             to know the difference between that and a bounced email. */
-          const msg = inviteErr?.message ?? "Could not send the invitation.";
+        if (linkErr || !link?.user || !link.properties?.action_link) {
+          const msg = linkErr?.message ?? "Could not create the invitation.";
           return bad(
             /already.*registered|already been registered/i.test(msg)
               ? `${email} already has a Rego account but no profile record. Ask them to sign in once, then add them here.`
@@ -247,7 +262,10 @@ export async function POST(req: Request) {
           );
         }
 
-        profileId = invite.user.id;
+        profileId = link.user.id;
+        /* Held in a local only. It is a sign-in credential: never logged,
+           never audited, never sent back to the browser. */
+        inviteLink = link.properties.action_link;
         invitedNow = true;
       }
 
@@ -284,12 +302,45 @@ export async function POST(req: Request) {
         );
       }
 
+      /* The account and the staff row both exist now, so the email can name
+         the job it is inviting them to. */
+      let mailProblem: string | null = null;
+      if (invitedNow) {
+        const [{ data: dept }, { data: roleRow }] = await Promise.all([
+          sb.from("staff_departments").select("name").eq("id", departmentId).maybeSingle(),
+          sb.from("staff_roles").select("name").eq("id", roleId).maybeSingle(),
+        ]);
+
+        const sent = await sendStaffInvite({
+          to: email,
+          name: fullName || null,
+          link: inviteLink,
+          employeeCode,
+          departmentName: (dept as { name?: string } | null)?.name ?? null,
+          roleName: (roleRow as { name?: string } | null)?.name ?? null,
+          invitedBy: actorEmail,
+        });
+
+        /* The account exists either way. Deleting it because the mail bounced
+           would be worse — the admin would have no record and the person may
+           already have received it. Say what happened instead. */
+        if (!sent.ok) mailProblem = sent.error ?? "The invitation email could not be sent.";
+      }
+
       await audit({
+        /* The link is deliberately absent. It signs its holder in, and an
+           audit trail is read by more people than it is written by. */
         action: invitedNow ? "staff.add_invited" : "staff.add",
         entityId: created.id,
         entityLabel: `${employeeCode} · ${email}`,
         before: null,
-        after: { email, department_id: departmentId, role_id: roleId, invited: invitedNow },
+        after: {
+          email,
+          department_id: departmentId,
+          role_id: roleId,
+          invited: invitedNow,
+          invite_email_sent: invitedNow ? mailProblem === null : null,
+        },
       });
 
       return NextResponse.json({
@@ -300,6 +351,8 @@ export async function POST(req: Request) {
         /* So the screen can say what actually happened rather than one
            message that is half wrong either way. */
         invited: invitedNow,
+        inviteEmailFailed: mailProblem !== null,
+        warning: mailProblem,
         email,
       });
     }

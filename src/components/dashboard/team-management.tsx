@@ -332,15 +332,26 @@ function AddMember({
     setBusy(false);
 
     if (!res.ok) return setNote({ ok: false, text: res.error ?? "Could not add them." });
-    setNote({
-      ok: true,
-      /* Two different things happened and the admin needs to know which. If an
-         invitation went out, there is a person waiting on an email; if it did
-         not, there is nothing to wait for. */
-      text: res.invited
-        ? `Invitation sent to ${email.trim()}. They are ${res.employeeCode}, referral code ${res.referralCode} — they can use the portal once they open the email and set a password.`
-        : `Added as ${res.employeeCode}. Their referral code is ${res.referralCode}.`,
-    });
+
+    /* Three outcomes, and the difference matters. Added to an existing
+       account: nothing to wait for. Invited: somebody has an email to open.
+       Invited but the mail failed: they are on the team and cannot sign in,
+       which is the one an admin must not walk away from. */
+    if (res.inviteEmailFailed) {
+      setNote({
+        ok: false,
+        text: `${email.trim()} was added as ${res.employeeCode}, but the invitation email did not send${
+          res.warning ? ` (${res.warning})` : ""
+        }. They cannot sign in until it does — fix the email settings, then send them a password reset from the sign-in page.`,
+      });
+    } else {
+      setNote({
+        ok: true,
+        text: res.invited
+          ? `Invitation sent to ${email.trim()}. They are ${res.employeeCode}, referral code ${res.referralCode} — they can use the portal once they open the email and choose a password.`
+          : `Added as ${res.employeeCode}. Their referral code is ${res.referralCode}.`,
+      });
+    }
     setEmail("");
     setFullName("");
     setJobTitle("");

@@ -178,8 +178,12 @@ export interface StaffApiResult {
   id?: string;
   employeeCode?: string;
   referralCode?: string;
-  /** True when the account did not exist and an invitation email was sent. */
+  /** True when the account did not exist and an invitation was created. */
   invited?: boolean;
+  /** The account exists but the email did not go out. They cannot sign in yet. */
+  inviteEmailFailed?: boolean;
+  /** Why, when something succeeded but not completely. */
+  warning?: string | null;
   email?: string;
 }
 
