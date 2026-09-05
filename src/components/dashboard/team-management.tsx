@@ -1,0 +1,683 @@
+"use client";
+
+import * as React from "react";
+import {
+  Loader2,
+  Search,
+  ShieldCheck,
+  TriangleAlert,
+  UserPlus,
+  Users,
+} from "lucide-react";
+
+import {
+  STAFF_STATUSES,
+  STATUS_HELP,
+  addStaffMember,
+  effectivePermissions,
+  getDepartments,
+  getGrants,
+  getPermissions,
+  getRolePermissions,
+  getRoles,
+  getScopes,
+  getStaffMembers,
+  setPermissionOverride,
+  setScope,
+  updateStaffMember,
+  type DepartmentRow,
+  type GrantRow,
+  type PermissionRow,
+  type RoleRow,
+  type ScopeRow,
+  type StaffMemberRow,
+  type StaffStatus,
+} from "@/lib/staff";
+import { getLocations, getMarkets, type LocationRow } from "@/lib/markets";
+import { cn } from "@/lib/utils";
+
+/* ============================================================
+ * Team Management.
+ *
+ * The screen deliberately shows what a member CAN do rather than
+ * which switches are on: a role grants a set, an override changes
+ * it in either direction, and the useful question is always the
+ * result. Reading two lists and doing the arithmetic in your head
+ * is how someone ends up believing a permission is off when it is
+ * on.
+ *
+ * Nothing here is authorisation. Every write goes to
+ * /api/admin/staff, which re-checks the caller server-side.
+ * ============================================================ */
+
+type Tab = "members" | "add";
+
+export function TeamManagement() {
+  const [tab, setTab] = React.useState<Tab>("members");
+
+  const [departments, setDepartments] = React.useState<DepartmentRow[]>([]);
+  const [roles, setRoles] = React.useState<RoleRow[]>([]);
+  const [permissions, setPermissions] = React.useState<PermissionRow[]>([]);
+  const [rolePerms, setRolePerms] = React.useState<{ role_id: string; permission_id: string }[]>([]);
+  const [members, setMembers] = React.useState<StaffMemberRow[]>([]);
+  const [emails, setEmails] = React.useState<Record<string, string>>({});
+  const [locations, setLocations] = React.useState<LocationRow[]>([]);
+
+  const [loading, setLoading] = React.useState(true);
+  const [notReady, setNotReady] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [query, setQuery] = React.useState("");
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const [d, r, p, rp, m] = await Promise.all([
+        getDepartments(),
+        getRoles(),
+        getPermissions(),
+        getRolePermissions(),
+        getStaffMembers(),
+      ]);
+      /* No departments means phase104 has not been run. That is a setup
+         state, not a failure — say which file rather than showing an
+         empty screen. */
+      if (d.length === 0) {
+        setNotReady(true);
+        return;
+      }
+      setDepartments(d);
+      setRoles(r);
+      setPermissions(p);
+      setRolePerms(rp);
+      setMembers(m);
+
+      const mk = await getMarkets();
+      if (mk.length > 0) setLocations(await getLocations(mk[0].id));
+    } catch {
+      setError("Could not load the team.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
+  /* Emails come from profiles, which an admin session can read. Fetched
+     separately because staff_members deliberately does not copy them —
+     one place for an address to be right. */
+  React.useEffect(() => {
+    if (members.length === 0) return;
+    let alive = true;
+    (async () => {
+      const { supabase } = await import("@/lib/supabase");
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", members.map((m) => m.profile_id));
+      if (!alive) return;
+      const map: Record<string, string> = {};
+      for (const row of (data as { id: string; email: string | null; full_name: string | null }[] | null) ?? []) {
+        map[row.id] = row.full_name || row.email || "";
+      }
+      setEmails(map);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [members]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-16 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading the team…
+      </div>
+    );
+  }
+
+  if (notReady) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-10 text-center">
+        <Users className="mx-auto h-10 w-10 text-forest-600" />
+        <p className="mt-3 font-semibold text-forest">Team management is not set up yet</p>
+        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Run <code className="rounded bg-muted px-1">phase104-staff-foundation.sql</code> in
+          Supabase. It creates the departments, roles and permissions this screen reads,
+          and adds nobody.
+        </p>
+      </div>
+    );
+  }
+
+  const selected = members.find((m) => m.id === selectedId) ?? null;
+
+  const shown = members.filter((m) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      m.employee_code.toLowerCase().includes(q) ||
+      (emails[m.profile_id] ?? "").toLowerCase().includes(q) ||
+      (m.job_title ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {([
+          ["members", `Team members (${members.length})`],
+          ["add", "Add a member"],
+        ] as [Tab, string][]).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+              tab === id
+                ? "bg-forest text-white"
+                : "border border-border text-forest hover:bg-muted/60"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+
+      {tab === "add" && (
+        <AddMember
+          departments={departments}
+          roles={roles}
+          onAdded={async () => {
+            await load();
+            setTab("members");
+          }}
+        />
+      )}
+
+      {tab === "members" && (
+        <div className="grid gap-4 lg:grid-cols-[minmax(280px,380px)_1fr]">
+          <div className="rounded-2xl border border-border bg-card p-2">
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by code, name or title…"
+                className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm"
+              />
+            </div>
+
+            {members.length === 0 ? (
+              <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                Nobody on the team yet. Add someone who already has a REGO account.
+              </p>
+            ) : shown.length === 0 ? (
+              <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                No one matches “{query}”.
+              </p>
+            ) : (
+              shown.map((m) => {
+                const dept = departments.find((d) => d.id === m.department_id);
+                const role = roles.find((r) => r.id === m.role_id);
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setSelectedId(m.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left",
+                      selectedId === m.id ? "bg-forest-50" : "hover:bg-muted/60"
+                    )}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-forest">
+                        {emails[m.profile_id] || "—"}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {m.employee_code} · {dept?.name ?? "—"} · {role?.name ?? "—"}
+                      </span>
+                    </span>
+                    <StatusBadge status={m.status} />
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div>
+            {selected ? (
+              <MemberDetail
+                key={selected.id}
+                member={selected}
+                who={emails[selected.profile_id] ?? ""}
+                departments={departments}
+                roles={roles}
+                permissions={permissions}
+                rolePerms={rolePerms}
+                locations={locations}
+                onChanged={load}
+                onError={setError}
+              />
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-12 text-center text-sm text-muted-foreground">
+                Choose someone to see their role, permissions and areas.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: StaffStatus }) {
+  const tone =
+    status === "active"
+      ? "bg-forest-50 text-forest-600"
+      : status === "suspended"
+      ? "bg-amber-100 text-amber-800"
+      : "bg-muted text-muted-foreground";
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", tone)}>
+      {status}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function AddMember({
+  departments,
+  roles,
+  onAdded,
+}: {
+  departments: DepartmentRow[];
+  roles: RoleRow[];
+  onAdded: () => void;
+}) {
+  const [email, setEmail] = React.useState("");
+  const [departmentId, setDepartmentId] = React.useState("");
+  const [roleId, setRoleId] = React.useState("");
+  const [jobTitle, setJobTitle] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [note, setNote] = React.useState<{ ok: boolean; text: string } | null>(null);
+
+  /* Roles for the chosen department, plus any that cross departments. */
+  const available = roles.filter(
+    (r) => !r.department_id || r.department_id === departmentId
+  );
+
+  const submit = async () => {
+    setNote(null);
+    if (!email.trim()) return setNote({ ok: false, text: "Enter their email address." });
+    if (!departmentId) return setNote({ ok: false, text: "Choose a department." });
+    if (!roleId) return setNote({ ok: false, text: "Choose a role." });
+
+    setBusy(true);
+    const res = await addStaffMember({
+      email: email.trim(),
+      departmentId,
+      roleId,
+      jobTitle: jobTitle.trim() || undefined,
+      phone: phone.trim() || undefined,
+    });
+    setBusy(false);
+
+    if (!res.ok) return setNote({ ok: false, text: res.error ?? "Could not add them." });
+    setNote({
+      ok: true,
+      text: `Added as ${res.employeeCode}. Their referral code is ${res.referralCode}.`,
+    });
+    setEmail("");
+    setJobTitle("");
+    setPhone("");
+    onAdded();
+  };
+
+  return (
+    <div className="max-w-xl space-y-4 rounded-2xl border border-border bg-card p-5">
+      <div>
+        <p className="flex items-center gap-2 font-display text-lg font-bold text-forest">
+          <UserPlus className="h-5 w-5" /> Add a team member
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          They need a REGO account first. Ask them to sign up normally, then add them
+          here — one account, one password, one place for an address to be wrong.
+        </p>
+      </div>
+
+      <Field label="Their email" required>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          type="email"
+          placeholder="name@example.com"
+          className="auth-input"
+        />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Department" required>
+          <select
+            value={departmentId}
+            onChange={(e) => {
+              setDepartmentId(e.target.value);
+              setRoleId("");
+            }}
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+          >
+            <option value="">Choose…</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name} ({d.code_prefix})
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Role" required>
+          <select
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
+            disabled={!departmentId}
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm disabled:opacity-50"
+          >
+            <option value="">{departmentId ? "Choose…" : "Pick a department first"}</option>
+            {available.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Job title">
+          <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} className="auth-input" />
+        </Field>
+        <Field label="Phone">
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="auth-input" inputMode="tel" />
+        </Field>
+      </div>
+
+      <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+        Their employee code and referral code are generated by the server and cannot be
+        changed afterwards. Attribution points at the code, so changing it later would
+        silently re-attribute their work.
+      </p>
+
+      {note && (
+        <p
+          className={cn(
+            "rounded-lg px-3 py-2 text-sm",
+            note.ok ? "bg-forest-50 text-forest-700" : "bg-red-50 text-red-700"
+          )}
+        >
+          {note.text}
+        </p>
+      )}
+
+      <button
+        onClick={submit}
+        disabled={busy}
+        className="inline-flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+      >
+        {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+        Add to the team
+      </button>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function MemberDetail({
+  member,
+  who,
+  departments,
+  roles,
+  permissions,
+  rolePerms,
+  locations,
+  onChanged,
+  onError,
+}: {
+  member: StaffMemberRow;
+  who: string;
+  departments: DepartmentRow[];
+  roles: RoleRow[];
+  permissions: PermissionRow[];
+  rolePerms: { role_id: string; permission_id: string }[];
+  locations: LocationRow[];
+  onChanged: () => Promise<void>;
+  onError: (s: string) => void;
+}) {
+  const [grants, setGrants] = React.useState<GrantRow[]>([]);
+  const [scopes, setScopes] = React.useState<ScopeRow[]>([]);
+  const [busy, setBusy] = React.useState("");
+
+  const reload = React.useCallback(async () => {
+    const [g, s] = await Promise.all([getGrants(member.id), getScopes(member.id)]);
+    setGrants(g);
+    setScopes(s);
+  }, [member.id]);
+
+  React.useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const dept = departments.find((d) => d.id === member.department_id);
+  const role = roles.find((r) => r.id === member.role_id);
+  const effective = effectivePermissions(member.role_id, rolePerms, grants);
+  const roleSet = new Set(
+    rolePerms.filter((rp) => rp.role_id === member.role_id).map((rp) => rp.permission_id)
+  );
+
+  const byModule = permissions.reduce<Record<string, PermissionRow[]>>((acc, p) => {
+    (acc[p.module] ??= []).push(p);
+    return acc;
+  }, {});
+
+  const act = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>) => {
+    setBusy(key);
+    const res = await fn();
+    setBusy("");
+    if (!res.ok) onError(res.error ?? "That did not save.");
+    else {
+      await reload();
+      await onChanged();
+    }
+  };
+
+  /* Districts and above. Scoping someone to a single attraction is possible
+     and almost never what is meant. */
+  const scopable = locations.filter((l) =>
+    ["country", "region", "division", "district"].includes(l.location_type)
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-display text-lg font-bold text-forest">{who || "—"}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {member.employee_code} · {dept?.name} · {role?.name}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Referral code <code className="rounded bg-muted px-1">{member.referral_code}</code>
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-forest">Status</label>
+            <select
+              value={member.status}
+              disabled={busy === "status"}
+              onChange={(e) =>
+                act("status", () =>
+                  updateStaffMember(member.id, { status: e.target.value as StaffStatus })
+                )
+              }
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
+            >
+              {STAFF_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <p className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          {STATUS_HELP[member.status]}
+        </p>
+      </div>
+
+      {/* ---- scope ---- */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <p className="font-semibold text-forest">Where they work</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Scope goes down, never up. Someone scoped to Skardu covers everything inside it
+          and nothing beside it. <strong>No area selected means no area access</strong> —
+          for all of Pakistan, tick Pakistan.
+        </p>
+
+        {scopable.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No locations loaded. Run the market migrations first.
+          </p>
+        ) : (
+          <div className="mt-3 max-h-64 space-y-1 overflow-y-auto">
+            {scopable.map((l) => {
+              const on = scopes.some((s) => s.location_id === l.id);
+              return (
+                <label
+                  key={l.id}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+                    on ? "bg-forest-50 text-forest-600" : "hover:bg-muted/60"
+                  )}
+                  style={{ paddingLeft: `${0.5 + l.depth * 0.75}rem` }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    disabled={busy === `scope:${l.id}`}
+                    onChange={() =>
+                      act(`scope:${l.id}`, () => setScope(member.id, l.id, !on))
+                    }
+                    className="h-4 w-4 rounded border-border accent-forest-600"
+                  />
+                  <span className="flex-1 truncate">{l.name}</span>
+                  <span className="text-[10px] uppercase text-muted-foreground">
+                    {l.location_type}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ---- permissions ---- */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <p className="flex items-center gap-2 font-semibold text-forest">
+          <ShieldCheck className="h-4 w-4" /> What they can do
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Ticked is what they can actually do. A tick that differs from the role is an
+          override, marked below it.
+        </p>
+
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            Deletion, verification approval, badges, bans and payment settings are not on
+            this list and cannot be granted from it. They belong to Super Admin and have
+            no permission to hand out.
+          </span>
+        </p>
+
+        <div className="mt-4 space-y-4">
+          {Object.entries(byModule).map(([module, perms]) => (
+            <div key={module}>
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {module}
+              </p>
+              <div className="space-y-1">
+                {perms.map((p) => {
+                  const on = effective.has(p.id);
+                  const fromRole = roleSet.has(p.id);
+                  const override = grants.find((g) => g.permission_id === p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        disabled={busy === `perm:${p.id}`}
+                        onChange={() =>
+                          act(`perm:${p.id}`, () =>
+                            /* Setting it back to what the role says clears the
+                               override rather than storing a redundant one. */
+                            setPermissionOverride(
+                              member.id,
+                              p.id,
+                              !on === fromRole ? null : !on
+                            )
+                          )
+                        }
+                        className="h-4 w-4 rounded border-border accent-forest-600"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{p.label}</span>
+                        {override && (
+                          <span className="block text-[11px] text-amber-700">
+                            {override.granted ? "Added for this person" : "Removed for this person"}
+                            {" — the role says "}
+                            {fromRole ? "yes" : "no"}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-foreground">
+        {label}
+        {required && <span className="text-red-600"> *</span>}
+      </span>
+      {children}
+    </label>
+  );
+}

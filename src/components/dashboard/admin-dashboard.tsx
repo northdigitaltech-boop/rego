@@ -14,6 +14,7 @@ import {
   KeyRound,
   Building2,
   Users,
+  UsersRound,
   CalendarCheck,
   Wallet,
   ShieldCheck,
@@ -90,6 +91,7 @@ import { setHotelFeatured } from "@/lib/hotels";
 import { setRankingBadge, RANKING_OPTIONS } from "@/lib/ranking";
 import { getAdminOverviewStats, type AdminOverviewStats } from "@/lib/platform-stats";
 import { MarketAreas } from "@/components/dashboard/market-areas";
+import { TeamManagement } from "@/components/dashboard/team-management";
 import { AdminBlog } from "@/components/dashboard/admin-blog";
 import { AdminAnalytics } from "@/components/dashboard/admin-analytics";
 import { AdminClientPasswords } from "@/components/dashboard/admin-client-passwords";
@@ -497,6 +499,7 @@ type Tab =
   | "subscription"
   | "expeditions"
   | "markets"
+  | "team"
   | "users";
 
 /* Market & Area Management used to be hidden behind NEXT_PUBLIC_MARKET_ADMIN.
@@ -549,6 +552,7 @@ const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "subscription", label: "Subscription & Monetization", icon: BadgeCheck },
   { id: "expeditions", label: "Mountaineering & Expeditions", icon: Mountain },
   { id: "markets", label: "Market & Area Management", icon: Globe },
+  { id: "team", label: "Team Management", icon: UsersRound },
   { id: "users", label: "Users", icon: Users },
 ];
 
@@ -1012,6 +1016,7 @@ export function AdminDashboard() {
             <DestinationsAdmin rows={destRows} onChange={refresh} />
           )}
           {tab === "markets" && <MarketAreas />}
+          {tab === "team" && <TeamManagement />}
           {tab === "blog" && <AdminBlog />}
           {tab === "manage" && <AdminListingsManager />}
           {tab === "hero" && <AdminHeroImage />}
