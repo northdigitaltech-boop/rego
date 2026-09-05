@@ -610,14 +610,17 @@ end $$;
 /* What exists now. No people — creating those is the admin's job.
    The Supabase editor shows only the last result set, so this is last. */
 select
-  d.name                                                        as department,
-  r.name                                                        as role,
-  count(rp.permission_id)                                       as permissions,
+  d.name                  as department,
+  r.name                  as role,
+  count(rp.permission_id) as permissions,
   (select count(*) from public.staff_members m where m.role_id = r.id) as members
 from public.staff_roles r
 join public.staff_departments d on d.id = r.department_id
 left join public.staff_role_permissions rp on rp.role_id = r.id
-group by d.display_order, d.name, r.display_order, r.name
+/* r.id belongs here, not only r.name: the correlated subquery above
+   references it, and a column used in the select list of a grouped query has
+   to be grouped even when it is functionally dependent on one that is. */
+group by d.display_order, d.name, r.id, r.display_order, r.name
 order by d.display_order, r.display_order;
 
 
