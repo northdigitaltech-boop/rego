@@ -45,11 +45,33 @@ const partnerCategories = [
 ];
 
 /** Split a pasted list on commas, semicolons, spaces or new lines. */
+/* The same shape the server accepts. They have to agree: the server
+   silently drops anything that is not an address, so a client that counts
+   everything reports a number nobody will ever be sent to.
+
+   This is not theoretical — a message pasted into the addresses box counted
+   as "89 people" because every word between the spaces looked like a
+   recipient. The send would have reached nobody and said it reached 89. */
+const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+
 function parseEmails(raw: string): string[] {
+  const seen = new Set<string>();
   return raw
     .split(/[\s,;]+/)
     .map((e) => e.trim())
-    .filter(Boolean);
+    .filter((e) => {
+      if (!e || !EMAIL_RE.test(e)) return false;
+      const k = e.toLowerCase();
+      if (seen.has(k)) return false;   // deduped here too, so the count matches
+      seen.add(k);
+      return true;
+    });
+}
+
+/** Things typed that are not addresses — worth naming rather than ignoring. */
+function countRejected(raw: string): number {
+  const all = raw.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean);
+  return all.length - parseEmails(raw).length;
 }
 
 const TEMPLATES: { label: string; subject: string; message: string }[] = [
@@ -117,11 +139,46 @@ export function AdminBroadcast() {
   const reachLabel = React.useMemo(() => {
     if (audience === "category" && !category) return "Choose a category above.";
     if (reach === null) return "Counting recipients…";
-    if (reach === 0)
-      return audience === "custom"
-        ? "Add at least one email address."
-        : "No one matches this audience yet.";
+
+    if (audience === "custom") {
+      const rejected = countRejected(customEmails);
+      if (reach === 0) {
+        /* Naming the count is what turns "why does it say nobody" into
+           something the admin can act on. Pasting a message here produces
+           dozens of rejects and zero recipients. */
+        return rejected > 0
+          ? `None of the ${rejected} item${rejected === 1 ? "" : "s"} here is an email address. This box takes addresses only — the message goes below.`
+          : "Add at least one email address.";
+      }
+      const skipped =
+        rejected > 0
+          ? ` ${rejected} entr${rejected === 1 ? "y was" : "ies were"} not an email address and will be skipped.`
+          : "";
+      return `This will reach ${reach} ${reach === 1 ? "person" : "people"}.${skipped}`;
+    }
+
+    if (reach === 0) return "No one matches this audience yet.";
     return `This will reach ${reach} ${reach === 1 ? "person" : "people"}.`;
+  }, [audience, category, reach, customEmails]);
+
+  /* What the send button should say. It has to name the audience: a button
+     reading "Send to all registered users" on the Specific-people tab offers
+     the one thing the admin deliberately did not choose. */
+  const sendLabel = React.useMemo(() => {
+    switch (audience) {
+      case "all":
+        return "Send to all registered users";
+      case "travelers":
+        return "Send to travellers";
+      case "partners":
+        return "Send to all partners";
+      case "category":
+        return category ? `Send to ${category.replace(/-/g, " ")} partners` : "Choose a category";
+      case "custom":
+        return reach === 1 ? "Send to 1 person" : `Send to ${reach ?? 0} people`;
+      default:
+        return "Send";
+    }
   }, [audience, category, reach]);
   const [busy, setBusy] = React.useState<"" | "test" | "all">("");
   const [note, setNote] = React.useState<{ ok: boolean; text: string } | null>(null);
@@ -399,10 +456,21 @@ export function AdminBroadcast() {
             type="button"
             variant="gold"
             className="rounded-lg"
-            disabled={busy !== ""}
+            /* Nothing to send to is not an error worth a round trip. The
+               server refuses an empty recipient list anyway; refusing here
+               means the admin finds out before pressing, not after. */
+            disabled={busy !== "" || reach === 0 || reach === null}
             onClick={() => send("all")}
           >
-            {busy === "all" ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : <><Megaphone className="h-4 w-4" /> Send to all registered users</>}
+            {busy === "all" ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+            ) : (
+              /* Follows the audience. It read "Send to all registered users"
+                 whatever was selected, which on the Specific-people tab is a
+                 button offering to do the one thing the admin did not ask
+                 for. */
+              <><Megaphone className="h-4 w-4" /> {sendLabel}</>
+            )}
           </Button>
           {note && (
             <span className={cn("inline-flex items-center gap-1.5 text-sm font-semibold", note.ok ? "text-forest-600" : "text-red-600")}>
