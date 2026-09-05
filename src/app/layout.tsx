@@ -10,6 +10,7 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ReferralCapture } from "@/components/referral-capture";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { IosSplash } from "@/components/pwa/ios-splash";
 
@@ -173,6 +174,9 @@ export default function RootLayout({
               are relevant, so they add no visible UI by default. */}
           <ServiceWorkerRegister />
           <InstallPrompt />
+          {/* Remembers ?ref= from a team member's link, on whatever page it
+              lands on. Renders nothing. */}
+          <ReferralCapture />
         </Providers>
         {/* Loads after the page is interactive, so it costs nothing on the
             metric Google actually measures. Renders nothing at all when

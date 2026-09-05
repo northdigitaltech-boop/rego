@@ -5,6 +5,7 @@ import * as React from "react";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { attachStashedReferral } from "@/lib/referral";
 import { CoveragePicker } from "@/components/dashboard/coverage-picker";
 import { setCoverage } from "@/lib/service-coverage";
 import {
@@ -99,6 +100,11 @@ export function CompanyRegisterWizard({
       setError(cErr?.message ?? "Could not save your company. Please try again.");
       return;
     }
+
+    /* The referral, if they arrived through a team member's link. Fire and
+       forget: attachStashedReferral never throws and never blocks — a lost
+       attribution is a smaller loss than a failed registration. */
+    void attachStashedReferral("tour_companies", (created as { id: string }).id);
 
     /* After the company exists, because the rows point at its id. A failure
        here must not lose the registration — the company and its package are

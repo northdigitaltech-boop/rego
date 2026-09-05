@@ -6,6 +6,7 @@ import { Building2, UserRound } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { attachStashedReferral } from "@/lib/referral";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -84,7 +85,7 @@ export function ExpeditionRegisterWizard({
     setError("");
 
     if (kind === "company") {
-      const { error: e } = await createCompany({
+      const { data: created, error: e } = await createCompany({
         ...area.payload,
         owner_email: user.email,
         name: name.trim(),
@@ -99,6 +100,15 @@ export function ExpeditionRegisterWizard({
         setError(e.message);
         return;
       }
+
+      /* The referral, if they arrived through a team member's link. Companies
+         only, matching the area picker above: expedition_professionals is the
+         table phase72's typo skipped, so an individual's row cannot carry
+         attribution until phase95 has been run. */
+      void attachStashedReferral(
+        "expedition_companies",
+        (created as { id?: string } | null)?.id ?? ""
+      );
     } else {
       const { error: e } = await createPro({
         owner_email: user.email,

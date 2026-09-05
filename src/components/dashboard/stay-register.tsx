@@ -5,6 +5,7 @@ import * as React from "react";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { attachStashedReferral } from "@/lib/referral";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -176,6 +177,12 @@ export function StayRegisterWizard({
       setError(createError ?? "Could not save. Please try again.");
       return;
     }
+
+    /* The referral, if they arrived through a team member's link. `kind` maps
+       straight onto the table the row went into. Fire and forget: it never
+       throws and never blocks — a lost attribution is a smaller loss than a
+       failed registration. */
+    void attachStashedReferral(`${kind}s`, createdId);
 
     /* Then the room. Each table stores them differently — hotels one at a
        time, the other two as a replaced set — so this is not one call. */

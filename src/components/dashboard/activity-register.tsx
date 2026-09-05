@@ -5,6 +5,7 @@ import * as React from "react";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { attachStashedReferral } from "@/lib/referral";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -78,7 +79,7 @@ export function ActivityRegisterWizard({
     setSubmitting(true);
     setError("");
 
-    const { error: e } = await createActivity({
+    const { data: created, error: e } = await createActivity({
       ...area.payload,
       title: title.trim(),
       category,
@@ -103,6 +104,11 @@ export function ActivityRegisterWizard({
       setError(e.message);
       return;
     }
+
+    /* The referral, if they arrived through a team member's link. Fire and
+       forget — a lost attribution is a smaller loss than a failed
+       registration. */
+    void attachStashedReferral("activities", (created as { id?: string } | null)?.id ?? "");
     setDone(true);
   };
 

@@ -5,6 +5,7 @@ import * as React from "react";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
+import { attachStashedReferral } from "@/lib/referral";
 import {
   RegisterSteps,
   RegisteredNotice,
@@ -96,6 +97,11 @@ export function RestaurantRegisterWizard({
       setError(rErr?.message ?? "Could not save your restaurant. Please try again.");
       return;
     }
+
+    /* The referral, if they arrived through a team member's link. Fire and
+       forget: attachStashedReferral never throws and never blocks — a lost
+       attribution is a smaller loss than a failed registration. */
+    void attachStashedReferral("restaurants", (created as { id: string }).id);
 
     const { error: mErr } = await createMenuItem({
       restaurant_id: (created as { id: string }).id,
