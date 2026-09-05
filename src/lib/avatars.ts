@@ -45,10 +45,31 @@ export async function getAvatarsByEmail(
   if (missing.length === 0) return out;
 
   try {
-    const { data, error } = await supabase
-      .from("public_avatars")
-      .select("email, avatar")
-      .in("email", missing);
+    /* A function, not the public_avatars view.
+     *
+     * The view returns id, email and avatar for EVERY profile to any
+     * signed-in user. This code has always asked only for addresses it
+     * already had, but the view never required that — one `select email from
+     * public_avatars` returns every address on the platform. Supabase's
+     * advisor flags it for being SECURITY DEFINER, which was deliberate; the
+     * email dump is the part that actually matters.
+     *
+     * avatars_for_emails (phase103) answers for the addresses handed to it
+     * and nothing else, so there is no list to take.
+     */
+    let { data, error } = await supabase.rpc("avatars_for_emails", {
+      p_emails: missing,
+    });
+
+    if (error) {
+      /* phase103 has not been run yet. Fall back to the view so avatars keep
+         working through the gap between this deploy and that migration —
+         they are two different machines and arrive in either order. */
+      ({ data, error } = await supabase
+        .from("public_avatars")
+        .select("email, avatar")
+        .in("email", missing));
+    }
 
     if (error) {
       /* Cache the misses too. Without this a failing policy causes the
