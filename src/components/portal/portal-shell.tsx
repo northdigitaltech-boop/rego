@@ -3,8 +3,19 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Copy, Check, MapPin, Loader2, ShieldCheck } from "lucide-react";
+import {
+  BadgeCheck,
+  Check,
+  Copy,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  MapPin,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/auth-context";
 import {
@@ -17,31 +28,41 @@ import {
 /* ============================================================
  * The team portal.
  *
- * WHAT THIS IS AND IS NOT
- *   Phase 3 of the team map: the shell. It shows a member who they
- *   are, where they may work, what they are permitted to do, and the
- *   referral link that credits them. The department workspaces —
- *   verification queues, action requests, approvals — are later
- *   phases and are NOT stubbed here. An empty panel promising a
- *   feature is a promise the screen cannot keep.
+ * WHAT IS HERE AND WHAT IS NOT
+ *   Identity, the referral link and what it has earned, assigned
+ *   areas, and effective permissions. Every number on this page
+ *   comes from a row that exists.
  *
- * WHY IT SHOWS PERMISSIONS AS A LIST
- *   Somebody who cannot find a screen needs to know whether it is
- *   missing or whether they are not allowed. Printing the answer is
- *   cheaper than a support conversation, and there is nothing secret
- *   about a person's own permissions.
+ *   Leads, tasks, evidence and department analytics are named in
+ *   the permission list and have no tables yet. They are NOT
+ *   stubbed here. A section that looks like a feature and does
+ *   nothing teaches somebody to distrust the whole screen, and it
+ *   also hides which parts are real.
+ *
+ * WHY IT MIRRORS THE TRAVELLER DASHBOARD
+ *   Same sidebar, same card shapes, same sign-out. Somebody who
+ *   uses Rego already knows how to read this, and a second visual
+ *   language for the same product is a cost with no payer.
  * ============================================================ */
 
-interface PermissionRow {
-  slug: string;
-  module: string;
-  label: string;
-}
+type Tab = "overview" | "referrals" | "areas" | "permissions";
+
+const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "referrals", label: "My referrals", icon: BadgeCheck },
+  { id: "areas", label: "Where I work", icon: MapPin },
+  { id: "permissions", label: "What I can do", icon: ShieldCheck },
+];
 
 export function PortalShell() {
-  const { user, ready } = useAuth();
+  const { user, ready, logout } = useAuth();
   const router = useRouter();
   const profile = useStaffProfile();
+  const [tab, setTab] = React.useState<Tab>("overview");
+
+  /* Counted once, here, because the overview and the referrals tab both
+     want it and neither should trigger its own request. */
+  const [credited, setCredited] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     if (ready && !user) router.replace("/signin");
@@ -50,6 +71,29 @@ export function PortalShell() {
   React.useEffect(() => {
     if (profile) void touchStaffSeen();
   }, [profile]);
+
+  React.useEffect(() => {
+    if (!profile || !isSupabaseConfigured) return;
+    let alive = true;
+    /* Only their own rows come back: the read policy on staff_attributions
+       limits it to staff_id = them, or an admin. */
+    supabase
+      .from("staff_attributions")
+      .select("relation", { count: "exact", head: true })
+      .eq("staff_id", profile.staff_id)
+      .eq("relation", "referred")
+      .then(({ count, error }) => {
+        if (alive) setCredited(error ? null : (count ?? 0));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [profile]);
+
+  const signOut = async () => {
+    await logout();
+    router.push("/");
+  };
 
   if (!ready || profile === undefined) {
     return (
@@ -83,20 +127,87 @@ export function PortalShell() {
     );
   }
 
-  return (
-    <div className="container-px mx-auto max-w-4xl space-y-5 py-10">
-      <Identity profile={profile} name={user.name} />
-      <Referral profile={profile} />
-      <Areas profile={profile} />
-      <Permissions profile={profile} />
+  const firstName = user.name.trim().split(/\s+/)[0] || user.name;
 
-      <p className="pt-2 text-center text-xs text-muted-foreground">
-        Looking for your own bookings?{" "}
-        <Link href="/dashboard" className="font-semibold text-forest underline">
-          Your dashboard
-        </Link>{" "}
-        is separate from this portal.
+  return (
+    <div className="container-px py-10">
+      <h1 className="font-display text-3xl font-bold text-forest">
+        Welcome back, {firstName}
+      </h1>
+      <p className="mt-1 text-muted-foreground">
+        {profile.role.name} · {profile.department.name} · {profile.employee_code}
       </p>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]">
+        <aside>
+          <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
+            <div className="flex items-center gap-3 border-b border-border p-3">
+              <span className="grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-gold text-forest-900">
+                {user.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <UserRound className="h-6 w-6" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-forest">{user.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                <span className="mt-1 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold text-gold-700">
+                  {profile.department.name}
+                </span>
+              </div>
+            </div>
+
+            <nav className="mt-2 space-y-1">
+              {NAV.map((n) => {
+                const Icon = n.icon;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => setTab(n.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      tab === n.id
+                        ? "bg-gradient-forest text-white shadow-soft"
+                        : "text-forest hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {n.label}
+                  </button>
+                );
+              })}
+
+              {/* Being on the team does not stop somebody being a customer. */}
+              <Link
+                href="/dashboard"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"
+              >
+                <UserRound className="h-4 w-4" />
+                My bookings
+              </Link>
+
+              <button
+                onClick={signOut}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        <div className="space-y-5">
+          {tab === "overview" && (
+            <Overview profile={profile} credited={credited} onGo={setTab} />
+          )}
+          {tab === "referrals" && <Referrals profile={profile} credited={credited} />}
+          {tab === "areas" && <Areas profile={profile} />}
+          {tab === "permissions" && <Permissions profile={profile} />}
+        </div>
+      </div>
     </div>
   );
 }
@@ -123,42 +234,101 @@ function Card({
   );
 }
 
-function Identity({ profile, name }: { profile: StaffProfile; name: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-5">
-      <p className="text-sm text-muted-foreground">Rego team portal</p>
-      <h1 className="mt-1 font-display text-2xl font-bold text-forest">{name}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {profile.job_title ? `${profile.job_title} · ` : ""}
-        {profile.role.name} · {profile.department.name}
-      </p>
-
-      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Stat label="Employee code" value={profile.employee_code} />
-        <Stat label="Referral code" value={profile.referral_code} />
-        <Stat
-          label="Joined"
-          value={
-            profile.joined_at
-              ? new Date(profile.joined_at).toLocaleDateString("en-GB", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "—"
-          }
-        />
-      </dl>
-
-      <p className="mt-4 text-xs text-muted-foreground">
-        Your employee code was generated by the server and never changes.
-        Everything credited to you points at it.
-      </p>
-    </section>
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <p className="font-display text-3xl font-bold text-forest">{value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+/* ------------------------------------------------------------------ */
+
+function Overview({
+  profile,
+  credited,
+  onGo,
+}: {
+  profile: StaffProfile;
+  credited: number | null;
+  onGo: (t: Tab) => void;
+}) {
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat
+          label="Providers credited to you"
+          value={credited === null ? "—" : String(credited)}
+          hint="Through your referral link"
+        />
+        <Stat
+          label="Areas you cover"
+          value={String(profile.scopes.length)}
+          hint={profile.scopes.length === 0 ? "None assigned yet" : undefined}
+        />
+        <Stat
+          label="Permissions"
+          value={String(profile.permissions.length)}
+          hint="From your role"
+        />
+      </div>
+
+      <Card title="Your details">
+        <dl className="grid gap-3 sm:grid-cols-3">
+          <Detail label="Employee code" value={profile.employee_code} />
+          <Detail label="Referral code" value={profile.referral_code} />
+          <Detail
+            label="Joined"
+            value={
+              profile.joined_at
+                ? new Date(profile.joined_at).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "—"
+            }
+          />
+        </dl>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Your employee code was generated by the server and never changes.
+          Everything credited to you points at it.
+        </p>
+      </Card>
+
+      <Card title="What is not here yet">
+        {/* Named plainly rather than shown as empty panels. Somebody whose
+            permission list mentions leads should be told where leads are,
+            not shown a section that does nothing. */}
+        <p className="text-sm text-muted-foreground">
+          Leads, tasks, evidence and department analytics appear in your
+          permissions because the permission exists. The screens for them are
+          not built yet, so they are not shown as empty sections here. What you
+          can see on this page is real.
+        </p>
+        <button
+          type="button"
+          onClick={() => onGo("permissions")}
+          className="mt-3 text-sm font-semibold text-forest underline"
+        >
+          See what you are allowed to do
+        </button>
+      </Card>
+    </>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border/70 bg-background px-3 py-2">
       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -169,32 +339,15 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /* ------------------------------------------------------------------ */
 
-function Referral({ profile }: { profile: StaffProfile }) {
+function Referrals({
+  profile,
+  credited,
+}: {
+  profile: StaffProfile;
+  credited: number | null;
+}) {
   const link = referralLink(profile);
   const [copied, setCopied] = React.useState(false);
-  const [counts, setCounts] = React.useState<Record<string, number> | null>(null);
-
-  React.useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    let alive = true;
-    /* Only their own rows come back — the read policy on staff_attributions
-       limits it to staff_id = them (or an admin). */
-    supabase
-      .from("staff_attributions")
-      .select("relation")
-      .eq("staff_id", profile.staff_id)
-      .then(({ data, error }) => {
-        if (!alive || error || !data) return;
-        const tally: Record<string, number> = {};
-        for (const row of data as { relation: string }[]) {
-          tally[row.relation] = (tally[row.relation] ?? 0) + 1;
-        }
-        setCounts(tally);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [profile.staff_id]);
 
   const copy = async () => {
     try {
@@ -205,8 +358,6 @@ function Referral({ profile }: { profile: StaffProfile }) {
       /* Clipboard refused. The link is on screen and can be selected. */
     }
   };
-
-  const referred = counts?.referred ?? 0;
 
   return (
     <Card title="Your referral link" icon={<BadgeCheck className="h-5 w-5" />}>
@@ -234,11 +385,16 @@ function Referral({ profile }: { profile: StaffProfile }) {
       </div>
 
       <p className="mt-3 text-sm text-forest">
-        {counts === null
+        {credited === null
           ? "Counting…"
-          : referred === 0
+          : credited === 0
             ? "No providers credited to you yet."
-            : `${referred} provider${referred === 1 ? "" : "s"} credited to you.`}
+            : `${credited} provider${credited === 1 ? "" : "s"} credited to you.`}
+      </p>
+
+      <p className="mt-3 text-xs text-muted-foreground">
+        Which providers, and when, is not shown here yet — that is part of the
+        analytics screen and is not built.
       </p>
     </Card>
   );
@@ -275,6 +431,12 @@ function Areas({ profile }: { profile: StaffProfile }) {
 }
 
 /* ------------------------------------------------------------------ */
+
+interface PermissionRow {
+  slug: string;
+  module: string;
+  label: string;
+}
 
 function Permissions({ profile }: { profile: StaffProfile }) {
   const [rows, setRows] = React.useState<PermissionRow[] | null>(null);
