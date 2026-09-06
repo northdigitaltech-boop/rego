@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clientThrottle } from "@/lib/client-throttle";
+import { loadStaffProfile } from "@/lib/staff-portal";
 import { CheckboxCaptcha } from "@/components/auth/checkbox-captcha";
 import {
   Turnstile,
@@ -130,7 +131,27 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const redirectQS = redirectTo
     ? `?redirect=${encodeURIComponent(redirectTo)}`
     : "";
-  const goAfterAuth = () => router.push(redirectTo || "/dashboard");
+  /* Where a sign-in lands.
+
+     An explicit ?redirect= always wins — somebody sent here from a booking
+     page is trying to finish that booking, not read a dashboard.
+
+     Otherwise a staff member goes to the portal, because that is where their
+     work is. This is decided HERE and not by /dashboard, deliberately: if
+     /dashboard sent staff to /portal, the portal's own "your bookings" link
+     would bounce straight back and they could never reach their own
+     bookings at all.
+
+     `fresh: true` because the cached answer was written before they were
+     signed in, when the honest answer was "not staff". */
+  const goAfterAuth = async () => {
+    if (redirectTo) {
+      router.push(redirectTo);
+      return;
+    }
+    const staff = await loadStaffProfile({ fresh: true });
+    router.push(staff ? "/portal" : "/dashboard");
+  };
 
   React.useEffect(() => {
     const msg = takeFlash();
@@ -205,7 +226,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       reportSecurity("login_success", {
         email: email.trim().toLowerCase(),
       });
-      goAfterAuth();
+      await goAfterAuth();
     } catch (err) {
       // Turnstile tokens are single-use — issue a fresh one for the next try.
       turnstileRef.current?.reset();
