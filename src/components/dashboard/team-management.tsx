@@ -23,6 +23,7 @@ import {
   getScopes,
   getStaffMembers,
   setPermissionOverride,
+  removeStaffMember,
   resendStaffInvite,
   setScope,
   updateStaffMember,
@@ -263,6 +264,12 @@ export function TeamManagement() {
                 locations={locations}
                 onChanged={load}
                 onError={setError}
+                onRemoved={async () => {
+                  /* Clear the selection first: the row this panel is drawn
+                     from no longer exists. */
+                  setSelectedId(null);
+                  await load();
+                }}
               />
             ) : (
               <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-12 text-center text-sm text-muted-foreground">
@@ -471,6 +478,105 @@ function AddMember({
 
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------
+ * Removing somebody.
+ *
+ * Two clicks, because one click that deletes is a click somebody makes by
+ * accident. The second click is also where the consequence is stated — a
+ * warning nobody has to read before acting is decoration.
+ * ------------------------------------------------------------------ */
+function RemoveMember({
+  member,
+  onRemoved,
+  onError,
+}: {
+  member: StaffMemberRow;
+  onRemoved: () => Promise<void>;
+  onError: (s: string) => void;
+}) {
+  const [arming, setArming] = React.useState(false);
+  const [alsoAccount, setAlsoAccount] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+
+  const remove = async () => {
+    setBusy(true);
+    const res = await removeStaffMember(member.id, { deleteAccount: alsoAccount });
+    setBusy(false);
+
+    if (!res.ok) {
+      setArming(false);
+      onError(res.error ?? "Could not remove them.");
+      return;
+    }
+    /* A warning here means it partly worked — the staff row went, the
+       account did not. Shown in the same place as an error, because it is
+       the thing the admin still has to decide about. */
+    if (res.warning) onError(res.warning);
+    await onRemoved();
+  };
+
+  if (!arming) {
+    return (
+      <div className="mt-4 border-t border-border pt-3">
+        <button
+          type="button"
+          onClick={() => setArming(true)}
+          className="text-sm font-semibold text-red-600 hover:underline"
+        >
+          Remove from the team
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-3 rounded-xl border border-red-200 bg-red-50/60 p-4">
+      <p className="text-sm font-semibold text-red-700">
+        Remove {member.employee_code} from the team?
+      </p>
+      <p className="text-xs leading-relaxed text-red-700/90">
+        Their role, permissions and areas are deleted. Their Rego account is
+        kept, so anything they booked as a customer stays with them. If any
+        provider is credited to them, the database will refuse this — disable
+        them instead, so the record of who brought those in survives.
+      </p>
+
+      <label className="flex items-start gap-2 text-xs text-red-700/90">
+        <input
+          type="checkbox"
+          checked={alsoAccount}
+          onChange={(e) => setAlsoAccount(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          Delete the Rego account too. Only happens if nobody has ever signed
+          into it — an invited account that was never used. If it has been
+          used, it is kept and you will be told.
+        </span>
+      </label>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={remove}
+          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? "Removing…" : "Yes, remove"}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setArming(false)}
+          className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MemberDetail({
   member,
   who,
@@ -481,6 +587,7 @@ function MemberDetail({
   locations,
   onChanged,
   onError,
+  onRemoved,
 }: {
   member: StaffMemberRow;
   who: string;
@@ -491,6 +598,7 @@ function MemberDetail({
   locations: LocationRow[];
   onChanged: () => Promise<void>;
   onError: (s: string) => void;
+  onRemoved: () => Promise<void>;
 }) {
   const [grants, setGrants] = React.useState<GrantRow[]>([]);
   const [scopes, setScopes] = React.useState<ScopeRow[]>([]);
@@ -608,6 +716,8 @@ function MemberDetail({
               : "Emails them a link to set their password. Goes to the address on their profile."}
           </span>
         </div>
+
+        <RemoveMember member={member} onRemoved={onRemoved} onError={onError} />
       </div>
 
       {/* ---- scope ---- */}

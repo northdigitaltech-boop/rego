@@ -358,6 +358,123 @@ export async function POST(req: Request) {
     }
 
     /* ================================================================
+     * Remove somebody from the team, and optionally delete the account
+     * that was created for them.
+     *
+     * TWO SEPARATE THINGS, ON PURPOSE
+     *   Removing from the team deletes the staff row. Scopes and permission
+     *   grants go with it by cascade. The Rego ACCOUNT survives, because
+     *   leaving the team is not the same as ceasing to exist, and somebody
+     *   who was staff may still have bookings as a customer.
+     *
+     * WHAT THE DATABASE REFUSES BEFORE THIS DOES
+     *   staff_attributions.staff_id is `on delete restrict`. A member who
+     *   brought in even one provider cannot be deleted at all — deleting
+     *   them would destroy the record of who earned that. The error is
+     *   translated below rather than dressed up.
+     *
+     * DELETING THE ACCOUNT IS NARROWER THAN IT LOOKS
+     *   Only when it has NEVER been signed into. That is the invitation
+     *   case — an account this system created, which nobody has used, and
+     *   which therefore cannot own a booking or a listing. Anything else is
+     *   a real person's account and goes through Users, which already has
+     *   the reason note, the listing handling and the checks. A second
+     *   general account-deletion path is a second place for those to drift.
+     * ================================================================ */
+    case "remove_member": {
+      const staffId = String(body.staffId ?? "");
+      const alsoAccount = body.deleteAccount === true;
+      if (!staffId) return bad("Missing team member.");
+
+      const { data: row } = await sb
+        .from("staff_members")
+        .select("id, employee_code, profile_id, profiles(email, role)")
+        .eq("id", staffId)
+        .maybeSingle();
+      if (!row) return bad("Team member not found.", 404);
+
+      const m = row as unknown as {
+        employee_code: string;
+        profile_id: string;
+        profiles: { email: string | null; role: string | null } | null;
+      };
+      const targetEmail = (m.profiles?.email ?? "").toLowerCase();
+
+      if (m.profile_id === caller.user.id) {
+        return bad("You cannot remove your own account from here.");
+      }
+
+      const { error: delErr } = await sb.from("staff_members").delete().eq("id", staffId);
+      if (delErr) {
+        /* 23503 is a foreign key violation, and the only thing pointing here
+           with `restrict` is attribution. Saying which one matters: an admin
+           reading "violates foreign key constraint" learns nothing. */
+        return bad(
+          delErr.code === "23503"
+            ? `${m.employee_code} cannot be removed: providers are credited to them, and deleting the record would erase who brought those in. Set their status to disabled instead.`
+            : delErr.message,
+          400
+        );
+      }
+
+      let accountDeleted = false;
+      let accountNote: string | null = null;
+
+      if (alsoAccount) {
+        if (m.profiles?.role === "admin") {
+          accountNote = "The account is an admin account and was kept.";
+        } else {
+          /* The evidence, not an assumption: an account that has never been
+             signed into cannot have created anything. */
+          const { data: authUser } = await sb.auth.admin.getUserById(m.profile_id);
+          const everSignedIn = Boolean(authUser?.user?.last_sign_in_at);
+
+          if (everSignedIn) {
+            accountNote =
+              "The Rego account was kept: somebody has signed into it, so it may hold their own bookings. Delete it from Users if that is really what you want.";
+          } else {
+            await sb.from("profiles").delete().eq("id", m.profile_id);
+            const { error: authErr } = await sb.auth.admin.deleteUser(m.profile_id);
+            if (authErr) {
+              accountNote = `They were removed from the team, but the account could not be deleted: ${authErr.message}`;
+            } else {
+              accountDeleted = true;
+              /* Written to the same table the Users screen writes to, so
+                 there is one history of account deletions rather than two. */
+              try {
+                await sb.from("admin_audit_logs").insert({
+                  admin_id: caller.user.id,
+                  admin_email: actorEmail,
+                  target_user_id: m.profile_id,
+                  target_email: targetEmail || null,
+                  field: "delete_account",
+                  note: `Unused invited account removed with team member ${m.employee_code}`,
+                });
+              } catch {
+                /* A gap in the history, not an error on the screen. */
+              }
+            }
+          }
+        }
+      }
+
+      await audit({
+        action: accountDeleted ? "staff.remove_and_delete_account" : "staff.remove",
+        entityId: staffId,
+        entityLabel: `${m.employee_code} · ${targetEmail}`,
+        before: { employee_code: m.employee_code, email: targetEmail },
+        after: null,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        email: targetEmail,
+        accountDeleted,
+        warning: accountNote,
+      });
+    }
+
+    /* ================================================================
      * Send the sign-in link again.
      *
      * Needed because add_member keeps the account when the mail fails: the

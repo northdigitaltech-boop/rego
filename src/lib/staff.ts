@@ -191,6 +191,8 @@ export interface StaffApiResult {
    * host can trace, instead of a boolean nobody can act on.
    */
   smtpResponse?: string | null;
+  /** True when the Rego account was deleted along with the staff row. */
+  accountDeleted?: boolean;
 }
 
 async function post(body: unknown): Promise<StaffApiResult> {
@@ -249,6 +251,25 @@ export function addStaffMember(input: {
   joinedAt?: string;
 }): Promise<StaffApiResult> {
   return post({ action: "add_member", ...input });
+}
+
+/**
+ * Remove somebody from the team.
+ *
+ * The staff row goes, and its scopes and permission overrides with it. The
+ * Rego account survives unless `deleteAccount` is set AND nobody has ever
+ * signed into it — the invitation case, where the account has no other
+ * purpose. A used account is kept and the caller is told why.
+ *
+ * A member with providers credited to them cannot be removed at all: the
+ * database refuses it, because deleting them would erase who brought those
+ * providers in. Disable them instead.
+ */
+export function removeStaffMember(
+  staffId: string,
+  { deleteAccount = false }: { deleteAccount?: boolean } = {}
+): Promise<StaffApiResult> {
+  return post({ action: "remove_member", staffId, deleteAccount });
 }
 
 /**
