@@ -64,8 +64,10 @@ export interface MailResult {
        "ok" said only that no exception was raised. When a message is accepted
        and then never arrives, that is not enough to tell anyone: the SMTP
        response carries a queue id, and the queue id is the one thing a host's
-       support can trace. `accepted` and `rejected` are also per-recipient, so
-       a partially refused send stops looking like a clean one. */
+       support can trace.
+
+     NONE OF IT DECIDES `ok`. Only a thrown error does. Reporting is worth
+     adding; it is not worth putting between Rego and its outbound mail. */
   /** Raw final SMTP line, e.g. "250 2.0.0 Ok: queued as 4b2f…". */
   response?: string;
   messageId?: string;
@@ -92,21 +94,17 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     const accepted = (info.accepted ?? []).map(String);
     const rejected = (info.rejected ?? []).map(String);
 
-    /* Nodemailer throws when EVERY recipient is refused, but a message with
-       one refused address among several resolves normally. Treating that as
-       success is how a send gets reported as fine while reaching nobody. */
-    if (accepted.length === 0) {
-      return {
-        ok: false,
-        error: `The mail server accepted no recipients${
-          info.response ? ` — ${info.response}` : ""
-        }`,
-        response: info.response,
-        accepted,
-        rejected,
-      };
-    }
+    /* A send succeeds when nodemailer does not throw. That is the rule this
+       function had for its whole working life and it is the rule again.
 
+       I briefly made an empty `accepted` list a failure, reasoning that a
+       message refused for every recipient can still resolve. The reasoning
+       was fine and the trade was not: if `accepted` is ever unpopulated on a
+       send that actually worked, EVERY email in Rego starts reporting
+       failure — bookings, welcome mail, admin alerts. Risking all outbound
+       mail to catch a rare partial rejection is the wrong way round.
+
+       The lists are still returned, so a caller that cares can look. */
     return {
       ok: true,
       response: info.response,
