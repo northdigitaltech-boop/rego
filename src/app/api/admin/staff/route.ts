@@ -170,11 +170,14 @@ export async function POST(req: Request) {
       if (!departmentId) return bad("Choose a department.");
       if (!roleId) return bad("Choose a role.");
 
-      const { data: person } = await sb
+      /* This decides whether to create an account, so a failed lookup must
+         not read as "no account exists". */
+      const { data: person, error: personErr } = await sb
         .from("profiles")
         .select("id, email, role")
         .ilike("email", email)
         .maybeSingle();
+      if (personErr) return bad(personErr.message, 500);
 
       const p = person as { id: string; role: string | null } | null;
 
@@ -188,11 +191,12 @@ export async function POST(req: Request) {
           );
         }
 
-        const { data: already } = await sb
+        const { data: already, error: alreadyErr } = await sb
           .from("staff_members")
           .select("id, employee_code")
           .eq("profile_id", p.id)
           .maybeSingle();
+        if (alreadyErr) return bad(alreadyErr.message, 500);
 
         if (already) {
           return bad(
@@ -386,19 +390,30 @@ export async function POST(req: Request) {
       const alsoAccount = body.deleteAccount === true;
       if (!staffId) return bad("Missing team member.");
 
-      const { data: row } = await sb
+      /* NO EMBEDDED profiles(...) HERE, AND THE ERROR IS NOT DISCARDED.
+         staff_members points at profiles three times — profile_id, created_by
+         and updated_by — so `profiles(email, role)` is ambiguous and PostgREST
+         refuses the whole query. The first version of this read only `data`,
+         so that refusal arrived as data:null and the screen said "Team member
+         not found" about a row that was sitting right there. Two plain
+         queries cannot be ambiguous, and an error now says what it was. */
+      const { data: row, error: rowErr } = await sb
         .from("staff_members")
-        .select("id, employee_code, profile_id, profiles(email, role)")
+        .select("id, employee_code, profile_id")
         .eq("id", staffId)
         .maybeSingle();
+      if (rowErr) return bad(rowErr.message, 500);
       if (!row) return bad("Team member not found.", 404);
 
-      const m = row as unknown as {
-        employee_code: string;
-        profile_id: string;
-        profiles: { email: string | null; role: string | null } | null;
-      };
-      const targetEmail = (m.profiles?.email ?? "").toLowerCase();
+      const m = row as { employee_code: string; profile_id: string };
+
+      const { data: prof } = await sb
+        .from("profiles")
+        .select("email, role")
+        .eq("id", m.profile_id)
+        .maybeSingle();
+      const p2 = prof as { email: string | null; role: string | null } | null;
+      const targetEmail = (p2?.email ?? "").toLowerCase();
 
       if (m.profile_id === caller.user.id) {
         return bad("You cannot remove your own account from here.");
@@ -421,7 +436,7 @@ export async function POST(req: Request) {
       let accountNote: string | null = null;
 
       if (alsoAccount) {
-        if (m.profiles?.role === "admin") {
+        if (p2?.role === "admin") {
           accountNote = "The account is an admin account and was kept.";
         } else {
           /* The evidence, not an assumption: an account that has never been
@@ -499,23 +514,25 @@ export async function POST(req: Request) {
         );
       }
 
-      const { data: row } = await sb
+      /* Plain columns, and the error is read. An embedded profiles(...) is
+         ambiguous here — staff_members points at profiles three times — and
+         PostgREST refuses the whole query. Reading only `data` turned that
+         refusal into "Team member not found" about a row that was there. */
+      const { data: row, error: rowErr } = await sb
         .from("staff_members")
-        .select(
-          "id, employee_code, status, profile_id, job_title, " +
-            "profiles(email, full_name), staff_departments(name), staff_roles(name)"
-        )
+        .select("id, employee_code, status, profile_id, department_id, role_id")
         .eq("id", staffId)
         .maybeSingle();
 
+      if (rowErr) return bad(rowErr.message, 500);
       if (!row) return bad("Team member not found.", 404);
 
-      const m = row as unknown as {
+      const m = row as {
         employee_code: string;
         status: string;
-        profiles: { email: string | null; full_name: string | null } | null;
-        staff_departments: { name: string } | null;
-        staff_roles: { name: string } | null;
+        profile_id: string;
+        department_id: string;
+        role_id: string;
       };
 
       if (m.status !== "active") {
@@ -524,7 +541,14 @@ export async function POST(req: Request) {
         );
       }
 
-      const target = (m.profiles?.email ?? "").trim().toLowerCase();
+      const [{ data: who }, { data: deptRow }, { data: roleRow }] = await Promise.all([
+        sb.from("profiles").select("email, full_name").eq("id", m.profile_id).maybeSingle(),
+        sb.from("staff_departments").select("name").eq("id", m.department_id).maybeSingle(),
+        sb.from("staff_roles").select("name").eq("id", m.role_id).maybeSingle(),
+      ]);
+
+      const person = who as { email: string | null; full_name: string | null } | null;
+      const target = (person?.email ?? "").trim().toLowerCase();
       if (!target) return bad("That team member has no email address on file.", 500);
 
       const { data: link, error: linkErr } = await sb.auth.admin.generateLink({
@@ -539,11 +563,11 @@ export async function POST(req: Request) {
 
       const sent = await sendStaffInvite({
         to: target,
-        name: m.profiles?.full_name ?? null,
+        name: person?.full_name ?? null,
         link: link.properties.action_link,
         employeeCode: m.employee_code,
-        departmentName: m.staff_departments?.name ?? null,
-        roleName: m.staff_roles?.name ?? null,
+        departmentName: (deptRow as { name?: string } | null)?.name ?? null,
+        roleName: (roleRow as { name?: string } | null)?.name ?? null,
         invitedBy: actorEmail,
       });
 
