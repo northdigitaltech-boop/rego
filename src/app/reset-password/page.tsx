@@ -28,8 +28,29 @@ export default function ResetPasswordPage() {
      route out of static rendering and require a Suspense boundary, to read one
      flag that only ever exists in a browser. */
   const [welcome, setWelcome] = React.useState(false);
+
+  /* Supabase reports a refused link in the URL FRAGMENT, not the query:
+     #error=access_denied&error_code=otp_expired&error_description=…
+     Nothing was reading it, so a spent or superseded link produced a page
+     that simply said the link was invalid, with no hint as to which of the
+     several quite different reasons applied. */
+  const [linkError, setLinkError] = React.useState("");
+
   React.useEffect(() => {
     setWelcome(new URLSearchParams(window.location.search).get("welcome") === "1");
+
+    const frag = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const code = frag.get("error_code");
+    if (code === "otp_expired") {
+      setLinkError(
+        "This link has already been used or has been replaced by a newer one. If you asked for a reset more than once, only the most recent email works — open that one. Otherwise ask for a new link."
+      );
+    } else if (frag.get("error")) {
+      setLinkError(
+        frag.get("error_description")?.replace(/\+/g, " ") ??
+          "This link could not be used."
+      );
+    }
   }, []);
 
   // Supabase auto-detects the recovery token in the URL and establishes a
@@ -101,7 +122,17 @@ export default function ResetPasswordPage() {
 
           {hasSession === false ? (
             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {welcome ? (
+              {/* The specific reason, when Supabase gave one, instead of the
+                  generic sentence below it. */}
+              {linkError ? (
+                <>
+                  {linkError}{" "}
+                  <Link href="/signin" className="font-semibold underline">
+                    Ask for a new link
+                  </Link>
+                  .
+                </>
+              ) : welcome ? (
                 <>
                   This invitation link is invalid or has expired. Ask whoever added
                   you to send it again.
