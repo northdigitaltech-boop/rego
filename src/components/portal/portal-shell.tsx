@@ -13,6 +13,7 @@ import {
   LogOut,
   MapPin,
   ShieldCheck,
+  UserCog,
   UserRound,
   Users,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/staff-portal";
 import { PortalLeads } from "@/components/portal/portal-leads";
 import { PortalTasks } from "@/components/portal/portal-tasks";
+import { PortalProfile } from "@/components/portal/portal-profile";
 
 /* ============================================================
  * The team portal.
@@ -51,7 +53,7 @@ import { PortalTasks } from "@/components/portal/portal-tasks";
  *   language for the same product is a cost with no payer.
  * ============================================================ */
 
-type Tab = "overview" | "leads" | "tasks" | "referrals" | "areas" | "permissions";
+type Tab = "overview" | "leads" | "tasks" | "referrals" | "areas" | "permissions" | "profile";
 
 /* `needs` is about DRAWING the tab, not about access. Somebody who reaches
    /portal and types the tab into React devtools sees a screen whose every
@@ -73,6 +75,7 @@ const NAV: {
   { id: "referrals", label: "My referrals", icon: BadgeCheck },
   { id: "areas", label: "Where I work", icon: MapPin },
   { id: "permissions", label: "What I can do", icon: ShieldCheck },
+  { id: "profile", label: "My profile", icon: UserCog },
 ];
 
 export function PortalShell() {
@@ -232,6 +235,7 @@ export function PortalShell() {
           {tab === "referrals" && <Referrals profile={profile} credited={credited} />}
           {tab === "areas" && <Areas profile={profile} />}
           {tab === "permissions" && <Permissions profile={profile} />}
+          {tab === "profile" && <PortalProfile profile={profile} />}
         </div>
       </div>
     </div>
