@@ -245,6 +245,15 @@ export function addStaffMember(input: {
   return post({ action: "add_member", ...input });
 }
 
+/**
+ * Send the sign-in link to a team member again — for when the first
+ * invitation email failed, or they never opened it. It always goes to the
+ * address on their profile; there is no way to redirect it.
+ */
+export function resendStaffInvite(staffId: string): Promise<StaffApiResult> {
+  return post({ action: "resend_invite", staffId });
+}
+
 export function updateStaffMember(
   staffId: string,
   patch: {

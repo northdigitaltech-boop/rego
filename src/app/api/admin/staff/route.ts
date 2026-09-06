@@ -358,6 +358,98 @@ export async function POST(req: Request) {
     }
 
     /* ================================================================
+     * Send the sign-in link again.
+     *
+     * Needed because add_member keeps the account when the mail fails: the
+     * person is on the team, the account exists, and every later attempt to
+     * add them is correctly refused as a duplicate. Without this there was
+     * no way to reach them at all — a gap the first version left.
+     *
+     * A RECOVERY link, not an invite: invite refuses for a user who already
+     * exists. It lands on the same screen and sets the same password, and
+     * it works whether they never had one or forgot the one they chose.
+     *
+     * It can only ever go to the address already on their profile. Nothing
+     * in the request says where to send it.
+     * ================================================================ */
+    case "resend_invite": {
+      const staffId = String(body.staffId ?? "");
+      if (!staffId) return bad("Missing team member.");
+      if (!isSmtpConfigured) {
+        return bad(
+          "Email is not configured on this server, so nothing can be sent. Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD.",
+          503
+        );
+      }
+
+      const { data: row } = await sb
+        .from("staff_members")
+        .select(
+          "id, employee_code, status, profile_id, job_title, " +
+            "profiles(email, full_name), staff_departments(name), staff_roles(name)"
+        )
+        .eq("id", staffId)
+        .maybeSingle();
+
+      if (!row) return bad("Team member not found.", 404);
+
+      const m = row as unknown as {
+        employee_code: string;
+        status: string;
+        profiles: { email: string | null; full_name: string | null } | null;
+        staff_departments: { name: string } | null;
+        staff_roles: { name: string } | null;
+      };
+
+      if (m.status !== "active") {
+        return bad(
+          `${m.employee_code} is ${m.status}. Set them back to active before sending a sign-in link.`
+        );
+      }
+
+      const target = (m.profiles?.email ?? "").trim().toLowerCase();
+      if (!target) return bad("That team member has no email address on file.", 500);
+
+      const { data: link, error: linkErr } = await sb.auth.admin.generateLink({
+        type: "recovery",
+        email: target,
+        options: { redirectTo: absoluteUrl("/reset-password?welcome=1") },
+      });
+
+      if (linkErr || !link?.properties?.action_link) {
+        return bad(linkErr?.message ?? "Could not create a sign-in link.", 500);
+      }
+
+      const sent = await sendStaffInvite({
+        to: target,
+        name: m.profiles?.full_name ?? null,
+        link: link.properties.action_link,
+        employeeCode: m.employee_code,
+        departmentName: m.staff_departments?.name ?? null,
+        roleName: m.staff_roles?.name ?? null,
+        invitedBy: actorEmail,
+      });
+
+      if (!sent.ok) {
+        return bad(
+          `The link was created but the email could not be sent: ${sent.error ?? "unknown error"}.`,
+          502
+        );
+      }
+
+      /* The address is recorded; the link is not. It signs its holder in. */
+      await audit({
+        action: "staff.invite_resent",
+        entityId: staffId,
+        entityLabel: `${m.employee_code} · ${target}`,
+        before: null,
+        after: { email: target },
+      });
+
+      return NextResponse.json({ ok: true, email: target });
+    }
+
+    /* ================================================================
      * Department, role, title, phone, status.
      * ================================================================ */
     case "update_member": {

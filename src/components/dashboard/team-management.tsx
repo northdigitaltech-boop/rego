@@ -23,6 +23,7 @@ import {
   getScopes,
   getStaffMembers,
   setPermissionOverride,
+  resendStaffInvite,
   setScope,
   updateStaffMember,
   type DepartmentRow,
@@ -517,6 +518,8 @@ function MemberDetail({
     return acc;
   }, {});
 
+  const [sentTo, setSentTo] = React.useState("");
+
   const act = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>) => {
     setBusy(key);
     const res = await fn();
@@ -572,6 +575,31 @@ function MemberDetail({
         <p className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
           {STATUS_HELP[member.status]}
         </p>
+
+        {/* If the first invitation never arrived, this is the only way back to
+            them: they are already on the team, so adding them again is
+            correctly refused as a duplicate. */}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={busy === "invite" || member.status !== "active"}
+            onClick={() =>
+              act("invite", async () => {
+                const res = await resendStaffInvite(member.id);
+                if (res.ok) setSentTo(res.email ?? who);
+                return res;
+              })
+            }
+            className="rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest disabled:opacity-50"
+          >
+            {busy === "invite" ? "Sending…" : "Send sign-in link"}
+          </button>
+          <span className="text-xs text-muted-foreground">
+            {sentTo
+              ? `Sent to ${sentTo}. It works once and expires.`
+              : "Emails them a link to set their password. Goes to the address on their profile."}
+          </span>
+        </div>
       </div>
 
       {/* ---- scope ---- */}
