@@ -13,17 +13,20 @@ import {
   MapPin,
   ShieldCheck,
   UserRound,
+  Users,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/auth-context";
 import {
+  can,
   referralLink,
   touchStaffSeen,
   useStaffProfile,
   type StaffProfile,
 } from "@/lib/staff-portal";
+import { PortalLeads } from "@/components/portal/portal-leads";
 
 /* ============================================================
  * The team portal.
@@ -45,10 +48,19 @@ import {
  *   language for the same product is a cost with no payer.
  * ============================================================ */
 
-type Tab = "overview" | "referrals" | "areas" | "permissions";
+type Tab = "overview" | "leads" | "referrals" | "areas" | "permissions";
 
-const NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+/* `needs` is about DRAWING the tab, not about access. Somebody who reaches
+   /portal and types the tab into React devtools sees a screen whose every
+   query the database then refuses. The hidden tab is a courtesy. */
+const NAV: {
+  id: Tab;
+  label: string;
+  icon: typeof LayoutDashboard;
+  needs?: string[];
+}[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "leads", label: "Leads", icon: Users, needs: ["view_leads", "manage_own_leads"] },
   { id: "referrals", label: "My referrals", icon: BadgeCheck },
   { id: "areas", label: "Where I work", icon: MapPin },
   { id: "permissions", label: "What I can do", icon: ShieldCheck },
@@ -160,7 +172,9 @@ export function PortalShell() {
             </div>
 
             <nav className="mt-2 space-y-1">
-              {NAV.map((n) => {
+              {NAV.filter(
+                (n) => !n.needs || n.needs.some((slug) => can(profile, slug))
+              ).map((n) => {
                 const Icon = n.icon;
                 return (
                   <button
@@ -203,6 +217,7 @@ export function PortalShell() {
           {tab === "overview" && (
             <Overview profile={profile} credited={credited} onGo={setTab} />
           )}
+          {tab === "leads" && <PortalLeads profile={profile} />}
           {tab === "referrals" && <Referrals profile={profile} credited={credited} />}
           {tab === "areas" && <Areas profile={profile} />}
           {tab === "permissions" && <Permissions profile={profile} />}
@@ -307,14 +322,13 @@ function Overview({
       </Card>
 
       <Card title="What is not here yet">
-        {/* Named plainly rather than shown as empty panels. Somebody whose
-            permission list mentions leads should be told where leads are,
-            not shown a section that does nothing. */}
+        {/* Named plainly rather than shown as empty panels, and kept honest as
+            each one lands — a stale "not built" note is its own small lie. */}
         <p className="text-sm text-muted-foreground">
-          Leads, tasks, evidence and department analytics appear in your
-          permissions because the permission exists. The screens for them are
-          not built yet, so they are not shown as empty sections here. What you
-          can see on this page is real.
+          Tasks, evidence and department analytics appear in your permissions
+          because the permission exists. Their screens are not built yet, so
+          they are not shown as empty sections here. Everything you can see on
+          this page is real.
         </p>
         <button
           type="button"
