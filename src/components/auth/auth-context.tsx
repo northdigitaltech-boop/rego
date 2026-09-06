@@ -38,7 +38,7 @@ interface AuthContextValue {
   ) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   resendCode: (email: string) => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<void>;
+  requestPasswordReset: (email: string, captchaToken?: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   updateProfile: (updates: { name?: string; avatar?: string }) => Promise<void>;
   login: (email: string, password: string, captchaToken?: string) => Promise<void>;
@@ -314,14 +314,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyCode = React.useCallback(async (_email: string, _code: string) => {}, []);
   const resendCode = React.useCallback(async (_email: string) => {}, []);
 
-  const requestPasswordReset = React.useCallback(async (email: string) => {
-    const redirectTo =
-      typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo,
-    });
-    if (error) throw new Error(error.message);
-  }, []);
+  /* captchaToken is not optional in practice. The Supabase project has CAPTCHA
+     protection switched on, and it applies to EVERY auth endpoint — sign-in
+     passed a token and this one did not, so the only thing forgot-password
+     ever returned was "request disallowed (no captcha_token found)". */
+  const requestPasswordReset = React.useCallback(
+    async (email: string, captchaToken?: string) => {
+      const redirectTo =
+        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo,
+        captchaToken,
+      });
+      if (error) throw new Error(error.message);
+    },
+    []
+  );
 
   const resetPassword = React.useCallback(
     async (_email: string, _code: string, newPassword: string) => {

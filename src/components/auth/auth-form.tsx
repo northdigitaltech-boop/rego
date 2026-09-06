@@ -118,6 +118,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const humanOk = isTurnstileEnabled ? Boolean(turnstileToken) : captcha;
 
   // Forgot-password state
+  /* Its own Turnstile instance and token. The sign-in form's widget lives in
+     a different branch of the render and is unmounted while this panel is
+     open, so its token is not available here and its ref would be null. */
+  const [forgotToken, setForgotToken] = React.useState<string | null>(null);
+  const forgotTurnstileRef = React.useRef<TurnstileHandle | null>(null);
   const [forgotOpen, setForgotOpen] = React.useState(false);
   const [forgotStep, setForgotStep] = React.useState<"email" | "reset">("email");
   const [newPassword, setNewPassword] = React.useState("");
@@ -304,12 +309,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setVerifyError("");
     setVerifyMsg("");
     try {
-      await requestPasswordReset(email);
+      /* The token comes from the widget rendered inside this panel, not from
+         the sign-in form's — that one is in a different branch and is not on
+         screen while this is. Without a token the Supabase project refuses
+         the request outright, which is what it was doing. */
+      await requestPasswordReset(email, forgotToken ?? undefined);
       // Supabase sends a secure reset link by email; no in-app code step.
       setVerifyMsg(
         `If an account exists for ${email}, we've emailed a password reset link. Open it to set a new password.`
       );
     } catch (err) {
+      /* Turnstile tokens are single-use. Without this reset, a second attempt
+         reuses a spent token and fails for a reason that has nothing to do
+         with what the person typed. */
+      forgotTurnstileRef.current?.reset();
+      setForgotToken(null);
       setVerifyError(err instanceof Error ? err.message : "Something went wrong.");
     }
   };
@@ -473,7 +487,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
               </h1>
               <p className="mt-2 text-muted-foreground">
                 {forgotStep === "email"
-                  ? "Enter your email and we'll send a reset code."
+                  ? /* A link, not a code. Supabase has sent a link since this
+                       flow moved to it; the screen had gone on promising a
+                       code that never arrives, which sends somebody looking
+                       through their inbox for the wrong thing. */
+                    "Enter your email and we'll send you a link to set a new password."
                   : `Enter the code sent to ${email} and your new password.`}
               </p>
 
@@ -512,13 +530,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
                       className="w-full bg-transparent text-sm text-forest placeholder:text-muted-foreground focus:outline-none"
                     />
                   </div>
+
+                  {isTurnstileEnabled && (
+                    <Turnstile
+                      ref={forgotTurnstileRef}
+                      action="password-reset"
+                      onToken={setForgotToken}
+                    />
+                  )}
+
                   <Button
                     type="submit"
                     variant="gold"
                     size="lg"
-                    className="w-full rounded-lg bg-forest-600 text-white hover:bg-forest-700"
+                    /* Disabled until the check passes, because sending
+                       without a token is a request the server refuses and a
+                       message that blames the person's email address. */
+                    disabled={isTurnstileEnabled && !forgotToken}
+                    className="w-full rounded-lg bg-forest-600 text-white hover:bg-forest-700 disabled:opacity-70"
                   >
-                    Send reset code
+                    Send reset link
                   </Button>
                 </form>
               ) : (
