@@ -314,19 +314,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const verifyCode = React.useCallback(async (_email: string, _code: string) => {}, []);
   const resendCode = React.useCallback(async (_email: string) => {}, []);
 
-  /* captchaToken is not optional in practice. The Supabase project has CAPTCHA
-     protection switched on, and it applies to EVERY auth endpoint — sign-in
-     passed a token and this one did not, so the only thing forgot-password
-     ever returned was "request disallowed (no captcha_token found)". */
+  /* Goes to Rego's own route, not to supabase.auth.resetPasswordForEmail().
+     That call asks SUPABASE to send the mail, and it answered "Error sending
+     recovery email" — the built-in service is rate-limited to a handful an
+     hour and, without custom SMTP, does not reliably reach addresses outside
+     the project team. The route generates the same one-time link and posts it
+     through the SMTP that already sends booking confirmations.
+
+     The captcha token still travels, and is still verified — by the route
+     now, against Cloudflare, because bypassing Supabase's mailer also
+     bypasses the check Supabase was performing. */
   const requestPasswordReset = React.useCallback(
     async (email: string, captchaToken?: string) => {
-      const redirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo,
-        captchaToken,
+      const res = await fetch("/api/auth/reset-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), captchaToken }),
       });
-      if (error) throw new Error(error.message);
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error ?? "Could not send the reset link.");
+      }
     },
     []
   );
