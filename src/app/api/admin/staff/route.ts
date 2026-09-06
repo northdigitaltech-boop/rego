@@ -437,16 +437,23 @@ export async function POST(req: Request) {
         );
       }
 
-      /* The address is recorded; the link is not. It signs its holder in. */
+      /* The address and the mail server's answer are recorded; the link is
+         not. It signs its holder in. */
       await audit({
         action: "staff.invite_resent",
         entityId: staffId,
         entityLabel: `${m.employee_code} · ${target}`,
         before: null,
-        after: { email: target },
+        after: { email: target, smtp_response: sent.response ?? null },
       });
 
-      return NextResponse.json({ ok: true, email: target });
+      return NextResponse.json({
+        ok: true,
+        email: target,
+        /* The queue id, so "it says sent but never arrived" has something a
+           mail host can actually trace. */
+        smtpResponse: sent.response ?? null,
+      });
     }
 
     /* ================================================================

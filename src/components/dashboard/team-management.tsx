@@ -519,6 +519,9 @@ function MemberDetail({
   }, {});
 
   const [sentTo, setSentTo] = React.useState("");
+  /* The mail server's own words, kept so "it says sent but never arrived"
+     comes with a queue id the host can trace. */
+  const [smtp, setSmtp] = React.useState("");
 
   const act = async (key: string, fn: () => Promise<{ ok: boolean; error?: string }>) => {
     setBusy(key);
@@ -586,7 +589,10 @@ function MemberDetail({
             onClick={() =>
               act("invite", async () => {
                 const res = await resendStaffInvite(member.id);
-                if (res.ok) setSentTo(res.email ?? who);
+                if (res.ok) {
+                  setSentTo(res.email ?? who);
+                  setSmtp(res.smtpResponse ?? "");
+                }
                 return res;
               })
             }
@@ -596,7 +602,9 @@ function MemberDetail({
           </button>
           <span className="text-xs text-muted-foreground">
             {sentTo
-              ? `Sent to ${sentTo}. It works once and expires.`
+              ? `Sent to ${sentTo}. It works once and expires.${
+                  smtp ? ` Mail server said: ${smtp}` : ""
+                }`
               : "Emails them a link to set their password. Goes to the address on their profile."}
           </span>
         </div>

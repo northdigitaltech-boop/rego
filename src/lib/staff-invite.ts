@@ -1,5 +1,5 @@
 import { emailLayout, emailButton } from "@/lib/email-layout";
-import { sendMail, isSmtpConfigured } from "@/lib/mailer";
+import { sendMail, isSmtpConfigured, type MailResult } from "@/lib/mailer";
 import { esc } from "@/lib/notify-email";
 import { siteConfig } from "@/lib/site";
 
@@ -46,8 +46,16 @@ export interface StaffInviteInput {
 
 export async function sendStaffInvite(
   input: StaffInviteInput
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<MailResult> {
   const who = (input.name || "").trim() || input.to;
+
+  /* emailButton does not escape its href, which is harmless for the short
+     URLs every other Rego email uses and not harmless here: a Supabase
+     action link carries several `&`-separated parameters, and a raw `&` in
+     an HTML attribute is at the mercy of whatever sanitiser the mail client
+     runs. Escaped at this call site rather than inside emailButton, so no
+     other email changes shape. */
+  const href = input.link.replace(/&/g, "&amp;");
 
   const position = [input.roleName, input.departmentName]
     .filter(Boolean)
@@ -70,7 +78,11 @@ export async function sendStaffInvite(
       Choose a password to finish setting up your account. Nobody at Rego sets
       it for you and nobody can see it.
     </p>
-    ${emailButton("Choose your password", input.link)}
+    ${emailButton("Choose your password", href)}
+    <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#6b7c75;">
+      If the button does not work, copy this address into your browser:<br />
+      <span style="word-break:break-all;color:#0F4C3A;">${esc(input.link)}</span>
+    </p>
     <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#6b7c75;">
       This link works once and expires. If it has expired by the time you open
       it, tell whoever added you and they can send a new one.

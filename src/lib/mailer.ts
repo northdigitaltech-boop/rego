@@ -53,24 +53,67 @@ export interface MailInput {
   html: string;
 }
 
+export interface MailResult {
+  ok: boolean;
+  error?: string;
+  /* What the receiving server actually said. Everything below is optional and
+     only present on a successful send.
+
+     WHY THESE ARE RETURNED
+       This used to return `{ ok: true }` and throw the rest away, which meant
+       "ok" said only that no exception was raised. When a message is accepted
+       and then never arrives, that is not enough to tell anyone: the SMTP
+       response carries a queue id, and the queue id is the one thing a host's
+       support can trace. `accepted` and `rejected` are also per-recipient, so
+       a partially refused send stops looking like a clean one. */
+  /** Raw final SMTP line, e.g. "250 2.0.0 Ok: queued as 4b2f…". */
+  response?: string;
+  messageId?: string;
+  accepted?: string[];
+  rejected?: string[];
+}
+
 /**
  * Send one email. Returns a plain result rather than throwing, so callers
  * can decide whether a failed notification should break their flow.
  */
-export async function sendMail(
-  input: MailInput
-): Promise<{ ok: boolean; error?: string }> {
+export async function sendMail(input: MailInput): Promise<MailResult> {
   if (!isSmtpConfigured) return { ok: false, error: "SMTP not configured" };
 
   try {
-    await transporter().sendMail({
+    const info = await transporter().sendMail({
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to: input.to,
       subject: input.subject,
       html: input.html,
       replyTo: process.env.REPLY_TO || undefined,
     });
-    return { ok: true };
+
+    const accepted = (info.accepted ?? []).map(String);
+    const rejected = (info.rejected ?? []).map(String);
+
+    /* Nodemailer throws when EVERY recipient is refused, but a message with
+       one refused address among several resolves normally. Treating that as
+       success is how a send gets reported as fine while reaching nobody. */
+    if (accepted.length === 0) {
+      return {
+        ok: false,
+        error: `The mail server accepted no recipients${
+          info.response ? ` — ${info.response}` : ""
+        }`,
+        response: info.response,
+        accepted,
+        rejected,
+      };
+    }
+
+    return {
+      ok: true,
+      response: info.response,
+      messageId: info.messageId,
+      accepted,
+      rejected,
+    };
   } catch (e) {
     // Log the real reason server-side; callers get something generic.
     console.error("[mailer] send failed:", e);

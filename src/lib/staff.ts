@@ -185,6 +185,12 @@ export interface StaffApiResult {
   /** Why, when something succeeded but not completely. */
   warning?: string | null;
   email?: string;
+  /**
+   * What the mail server said, e.g. "250 2.0.0 Ok: queued as 4b2f…". Shown
+   * so that "it says sent but never arrived" comes with a queue id the mail
+   * host can trace, instead of a boolean nobody can act on.
+   */
+  smtpResponse?: string | null;
 }
 
 async function post(body: unknown): Promise<StaffApiResult> {
