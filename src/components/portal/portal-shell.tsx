@@ -7,6 +7,8 @@ import {
   BadgeCheck,
   Check,
   ClipboardList,
+  FileText,
+  Globe2,
   Copy,
   LayoutDashboard,
   Loader2,
@@ -31,6 +33,8 @@ import {
 import { PortalLeads } from "@/components/portal/portal-leads";
 import { PortalTasks } from "@/components/portal/portal-tasks";
 import { PortalProfile } from "@/components/portal/portal-profile";
+import { AdminBlog } from "@/components/dashboard/admin-blog";
+import { MarketAreas } from "@/components/dashboard/market-areas";
 
 /* ============================================================
  * The team portal.
@@ -53,7 +57,7 @@ import { PortalProfile } from "@/components/portal/portal-profile";
  *   language for the same product is a cost with no payer.
  * ============================================================ */
 
-type Tab = "overview" | "leads" | "tasks" | "referrals" | "areas" | "permissions" | "profile";
+type Tab = "overview" | "leads" | "tasks" | "referrals" | "areas" | "permissions" | "profile" | "blog" | "places";
 
 /* `needs` is about DRAWING the tab, not about access. Somebody who reaches
    /portal and types the tab into React devtools sees a screen whose every
@@ -71,6 +75,18 @@ const NAV: {
     label: "Tasks",
     icon: ClipboardList,
     needs: ["view_tasks", "update_own_tasks"],
+  },
+  {
+    id: "blog",
+    label: "Blog & news",
+    icon: FileText,
+    needs: ["create_blog", "edit_blog", "publish_blog", "unpublish_blog"],
+  },
+  {
+    id: "places",
+    label: "Destinations & areas",
+    icon: Globe2,
+    needs: ["view_locations", "add_location", "edit_location", "add_attraction"],
   },
   { id: "referrals", label: "My referrals", icon: BadgeCheck },
   { id: "areas", label: "Where I work", icon: MapPin },
@@ -236,6 +252,14 @@ export function PortalShell() {
           {tab === "areas" && <Areas profile={profile} />}
           {tab === "permissions" && <Permissions profile={profile} />}
           {tab === "profile" && <PortalProfile profile={profile} />}
+
+          {/* The admin screens themselves, not copies. A second blog editor
+              would drift from the first, and the difference would show up as
+              a field that saves in one place and not the other. What a staff
+              member may actually DO with them is decided by the route, per
+              action — see /api/admin/blog and /api/admin/markets. */}
+          {tab === "blog" && <AdminBlog />}
+          {tab === "places" && <MarketAreas />}
         </div>
       </div>
     </div>

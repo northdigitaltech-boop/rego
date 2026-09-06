@@ -5,6 +5,7 @@ import { createHash } from "crypto";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
+import { callerCan } from "@/lib/staff-guard";
 
 /* ============================================================
  * Market & Area Management — the only write path.
@@ -16,8 +17,12 @@ import { enforceIpBlock } from "@/lib/ip-block";
  *   • checked against the IP block list
  *   • same-origin
  *   • rate limited
- *   • authenticated, then verified admin by reading profiles
- *     server-side — never by trusting a claim in the request
+ *   • authenticated, then authorised by reading the DATABASE —
+ *     the caller's role from profiles, and for staff their
+ *     permission and area from staff_can(). Never by trusting a
+ *     claim in the request. Which actions a non-admin may reach
+ *     is listed at the authorisation block below; the ones that
+ *     decide what the public site shows are not among them.
  *   • validated field by field against a whitelist
  *   • written to market_audit_logs with before AND after values
  *
@@ -175,7 +180,7 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   const role = (profile as { role?: string } | null)?.role;
-  if (role !== "admin") return bad("Admins only.", 403);
+  const isAdmin = role === "admin";
 
   const actorEmail =
     (profile as { email?: string } | null)?.email ?? caller.user.email ?? null;
@@ -189,6 +194,53 @@ export async function POST(req: Request) {
   }
 
   const action = String(body.action ?? "");
+
+  /* ---------------------------------------------------------------------
+   * AUTHORISATION, PER ACTION
+   *
+   * Adding a district and switching a whole region off are not the same
+   * act, and the route used to treat them identically by admitting only
+   * admins. A content person who maintains destinations now needs the first
+   * and must not have the second.
+   *
+   * Only three actions open up. Everything else — flags, service switches,
+   * apply-to-children, bulk changes — stays admin-only, because those decide
+   * what the PUBLIC SITE shows across whole subtrees and phase104 has no
+   * permission naming that authority. A permission that does not exist
+   * cannot be granted by mistake, which is the point.
+   * ------------------------------------------------------------------- */
+  if (!isAdmin) {
+    const needed: Record<string, string> = {
+      create_location: "add_location",
+      update_location: "edit_location",
+      /* SEO text on a location is editing the location. It is not a
+         publishing decision, which is why it is here and not with the
+         flags. */
+      save_seo: "edit_location",
+      sync_attractions: "add_attraction",
+    };
+
+    const slug = needed[action];
+    if (!slug) return bad("Admins only.", 403);
+
+    /* Scoped where it can be. Somebody whose scope is Baltistan should not
+       be renaming districts in Punjab, and staff_can() already knows how to
+       answer that — passing the location is the whole reason it takes one. */
+    const scopeId =
+      typeof body.id === "string"
+        ? body.id
+        : typeof body.parentId === "string"
+          ? body.parentId
+          : null;
+
+    const allowed = await callerCan(token, slug, scopeId);
+    if (!allowed) {
+      return bad(
+        "Your role does not allow that here. It may be the permission, or it may be the area you cover — ask an admin.",
+        403
+      );
+    }
+  }
   const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
 
   /** Append-only audit write. Never blocks the change it records. */

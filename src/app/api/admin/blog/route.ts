@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
+import { callerCanAny } from "@/lib/staff-guard";
 
 /* ============================================================
  * Blog & News — the only write path.
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   const p = profile as { role?: string; full_name?: string; email?: string } | null;
-  if (p?.role !== "admin") return bad("Admins only.", 403);
+  const isAdmin = p?.role === "admin";
 
   let body: Record<string, unknown>;
   try {
@@ -154,6 +155,52 @@ export async function POST(req: Request) {
   }
 
   const action = String(body.action ?? "");
+
+  /* ---------------------------------------------------------------------
+   * AUTHORISATION
+   *
+   * Was a flat "admins only". A content writer on the team now needs to
+   * write, so each action asks for the permission that names it. The check
+   * is per ACTION rather than per route, because "can open the blog screen"
+   * and "can delete a published post" are not the same question and a route
+   * that conflates them grants the wrong one.
+   *
+   * Deleting and comment moderation stay admin-only: phase104 has no
+   * permission for either, and inventing one here would create an authority
+   * the Super Admin screens never granted and nobody reviewed.
+   *
+   * Asked AFTER the body is parsed, because the answer depends on the
+   * action. The token was already verified above; only the narrower question
+   * is left.
+   * ------------------------------------------------------------------- */
+  if (!isAdmin) {
+    const needed: Record<string, string[]> = {
+      /* Creating and editing are one action here, so either permission opens
+         it. The database is not fooled: a writer without edit_blog still
+         cannot change somebody else's post if a policy says so. */
+      save: ["create_blog", "edit_blog"],
+      /* Split by what the status change actually does. Somebody trusted to
+         take a post down is not automatically trusted to put one up, and
+         accepting either permission for both would have made those two rows
+         in staff_permissions mean the same thing. */
+      set_status:
+        String(body.status ?? "") === "published" ||
+        String(body.status ?? "") === "scheduled"
+          ? ["publish_blog"]
+          : ["unpublish_blog"],
+    };
+
+    const slugs = needed[action];
+    if (!slugs) return bad("Admins only.", 403);
+
+    const allowed = await callerCanAny(token, slugs);
+    if (!allowed) {
+      return bad(
+        "Your role does not allow that. Ask an admin to check your permissions.",
+        403
+      );
+    }
+  }
 
   /* ---------------------------------------------------------------- */
   if (action === "save") {
@@ -277,9 +324,12 @@ export async function POST(req: Request) {
            Article JSON-LD, so an admin with no full_name set had their email
            published on every post they wrote. "Rego Team" is the correct
            fallback — a byline, not a contact address. */
+        /* `p?` because the admin check that used to narrow this away is gone
+           — the caller may now be staff. Which is also the right byline:
+           whoever wrote it, admin or team member. */
         author_name:
           (clean.author_name as string)?.trim() ||
-          p.full_name?.trim() ||
+          p?.full_name?.trim() ||
           "Rego Team",
       })
       .select("id, slug")
