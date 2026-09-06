@@ -362,6 +362,78 @@ export async function POST(req: Request) {
     }
 
     /* ================================================================
+     * Assign a task.
+     *
+     * WHY THIS IS A ROUTE AND STATUS UPDATES ARE NOT
+     *   phase108 revokes the blanket update grant on staff_tasks and
+     *   re-grants only (status, progress_note). A signed-in member can
+     *   therefore move their work along from the browser, and Postgres
+     *   itself refuses `set due_date` or `set title` before any policy is
+     *   consulted. Assigning has to write the columns that grant excludes,
+     *   so it runs with the service-role client — and leaves an audit row,
+     *   which is the other reason it belongs here.
+     *
+     *   There is no `assign_tasks` permission in phase104, so this is an
+     *   admin act. Inventing the permission here would create one the Super
+     *   Admin screens never granted and nobody reviewed.
+     * ================================================================ */
+    case "assign_task": {
+      const staffId = String(body.staffId ?? "");
+      const title = String(body.title ?? "").trim();
+      const detail = String(body.detail ?? "").trim();
+      const priority = String(body.priority ?? "normal");
+      const dueDate = body.dueDate ? String(body.dueDate) : null;
+
+      if (!staffId) return bad("Missing team member.");
+      if (!title) return bad("Give the task a title.");
+      if (!["low", "normal", "high"].includes(priority)) return bad("Unknown priority.");
+
+      const { data: row, error: rowErr } = await sb
+        .from("staff_members")
+        .select("id, employee_code, status, department_id")
+        .eq("id", staffId)
+        .maybeSingle();
+      if (rowErr) return bad(rowErr.message, 500);
+      if (!row) return bad("Team member not found.", 404);
+
+      const t = row as { employee_code: string; status: string; department_id: string };
+      if (t.status !== "active") {
+        return bad(
+          `${t.employee_code} is ${t.status}. Assigning work to somebody who cannot sign in would leave it sitting there unread.`
+        );
+      }
+
+      const { data: created, error } = await sb
+        .from("staff_tasks")
+        .insert({
+          staff_id: staffId,
+          /* Read from the member, not from the request. A task filed under
+             the wrong department disappears from the view that would have
+             chased it. */
+          department_id: t.department_id,
+          title,
+          detail: detail || null,
+          priority,
+          due_date: dueDate,
+          assigned_by: caller.user.id,
+        })
+        .select("id")
+        .single();
+
+      if (error) return bad(error.message, 500);
+
+      await audit({
+        action: "staff.assign_task",
+        entityId: staffId,
+        entityLabel: `${t.employee_code} · ${title}`,
+        before: null,
+        after: { title, priority, due_date: dueDate },
+      });
+
+      return NextResponse.json({ ok: true, id: created.id });
+    }
+
+    /* ================================================================
      * Remove somebody from the team, and optionally delete the account
      * that was created for them.
      *

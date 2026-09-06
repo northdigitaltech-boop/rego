@@ -193,6 +193,8 @@ export interface StaffApiResult {
   smtpResponse?: string | null;
   /** True when the Rego account was deleted along with the staff row. */
   accountDeleted?: boolean;
+  /** Not used by every action; present on the ones that create a row. */
+  taskId?: string;
 }
 
 async function post(body: unknown): Promise<StaffApiResult> {
@@ -251,6 +253,25 @@ export function addStaffMember(input: {
   joinedAt?: string;
 }): Promise<StaffApiResult> {
   return post({ action: "add_member", ...input });
+}
+
+/**
+ * Assign a task to a team member.
+ *
+ * Goes through the route rather than the browser because phase108 narrows
+ * the update grant on staff_tasks to (status, progress_note) — the assignee
+ * moves their work along, and only a service-role write can set the title
+ * and the date. The department comes from the member's record, not from
+ * here.
+ */
+export function assignTask(input: {
+  staffId: string;
+  title: string;
+  detail?: string;
+  priority?: "low" | "normal" | "high";
+  dueDate?: string;
+}): Promise<StaffApiResult> {
+  return post({ action: "assign_task", ...input });
 }
 
 /**

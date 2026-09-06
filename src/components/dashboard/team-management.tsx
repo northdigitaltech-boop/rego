@@ -23,6 +23,7 @@ import {
   getScopes,
   getStaffMembers,
   setPermissionOverride,
+  assignTask,
   removeStaffMember,
   resendStaffInvite,
   setScope,
@@ -479,6 +480,139 @@ function AddMember({
 /* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------
+ * Assigning work.
+ *
+ * The title and the due date can only be set from here — phase108 lets the
+ * assignee change the status and a note and nothing else, so a deadline
+ * cannot be quietly moved by whoever missed it.
+ * ------------------------------------------------------------------ */
+function AssignTask({
+  member,
+  onError,
+}: {
+  member: StaffMemberRow;
+  onError: (s: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [detail, setDetail] = React.useState("");
+  const [priority, setPriority] = React.useState<"low" | "normal" | "high">("normal");
+  const [dueDate, setDueDate] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [sent, setSent] = React.useState("");
+
+  const submit = async () => {
+    if (!title.trim()) {
+      onError("Give the task a title.");
+      return;
+    }
+    setBusy(true);
+    const res = await assignTask({
+      staffId: member.id,
+      title,
+      detail: detail.trim() || undefined,
+      priority,
+      dueDate: dueDate || undefined,
+    });
+    setBusy(false);
+    if (!res.ok) {
+      onError(res.error ?? "Could not assign that.");
+      return;
+    }
+    setSent(title.trim());
+    setTitle("");
+    setDetail("");
+    setDueDate("");
+  };
+
+  if (!open) {
+    return (
+      <div className="mt-4 border-t border-border pt-3">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-sm font-semibold text-forest hover:underline"
+        >
+          Assign a task
+        </button>
+        {sent && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Assigned “{sent}”. It is in their portal now.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-3 rounded-xl border border-border bg-background p-4">
+      <p className="text-sm font-semibold text-forest">
+        Assign a task to {member.employee_code}
+      </p>
+
+      <Field label="What needs doing" required>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="auth-input"
+          placeholder="e.g. Visit three hotels in Skardu"
+          autoFocus
+        />
+      </Field>
+
+      <Field label="Detail">
+        <textarea
+          value={detail}
+          onChange={(e) => setDetail(e.target.value)}
+          rows={2}
+          className="auth-input"
+        />
+      </Field>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Priority">
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as "low" | "normal" | "high")}
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+          >
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+          </select>
+        </Field>
+        <Field label="Due">
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+          />
+        </Field>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={busy}
+          className="rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? "Assigning…" : "Assign"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
  * Removing somebody.
  *
  * Two clicks, because one click that deletes is a click somebody makes by
@@ -716,6 +850,8 @@ function MemberDetail({
               : "Emails them a link to set their password. Goes to the address on their profile."}
           </span>
         </div>
+
+        <AssignTask member={member} onError={onError} />
 
         <RemoveMember member={member} onRemoved={onRemoved} onError={onError} />
       </div>

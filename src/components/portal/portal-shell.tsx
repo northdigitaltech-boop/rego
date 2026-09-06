@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Check,
+  ClipboardList,
   Copy,
   LayoutDashboard,
   Loader2,
@@ -27,20 +28,22 @@ import {
   type StaffProfile,
 } from "@/lib/staff-portal";
 import { PortalLeads } from "@/components/portal/portal-leads";
+import { PortalTasks } from "@/components/portal/portal-tasks";
 
 /* ============================================================
  * The team portal.
  *
  * WHAT IS HERE AND WHAT IS NOT
- *   Identity, the referral link and what it has earned, assigned
- *   areas, and effective permissions. Every number on this page
- *   comes from a row that exists.
+ *   Identity, leads, tasks, the referral link and what it has
+ *   earned, assigned areas, and effective permissions. Every number
+ *   on this page comes from a row that exists.
  *
- *   Leads, tasks, evidence and department analytics are named in
- *   the permission list and have no tables yet. They are NOT
- *   stubbed here. A section that looks like a feature and does
- *   nothing teaches somebody to distrust the whole screen, and it
- *   also hides which parts are real.
+ *   Evidence and department analytics are named in the permission
+ *   list and have no tables yet. They are NOT stubbed here. A
+ *   section that looks like a feature and does nothing teaches
+ *   somebody to distrust the whole screen, and it hides which parts
+ *   are real. This note is updated as each one lands, because a
+ *   stale "not built yet" is its own small lie.
  *
  * WHY IT MIRRORS THE TRAVELLER DASHBOARD
  *   Same sidebar, same card shapes, same sign-out. Somebody who
@@ -48,7 +51,7 @@ import { PortalLeads } from "@/components/portal/portal-leads";
  *   language for the same product is a cost with no payer.
  * ============================================================ */
 
-type Tab = "overview" | "leads" | "referrals" | "areas" | "permissions";
+type Tab = "overview" | "leads" | "tasks" | "referrals" | "areas" | "permissions";
 
 /* `needs` is about DRAWING the tab, not about access. Somebody who reaches
    /portal and types the tab into React devtools sees a screen whose every
@@ -61,6 +64,12 @@ const NAV: {
 }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "leads", label: "Leads", icon: Users, needs: ["view_leads", "manage_own_leads"] },
+  {
+    id: "tasks",
+    label: "Tasks",
+    icon: ClipboardList,
+    needs: ["view_tasks", "update_own_tasks"],
+  },
   { id: "referrals", label: "My referrals", icon: BadgeCheck },
   { id: "areas", label: "Where I work", icon: MapPin },
   { id: "permissions", label: "What I can do", icon: ShieldCheck },
@@ -218,6 +227,7 @@ export function PortalShell() {
             <Overview profile={profile} credited={credited} onGo={setTab} />
           )}
           {tab === "leads" && <PortalLeads profile={profile} />}
+          {tab === "tasks" && <PortalTasks profile={profile} />}
           {tab === "referrals" && <Referrals profile={profile} credited={credited} />}
           {tab === "areas" && <Areas profile={profile} />}
           {tab === "permissions" && <Permissions profile={profile} />}
@@ -325,10 +335,10 @@ function Overview({
         {/* Named plainly rather than shown as empty panels, and kept honest as
             each one lands — a stale "not built" note is its own small lie. */}
         <p className="text-sm text-muted-foreground">
-          Tasks, evidence and department analytics appear in your permissions
-          because the permission exists. Their screens are not built yet, so
-          they are not shown as empty sections here. Everything you can see on
-          this page is real.
+          Evidence and department analytics appear in your permissions because
+          the permission exists. Their screens are not built yet, so they are
+          not shown as empty sections here. Everything you can see on this page
+          is real.
         </p>
         <button
           type="button"
