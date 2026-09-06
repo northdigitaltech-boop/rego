@@ -86,7 +86,14 @@ export function PortalShell() {
   const [credited, setCredited] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    if (ready && !user) router.replace("/signin");
+    /* Carry the destination. Without ?redirect= somebody who opened
+       /portal directly signed in and landed on whatever the default was,
+       which is the wrong answer to the door they knocked on.
+
+       Not a separate team login form: it would be a second authentication
+       path against the same accounts, which is one more place for a session
+       bug to live. Same form, told where it is going. */
+    if (ready && !user) router.replace("/signin?redirect=%2Fportal");
   }, [ready, user, router]);
 
   React.useEffect(() => {
@@ -202,15 +209,9 @@ export function PortalShell() {
                 );
               })}
 
-              {/* Being on the team does not stop somebody being a customer. */}
-              <Link
-                href="/dashboard"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"
-              >
-                <UserRound className="h-4 w-4" />
-                My bookings
-              </Link>
-
+              {/* No link to /dashboard. A team account is a team account
+                  now — /dashboard sends staff back here, so a link would
+                  bounce between the two and reach nothing. */}
               <button
                 onClick={signOut}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"

@@ -19,6 +19,7 @@ import {
 
 import { VoucherButton } from "@/components/bookings/voucher-button";
 import { useWishlist } from "@/lib/wishlist";
+import { useStaffProfile } from "@/lib/staff-portal";
 import { useAuth } from "@/components/auth/auth-context";
 import { PartnerDashboard } from "@/components/dashboard/partner-dashboard";
 import { HotelProviderDashboard } from "@/components/dashboard/hotel-provider-dashboard";
@@ -99,10 +100,21 @@ export function Dashboard() {
   const { user, ready, logout } = useAuth();
   const router = useRouter();
 
+  const staff = useStaffProfile();
+
   React.useEffect(() => {
     if (ready && !user) router.replace("/signin");
     else if (ready && user?.role === "admin") router.replace("/admin");
-  }, [ready, user, router]);
+    /* A team account is a team account. Somebody on the staff has no use for
+       a traveller dashboard, so they are sent to the portal the same way an
+       admin is sent to /admin.
+
+       The cost, stated plainly: if a staff member ever booked something with
+       this account, those bookings are now unreachable from the interface.
+       They are not deleted and the rows are untouched — but reaching them
+       would need a personal account, separate from the team one. */
+    else if (ready && staff) router.replace("/portal");
+  }, [ready, user, staff, router]);
 
   React.useEffect(() => {
     if (user && user.role === "traveler") {

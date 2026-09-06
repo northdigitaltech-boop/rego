@@ -131,6 +131,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const redirectQS = redirectTo
     ? `?redirect=${encodeURIComponent(redirectTo)}`
     : "";
+
+  /* Only changes the wording. It is not a claim that the person IS staff —
+     my_staff_profile() decides that after they sign in, and somebody who is
+     not on the team goes to their own dashboard rather than being told at
+     the door that they do not belong. */
+  const toPortal = redirectTo.startsWith("/portal");
   /* Where a sign-in lands.
 
      An explicit ?redirect= always wins — somebody sent here from a booking
@@ -145,7 +151,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
      `fresh: true` because the cached answer was written before they were
      signed in, when the honest answer was "not staff". */
   const goAfterAuth = async () => {
-    if (redirectTo) {
+    /* /portal is the one redirect that is checked rather than obeyed. The
+       heading above promises that somebody who is not on the team lands on
+       their own dashboard, and sending them to a page that says "this area
+       is for the Rego team" would make that a lie. Every other redirect is
+       somewhere they asked to be. */
+    if (redirectTo && !toPortal) {
       router.push(redirectTo);
       return;
     }
@@ -558,12 +569,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
           ) : (
             <>
           <h1 className="font-display text-3xl font-bold text-forest">
-            {isSignup ? "Create your account" : "Welcome back"}
+            {isSignup ? "Create your account" : toPortal ? "Rego team portal" : "Welcome back"}
           </h1>
           <p className="mt-2 text-muted-foreground">
             {isSignup
               ? "Join Rego to book your perfect trip across Gilgit Baltistan."
-              : "Sign in to continue planning your journey."}
+              : toPortal
+                ? "Sign in with your Rego account. The portal opens for team members; everyone else lands on their own dashboard."
+                : "Sign in to continue planning your journey."}
           </p>
 
           {flash && (
