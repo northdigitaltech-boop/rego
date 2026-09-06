@@ -30,6 +30,9 @@ export default function robots(): MetadataRoute.Robots {
            nobody outside the team should reach. */
         "/cyber",
         "/dashboard",
+        // The team portal. Same reasoning as /cyber: internal, and there is
+        // nothing on it a crawler could usefully reach.
+        "/portal",
         "/api/",
         "/signin",
         "/signup",

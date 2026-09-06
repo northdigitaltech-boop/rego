@@ -199,6 +199,27 @@ there is.
 
 ---
 
+## 5a. What has actually shipped
+
+Kept here rather than in a commit message, because "has this migration been
+run" is the question that keeps coming up.
+
+| Phase | SQL | Run on Supabase | Notes |
+|---|---|---|---|
+| 1–2 foundation | `phase104-staff-foundation.sql` | yes | 6 departments, 7 roles, 39 permissions, `staff_can()`, `is_staff()` |
+| 4 attribution | `phase105-staff-attribution.sql` | yes | `staff_attributions`, `attach_referral()`, first-touch and immutable |
+| 3 portal shell | `phase106-staff-portal-profile.sql` | **not yet** | `my_staff_profile()`, `touch_staff_seen()` |
+
+Also shipped without a migration: the admin **Team Management** screen, and
+adding a member by **invitation** — `generateLink({ type: "invite" })` plus
+Rego's own SMTP, because Supabase's built-in mailer is rate-limited and in
+practice only reaches project members.
+
+`/portal` renders the shell: identity, referral link and what it has earned,
+scope, and effective permissions. The department workspaces are phases 5–9 and
+are deliberately **not** stubbed — an empty panel promising a feature is a
+promise the screen cannot keep.
+
 ## 6. What I would build first, and an honest note on size
 
 **Phases 1 and 2** — the vocabulary, `staff_can()`, and the Super Admin screens

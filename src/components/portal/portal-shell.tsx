@@ -1,0 +1,356 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { BadgeCheck, Copy, Check, MapPin, Loader2, ShieldCheck } from "lucide-react";
+
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useAuth } from "@/components/auth/auth-context";
+import {
+  referralLink,
+  touchStaffSeen,
+  useStaffProfile,
+  type StaffProfile,
+} from "@/lib/staff-portal";
+
+/* ============================================================
+ * The team portal.
+ *
+ * WHAT THIS IS AND IS NOT
+ *   Phase 3 of the team map: the shell. It shows a member who they
+ *   are, where they may work, what they are permitted to do, and the
+ *   referral link that credits them. The department workspaces —
+ *   verification queues, action requests, approvals — are later
+ *   phases and are NOT stubbed here. An empty panel promising a
+ *   feature is a promise the screen cannot keep.
+ *
+ * WHY IT SHOWS PERMISSIONS AS A LIST
+ *   Somebody who cannot find a screen needs to know whether it is
+ *   missing or whether they are not allowed. Printing the answer is
+ *   cheaper than a support conversation, and there is nothing secret
+ *   about a person's own permissions.
+ * ============================================================ */
+
+interface PermissionRow {
+  slug: string;
+  module: string;
+  label: string;
+}
+
+export function PortalShell() {
+  const { user, ready } = useAuth();
+  const router = useRouter();
+  const profile = useStaffProfile();
+
+  React.useEffect(() => {
+    if (ready && !user) router.replace("/signin");
+  }, [ready, user, router]);
+
+  React.useEffect(() => {
+    if (profile) void touchStaffSeen();
+  }, [profile]);
+
+  if (!ready || profile === undefined) {
+    return (
+      <div className="container-px mx-auto flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  if (profile === null) {
+    return (
+      <div className="container-px mx-auto max-w-2xl py-16">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h1 className="font-display text-xl font-bold text-forest">
+            This area is for the Rego team
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account is not on the team, or your access has been paused. If
+            you think that is wrong, ask whoever added you.
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-5 inline-block rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white"
+          >
+            Go to my dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container-px mx-auto max-w-4xl space-y-5 py-10">
+      <Identity profile={profile} name={user.name} />
+      <Referral profile={profile} />
+      <Areas profile={profile} />
+      <Permissions profile={profile} />
+
+      <p className="pt-2 text-center text-xs text-muted-foreground">
+        Looking for your own bookings?{" "}
+        <Link href="/dashboard" className="font-semibold text-forest underline">
+          Your dashboard
+        </Link>{" "}
+        is separate from this portal.
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function Card({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <h2 className="flex items-center gap-2 font-display text-lg font-bold text-forest">
+        {icon}
+        {title}
+      </h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+function Identity({ profile, name }: { profile: StaffProfile; name: string }) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <p className="text-sm text-muted-foreground">Rego team portal</p>
+      <h1 className="mt-1 font-display text-2xl font-bold text-forest">{name}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {profile.job_title ? `${profile.job_title} · ` : ""}
+        {profile.role.name} · {profile.department.name}
+      </p>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        <Stat label="Employee code" value={profile.employee_code} />
+        <Stat label="Referral code" value={profile.referral_code} />
+        <Stat
+          label="Joined"
+          value={
+            profile.joined_at
+              ? new Date(profile.joined_at).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"
+          }
+        />
+      </dl>
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        Your employee code was generated by the server and never changes.
+        Everything credited to you points at it.
+      </p>
+    </section>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/70 bg-background px-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 font-mono text-sm font-semibold text-forest">{value}</dd>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function Referral({ profile }: { profile: StaffProfile }) {
+  const link = referralLink(profile);
+  const [copied, setCopied] = React.useState(false);
+  const [counts, setCounts] = React.useState<Record<string, number> | null>(null);
+
+  React.useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let alive = true;
+    /* Only their own rows come back — the read policy on staff_attributions
+       limits it to staff_id = them (or an admin). */
+    supabase
+      .from("staff_attributions")
+      .select("relation")
+      .eq("staff_id", profile.staff_id)
+      .then(({ data, error }) => {
+        if (!alive || error || !data) return;
+        const tally: Record<string, number> = {};
+        for (const row of data as { relation: string }[]) {
+          tally[row.relation] = (tally[row.relation] ?? 0) + 1;
+        }
+        setCounts(tally);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [profile.staff_id]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* Clipboard refused. The link is on screen and can be selected. */
+    }
+  };
+
+  const referred = counts?.referred ?? 0;
+
+  return (
+    <Card title="Your referral link" icon={<BadgeCheck className="h-5 w-5" />}>
+      <p className="text-sm text-muted-foreground">
+        Share this with a provider. If they register after following it, you are
+        credited — once. A second link cannot replace the first, so nobody can
+        take a referral off you and you cannot take one off anybody else.
+      </p>
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          readOnly
+          value={link}
+          onFocus={(e) => e.currentTarget.select()}
+          className="auth-input flex-1 font-mono text-xs"
+        />
+        <button
+          type="button"
+          onClick={copy}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white"
+        >
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+
+      <p className="mt-3 text-sm text-forest">
+        {counts === null
+          ? "Counting…"
+          : referred === 0
+            ? "No providers credited to you yet."
+            : `${referred} provider${referred === 1 ? "" : "s"} credited to you.`}
+      </p>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function Areas({ profile }: { profile: StaffProfile }) {
+  return (
+    <Card title="Where you work" icon={<MapPin className="h-5 w-5" />}>
+      {profile.scopes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No area has been assigned to you yet. Anything that depends on a
+          location will be refused until an admin sets one — that is the
+          database refusing it, not this screen.
+        </p>
+      ) : (
+        <ul className="flex flex-wrap gap-2">
+          {profile.scopes.map((s) => (
+            <li
+              key={s.location_id}
+              className="rounded-full border border-border bg-background px-3 py-1 text-sm text-forest"
+            >
+              {s.name}
+              <span className="ml-1 text-xs text-muted-foreground">
+                {s.includes_descendants ? "and everything inside it" : "only"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function Permissions({ profile }: { profile: StaffProfile }) {
+  const [rows, setRows] = React.useState<PermissionRow[] | null>(null);
+
+  React.useEffect(() => {
+    if (!isSupabaseConfigured || profile.permissions.length === 0) {
+      setRows([]);
+      return;
+    }
+    let alive = true;
+    supabase
+      .from("staff_permissions")
+      .select("slug, module, label")
+      .in("slug", profile.permissions)
+      .then(({ data, error }) => {
+        if (!alive) return;
+        setRows(error || !data ? [] : (data as PermissionRow[]));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [profile.permissions]);
+
+  const byModule = React.useMemo(() => {
+    const map = new Map<string, PermissionRow[]>();
+    for (const r of rows ?? []) {
+      const list = map.get(r.module) ?? [];
+      list.push(r);
+      map.set(r.module, list);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [rows]);
+
+  return (
+    <Card title="What you are allowed to do" icon={<ShieldCheck className="h-5 w-5" />}>
+      {rows === null ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : profile.permissions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Your role carries no permissions yet.
+        </p>
+      ) : byModule.length === 0 ? (
+        /* Names could not be loaded; the slugs are still the truth. */
+        <ul className="flex flex-wrap gap-2">
+          {profile.permissions.map((s) => (
+            <li key={s} className="rounded-full border border-border px-3 py-1 font-mono text-xs">
+              {s}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="space-y-4">
+          {byModule.map(([module, list]) => (
+            <div key={module}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {module.replace(/_/g, " ")}
+              </p>
+              <ul className="mt-1.5 flex flex-wrap gap-2">
+                {list.map((p) => (
+                  <li
+                    key={p.slug}
+                    className="rounded-full border border-border bg-background px-3 py-1 text-sm text-forest"
+                  >
+                    {p.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        These are checked again by the database on every action, so this list
+        describes what will happen rather than deciding it.
+      </p>
+    </Card>
+  );
+}

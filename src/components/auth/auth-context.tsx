@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { type CategorySlug } from "@/lib/data";
 import { checkSignupEmail } from "@/lib/email-validation";
 import { notifyWelcome } from "@/lib/notify-events";
+import { clearStaffProfileCache } from "@/lib/staff-portal";
 
 export type AccountRole = "traveler" | "partner" | "admin";
 
@@ -381,6 +382,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
+    /* The staff record is cached for the tab. Without this, the next person
+       to sign in on a shared computer would be shown the previous one's
+       portal until the tab was closed. */
+    clearStaffProfileCache();
     await supabase.auth.signOut();
     setUser(null);
   }, []);

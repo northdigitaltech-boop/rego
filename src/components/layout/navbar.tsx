@@ -20,6 +20,7 @@ import { BrandLogo } from "@/components/layout/logo";
 import { RecommendationsBell } from "@/components/layout/recommendations-bell";
 import { MobileBottomNavigation } from "@/components/layout/mobile-bottom-nav";
 import { BookingStatusModal } from "@/components/booking/booking-status-modal";
+import { useStaffProfile } from "@/lib/staff-portal";
 import { getBookingIdsForUser } from "@/lib/bookings";
 import { getHomestayBookingIdsForUser } from "@/lib/homestay-bookings";
 import { getTourBookingIdsForUser } from "@/lib/tour-bookings";
@@ -196,10 +197,18 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
   // instead of being centered in the 1320px container.
   const cx = fluid ? "w-full px-5 sm:px-8" : "container-px";
 
+  /* A staff member's account button goes to the portal, because that is where
+     their work is. Their own bookings are still at /dashboard and the portal
+     links back to it — being on the team does not take away being a customer.
+     Admins are unaffected: an admin is not staff, by design. */
+  const staff = useStaffProfile();
+
   const accountHref = user
     ? user.role === "admin"
       ? "/admin"
-      : "/dashboard"
+      : staff
+        ? "/portal"
+        : "/dashboard"
     : "/signin";
   const initial = user?.name.trim().charAt(0).toUpperCase();
 
@@ -711,7 +720,7 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
                 className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-gold px-4 py-3 font-semibold text-forest-900 shadow-gold-glow"
               >
                 <UserRound className="h-5 w-5" />
-                {user ? "My Dashboard" : "Sign in / Create account"}
+                {user ? (staff ? "Team portal" : "My Dashboard") : "Sign in / Create account"}
               </Link>
               {!user && (
                 <Link
