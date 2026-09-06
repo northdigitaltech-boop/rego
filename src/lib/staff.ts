@@ -195,6 +195,8 @@ export interface StaffApiResult {
   accountDeleted?: boolean;
   /** Not used by every action; present on the ones that create a row. */
   taskId?: string;
+  /** How many active members a role change reached. */
+  affected?: number;
 }
 
 async function post(body: unknown): Promise<StaffApiResult> {
@@ -253,6 +255,23 @@ export function addStaffMember(input: {
   joinedAt?: string;
 }): Promise<StaffApiResult> {
   return post({ action: "add_member", ...input });
+}
+
+/**
+ * Change what a ROLE carries, for everyone who holds it.
+ *
+ * Takes effect on each person's next request — staff_can() reads these rows
+ * every time, so there is no cache to wait out. Personal overrides still
+ * win: somebody who had a permission explicitly removed keeps not having it.
+ *
+ * Returns how many active members it affected, so the screen can say.
+ */
+export function setRolePermission(
+  roleId: string,
+  permissionId: string,
+  granted: boolean
+): Promise<StaffApiResult> {
+  return post({ action: "set_role_permission", roleId, permissionId, granted });
 }
 
 /**

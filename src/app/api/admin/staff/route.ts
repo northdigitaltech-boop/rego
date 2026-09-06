@@ -768,6 +768,95 @@ export async function POST(req: Request) {
     }
 
     /* ================================================================
+     * What a ROLE carries.
+     *
+     * This was the missing half. set_permission below changes one person;
+     * until now the only way to change what "Marketing Manager" means was a
+     * migration, so an admin who wanted every marketing manager to write
+     * blog posts had to tick eight boxes per person and remember to do it
+     * again for the next hire. That is how somebody eventually gets missed.
+     *
+     * IT CHANGES EVERYONE IN THE ROLE, AT ONCE
+     *   No cache to wait out: staff_can() reads these rows on every call.
+     *   Somebody signed in right now gains or loses the permission on their
+     *   next request. The screen says so before the tick.
+     *
+     * PERSONAL OVERRIDES STILL WIN
+     *   Somebody who had it explicitly taken away keeps not having it, even
+     *   after the role grants it. That is the point of an override, and it
+     *   is why the member screen shows the result rather than the switch.
+     *
+     * Super Admin's own authority is unreachable here for the same reason as
+     * everywhere else: those permissions have no rows, so no role can be
+     * given them.
+     * ================================================================ */
+    case "set_role_permission": {
+      const roleId = String(body.roleId ?? "");
+      const permissionId = String(body.permissionId ?? "");
+      const granted = body.granted;
+
+      if (!roleId) return bad("Missing role.");
+      if (!permissionId) return bad("Missing permission.");
+      if (typeof granted !== "boolean") {
+        return bad("Value must be true or false — a role either carries it or does not.");
+      }
+
+      const [{ data: roleRow, error: roleErr }, { data: perm, error: permErr }] =
+        await Promise.all([
+          sb.from("staff_roles").select("id, name").eq("id", roleId).maybeSingle(),
+          sb
+            .from("staff_permissions")
+            .select("id, slug, label")
+            .eq("id", permissionId)
+            .maybeSingle(),
+        ]);
+
+      if (roleErr) return bad(roleErr.message, 500);
+      if (permErr) return bad(permErr.message, 500);
+      if (!roleRow) return bad("Unknown role.", 404);
+      if (!perm) return bad("Unknown permission.", 404);
+
+      const r = roleRow as { name: string };
+      const pm = perm as { slug: string; label: string };
+
+      if (granted) {
+        const { error } = await sb
+          .from("staff_role_permissions")
+          .upsert(
+            { role_id: roleId, permission_id: permissionId },
+            { onConflict: "role_id,permission_id" }
+          );
+        if (error) return bad(error.message, 500);
+      } else {
+        const { error } = await sb
+          .from("staff_role_permissions")
+          .delete()
+          .eq("role_id", roleId)
+          .eq("permission_id", permissionId);
+        if (error) return bad(error.message, 500);
+      }
+
+      /* How many people this just affected — recorded because "we changed a
+         role" and "we changed it for nine people" are different facts, and
+         the second is the one an audit trail is read for. */
+      const { count } = await sb
+        .from("staff_members")
+        .select("id", { count: "exact", head: true })
+        .eq("role_id", roleId)
+        .eq("status", "active");
+
+      await audit({
+        action: "staff.role_permission",
+        entityId: roleId,
+        entityLabel: `${r.name} · ${pm.label}`,
+        before: null,
+        after: { permission: pm.slug, granted, active_members_affected: count ?? 0 },
+      });
+
+      return NextResponse.json({ ok: true, affected: count ?? 0 });
+    }
+
+    /* ================================================================
      * Per-person permission override.
      * ================================================================ */
     case "set_permission": {

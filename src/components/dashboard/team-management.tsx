@@ -23,6 +23,7 @@ import {
   getScopes,
   getStaffMembers,
   setPermissionOverride,
+  setRolePermission,
   assignTask,
   removeStaffMember,
   resendStaffInvite,
@@ -53,7 +54,7 @@ import { cn } from "@/lib/utils";
  * /api/admin/staff, which re-checks the caller server-side.
  * ============================================================ */
 
-type Tab = "members" | "add";
+type Tab = "members" | "add" | "roles";
 
 export function TeamManagement() {
   const [tab, setTab] = React.useState<Tab>("members");
@@ -172,6 +173,7 @@ export function TeamManagement() {
         {([
           ["members", `Team members (${members.length})`],
           ["add", "Add a member"],
+          ["roles", `Roles (${roles.length})`],
         ] as [Tab, string][]).map(([id, label]) => (
           <button
             key={id}
@@ -200,6 +202,18 @@ export function TeamManagement() {
             await load();
             setTab("members");
           }}
+        />
+      )}
+
+      {tab === "roles" && (
+        <RolePermissions
+          roles={roles}
+          departments={departments}
+          permissions={permissions}
+          rolePerms={rolePerms}
+          members={members}
+          onChanged={load}
+          onError={setError}
         />
       )}
 
@@ -478,6 +492,194 @@ function AddMember({
 }
 
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------
+ * What each ROLE carries.
+ *
+ * The member screen answers "what can this person do". This answers "what
+ * does this job mean", which is the question that stops an admin ticking
+ * eight boxes for every new hire and eventually missing one.
+ *
+ * Two things it says out loud, because both surprise people:
+ *   - a change reaches everyone in the role on their next request
+ *   - somebody with a personal override keeps it, in either direction
+ * ------------------------------------------------------------------ */
+function RolePermissions({
+  roles,
+  departments,
+  permissions,
+  rolePerms,
+  members,
+  onChanged,
+  onError,
+}: {
+  roles: RoleRow[];
+  departments: DepartmentRow[];
+  permissions: PermissionRow[];
+  rolePerms: { role_id: string; permission_id: string }[];
+  members: StaffMemberRow[];
+  onChanged: () => Promise<void>;
+  onError: (s: string) => void;
+}) {
+  const [roleId, setRoleId] = React.useState(roles[0]?.id ?? "");
+  const [busy, setBusy] = React.useState("");
+  const [note, setNote] = React.useState("");
+
+  const role = roles.find((r) => r.id === roleId) ?? null;
+  const dept = departments.find((d) => d.id === role?.department_id) ?? null;
+
+  const held = React.useMemo(
+    () => new Set(rolePerms.filter((rp) => rp.role_id === roleId).map((rp) => rp.permission_id)),
+    [rolePerms, roleId]
+  );
+
+  const inRole = members.filter((m) => m.role_id === roleId && m.status === "active");
+
+  const byModule = React.useMemo(() => {
+    const map = new Map<string, PermissionRow[]>();
+    for (const p of permissions) {
+      const list = map.get(p.module) ?? [];
+      list.push(p);
+      map.set(p.module, list);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [permissions]);
+
+  const toggle = async (p: PermissionRow) => {
+    const next = !held.has(p.id);
+    setBusy(p.id);
+    setNote("");
+    const res = await setRolePermission(roleId, p.id, next);
+    setBusy("");
+    if (!res.ok) {
+      onError(res.error ?? "That did not save.");
+      return;
+    }
+    const n = res.affected ?? 0;
+    setNote(
+      `${next ? "Added" : "Removed"} “${p.label}”. ${
+        n === 0
+          ? "Nobody holds this role yet."
+          : `${n} active member${n === 1 ? "" : "s"} affected, from their next request.`
+      }`
+    );
+    await onChanged();
+  };
+
+  if (roles.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+        No roles yet. Run phase104-staff-foundation.sql.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
+      <div className="rounded-2xl border border-border bg-card p-2">
+        {roles.map((r) => {
+          const d = departments.find((x) => x.id === r.department_id);
+          const count = members.filter((m) => m.role_id === r.id && m.status === "active").length;
+          return (
+            <button
+              key={r.id}
+              onClick={() => {
+                setRoleId(r.id);
+                setNote("");
+              }}
+              className={cn(
+                "block w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
+                roleId === r.id ? "bg-forest-50" : "hover:bg-muted/60"
+              )}
+            >
+              <span className="block font-semibold text-forest">{r.name}</span>
+              <span className="block text-xs text-muted-foreground">
+                {d?.name ?? "All departments"} ·{" "}
+                {count === 0 ? "nobody yet" : `${count} member${count === 1 ? "" : "s"}`}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="font-display text-lg font-bold text-forest">{role?.name}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {dept?.name ?? "Crosses departments"}
+          </p>
+
+          <p className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Changing this changes it for{" "}
+              <strong>
+                {inRole.length === 0
+                  ? "nobody yet"
+                  : `all ${inRole.length} active member${inRole.length === 1 ? "" : "s"}`}
+              </strong>{" "}
+              in the role, from their next request. Anyone with a personal
+              override keeps it — added or removed — because that is what an
+              override is for.
+            </span>
+          </p>
+
+          {note && (
+            <p className="mt-3 rounded-lg bg-forest-50 px-3 py-2 text-xs text-forest-700">
+              {note}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="flex items-center gap-2 font-semibold text-forest">
+            <ShieldCheck className="h-4 w-4" /> What this role carries
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Super Admin&apos;s own authority is not on this list — deleting,
+            approving verification, badges, payment settings and permission
+            changes have no permission to grant. That is why they cannot be
+            given to a role by mistake.
+          </p>
+
+          <div className="mt-4 space-y-4">
+            {byModule.map(([module, list]) => (
+              <div key={module}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {module.replace(/_/g, " ")}
+                </p>
+                <div className="mt-1.5 grid gap-1 sm:grid-cols-2">
+                  {list.map((p) => (
+                    <label
+                      key={p.id}
+                      className="flex items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={held.has(p.id)}
+                        disabled={busy === p.id}
+                        onChange={() => toggle(p)}
+                        className="mt-0.5 h-4 w-4 rounded border-border accent-forest-600"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block">{p.label}</span>
+                        {p.description && (
+                          <span className="block text-[11px] text-muted-foreground">
+                            {p.description}
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------
  * Assigning work.
