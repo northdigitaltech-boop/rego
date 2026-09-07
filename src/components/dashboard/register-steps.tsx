@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
+import { ReferralField } from "@/components/dashboard/register-fields";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { cn } from "@/lib/utils";
 
@@ -260,6 +261,17 @@ export function useVerificationStep(opts?: {
     skipLabel: "Skip for now",
     content: (
       <>
+        {/* Added here rather than to each of the nine wizards, because this
+            step is the one thing all nine already share. One field, one
+            place, and no chance of the ninth being forgotten.
+
+            It writes to the referral stash, which every wizard's
+            attachStashedReferral() already reads after the listing is
+            created — so no wizard's submit function changes at all. */}
+        <div className="mb-5 rounded-xl border border-border bg-card p-4">
+          <ReferralField />
+        </div>
+
         <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm leading-relaxed text-forest">
           Travellers are trusting {opts?.noun ?? "a stranger"} they have never
           met, and a <strong>Verified</strong> badge is the main thing that

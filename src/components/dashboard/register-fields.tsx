@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { readReferral, rememberTypedReferral } from "@/lib/referral";
+
 /* ============================================================
  * The small pieces every registration wizard uses.
  *
@@ -76,6 +78,72 @@ export function ReviewFooter({
         adding details while yours is being reviewed.
       </p>
     </>
+  );
+}
+
+/* ============================================================
+ * "Who told you about Rego?" — the referral code, typed.
+ *
+ * WHY IT WRITES TO LOCALSTORAGE AND NOT TO A PROP
+ *   Every wizard already calls attachStashedReferral() after the listing is
+ *   created, and that reads the stash. So this field needs no state in the
+ *   nine wizards and no change to any of their submit functions: it stores
+ *   the code where the existing plumbing already looks.
+ *
+ *   That also means it works the same as a ?ref= link, which is the point —
+ *   somebody handed a printed card and somebody sent a link should end up
+ *   credited identically.
+ *
+ * TYPING BEATS A LINK, ON PURPOSE
+ *   rememberTypedReferral REPLACES a stashed link. A link is passive; typing
+ *   a code is a person telling us who actually sent them, and they get the
+ *   last word.
+ *
+ * NOTHING HERE IS TRUSTED. attach_referral() resolves the code in the
+ * database, refuses an unknown or suspended one, and refuses to overwrite an
+ * existing referral.
+ * ============================================================ */
+export function ReferralField() {
+  const [code, setCode] = React.useState("");
+  const [state, setState] = React.useState<"idle" | "kept" | "bad">("idle");
+
+  /* Prefilled when they arrived through a link, so somebody who followed
+     MKT-005 does not have to be told their own code. Read once, on mount. */
+  React.useEffect(() => {
+    const existing = readReferral();
+    if (existing) {
+      setCode(existing);
+      setState("kept");
+    }
+  }, []);
+
+  const remember = (raw: string) => {
+    setCode(raw);
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setState("idle");
+      return;
+    }
+    setState(rememberTypedReferral(trimmed) ? "kept" : "bad");
+  };
+
+  return (
+    <L label="Referral code">
+      <input
+        value={code}
+        onChange={(e) => remember(e.target.value)}
+        className="auth-input"
+        placeholder="e.g. MKT-005"
+        autoComplete="off"
+      />
+      <span className="mt-1 block text-xs text-muted-foreground">
+        {state === "bad"
+          ? "That does not look like a Rego code — check it, or leave it blank."
+          : state === "kept"
+            ? "Saved. The Rego team member who gave you this will be credited."
+            : "If a Rego team member introduced you, enter their code so they are credited. Optional."}
+      </span>
+    </L>
   );
 }
 
