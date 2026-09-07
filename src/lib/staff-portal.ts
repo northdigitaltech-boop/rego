@@ -120,22 +120,69 @@ export async function touchStaffSeen(): Promise<void> {
  * are kept apart so a screen never flashes "you are not on the team" at
  * somebody who is, during the half second before the answer arrives.
  */
-export function useStaffProfile(
-  { fresh = false }: { fresh?: boolean } = {}
-): StaffProfile | null | undefined {
+/** How often a watching screen re-asks. Long enough to be free, short enough
+ *  that "I have given you access" and the tab agreeing feel like one event. */
+const WATCH_MS = 30_000;
+
+export function useStaffProfile({
+  fresh = false,
+  /** Keep asking while the screen is open, so a permission granted in the
+   *  next room arrives without anyone being told to reload. */
+  watch = false,
+}: { fresh?: boolean; watch?: boolean } = {}): StaffProfile | null | undefined {
   const [profile, setProfile] = React.useState<StaffProfile | null | undefined>(
     undefined
   );
+  /* One request at a time. A tab that has been in the background for an hour
+     fires focus, visibility and the interval within the same tick otherwise. */
+  const inFlight = React.useRef(false);
 
   React.useEffect(() => {
     let alive = true;
-    loadStaffProfile({ fresh }).then((p) => {
-      if (alive) setProfile(p);
-    });
+
+    const pull = async (force: boolean) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      try {
+        const p = await loadStaffProfile({ fresh: force || fresh });
+        if (alive) setProfile(p);
+      } finally {
+        inFlight.current = false;
+      }
+    };
+
+    void pull(false);
+
+    if (!watch) {
+      return () => {
+        alive = false;
+      };
+    }
+
+    /* Focus first, because it is the case that actually happens: an admin
+       says "done", the member clicks back to their tab, and it should
+       already be true by the time they look. */
+    const onFocus = () => void pull(true);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void pull(true);
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+
+    /* And a slow poll for the case where they never left the tab. Skipped
+       while hidden — a background tab polling forever is somebody's battery. */
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void pull(true);
+    }, WATCH_MS);
+
     return () => {
       alive = false;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(timer);
     };
-  }, [fresh]);
+  }, [fresh, watch]);
 
   return profile;
 }

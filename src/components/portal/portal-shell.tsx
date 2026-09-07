@@ -101,7 +101,7 @@ export function PortalShell() {
      permission granted five minutes ago has not arrived, and the member has
      no way to tell the difference between "not granted" and "not reloaded".
      One indexed lookup on page load is the cheaper mistake. */
-  const profile = useStaffProfile({ fresh: true });
+  const profile = useStaffProfile({ fresh: true, watch: true });
   const [tab, setTab] = React.useState<Tab>("overview");
 
   /* Counted once, here, because the overview and the referrals tab both
@@ -140,6 +140,17 @@ export function PortalShell() {
       alive = false;
     };
   }, [profile]);
+
+  /* A permission can be taken away while they are looking at the screen it
+     opened. Leaving them there would give them a page whose every action the
+     database now refuses, with no clue why — so the tab closes itself. */
+  React.useEffect(() => {
+    if (!profile) return;
+    const entry = NAV.find((n) => n.id === tab);
+    if (entry?.needs && !entry.needs.some((slug) => can(profile, slug))) {
+      setTab("overview");
+    }
+  }, [profile, tab]);
 
   const signOut = async () => {
     await logout();
