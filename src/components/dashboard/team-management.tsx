@@ -40,6 +40,7 @@ import {
 import { getLocations, getMarkets, type LocationRow } from "@/lib/markets";
 import { StaffThread } from "@/components/portal/staff-thread";
 import { useAuth } from "@/components/auth/auth-context";
+import { unreadByStaff } from "@/lib/staff-messages";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -68,6 +69,11 @@ export function TeamManagement() {
   const [members, setMembers] = React.useState<StaffMemberRow[]>([]);
   const [emails, setEmails] = React.useState<Record<string, string>>({});
   const [locations, setLocations] = React.useState<LocationRow[]>([]);
+  /* Unread messages per member. Without this the admin side of the thread was
+     a screen nobody would ever open: a member could write and be met with
+     silence, because finding the message meant guessing which of five people
+     had sent one. */
+  const [unread, setUnread] = React.useState<Record<string, number>>({});
 
   const [loading, setLoading] = React.useState(true);
   const [notReady, setNotReady] = React.useState(false);
@@ -97,6 +103,8 @@ export function TeamManagement() {
       setPermissions(p);
       setRolePerms(rp);
       setMembers(m);
+
+      setUnread(await unreadByStaff());
 
       const mk = await getMarkets();
       if (mk.length > 0) setLocations(await getLocations(mk[0].id));
@@ -173,7 +181,15 @@ export function TeamManagement() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         {([
-          ["members", `Team members (${members.length})`],
+          [
+            "members",
+            (() => {
+              const waiting = Object.values(unread).reduce((a, b) => a + b, 0);
+              return waiting > 0
+                ? `Team members (${members.length}) · ${waiting} unread`
+                : `Team members (${members.length})`;
+            })(),
+          ],
           ["add", "Add a member"],
           ["roles", `Roles (${roles.length})`],
         ] as [Tab, string][]).map(([id, label]) => (
@@ -261,6 +277,16 @@ export function TeamManagement() {
                         {m.employee_code} · {dept?.name ?? "—"} · {role?.name ?? "—"}
                       </span>
                     </span>
+                    {/* Unread first: an unanswered message is more urgent
+                        than a status somebody already knows. */}
+                    {(unread[m.id] ?? 0) > 0 && (
+                      <span
+                        title={`${unread[m.id]} unread message${unread[m.id] === 1 ? "" : "s"}`}
+                        className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white"
+                      >
+                        {unread[m.id]}
+                      </span>
+                    )}
                     <StatusBadge status={m.status} />
                   </button>
                 );
@@ -281,6 +307,7 @@ export function TeamManagement() {
                 locations={locations}
                 onChanged={load}
                 onError={setError}
+                unreadForMember={unread[selected.id] ?? 0}
                 onRemoved={async () => {
                   /* Clear the selection first: the row this panel is drawn
                      from no longer exists. */
@@ -689,7 +716,15 @@ function RolePermissions({
  * Collapsed by default: an admin scanning a member's permissions does not
  * want a conversation in the way, and opening it is one click.
  * ------------------------------------------------------------------ */
-function MessagePanel({ member, who }: { member: StaffMemberRow; who: string }) {
+function MessagePanel({
+  member,
+  who,
+  unread,
+}: {
+  member: StaffMemberRow;
+  who: string;
+  unread: number;
+}) {
   const { user } = useAuth();
   const [open, setOpen] = React.useState(false);
 
@@ -703,6 +738,11 @@ function MessagePanel({ member, who }: { member: StaffMemberRow; who: string }) 
         >
           Message {who || member.employee_code}
         </button>
+        {unread > 0 && (
+          <span className="ml-2 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white">
+            {unread} unread
+          </span>
+        )}
       </div>
     );
   }
@@ -976,6 +1016,7 @@ function MemberDetail({
   onChanged,
   onError,
   onRemoved,
+  unreadForMember,
 }: {
   member: StaffMemberRow;
   who: string;
@@ -987,6 +1028,7 @@ function MemberDetail({
   onChanged: () => Promise<void>;
   onError: (s: string) => void;
   onRemoved: () => Promise<void>;
+  unreadForMember: number;
 }) {
   const [grants, setGrants] = React.useState<GrantRow[]>([]);
   const [scopes, setScopes] = React.useState<ScopeRow[]>([]);
@@ -1105,7 +1147,7 @@ function MemberDetail({
           </span>
         </div>
 
-        <MessagePanel member={member} who={who} />
+        <MessagePanel member={member} who={who} unread={unreadForMember} />
 
         <AssignTask member={member} onError={onError} />
 

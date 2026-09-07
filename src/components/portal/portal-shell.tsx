@@ -38,6 +38,7 @@ import { PortalProfile } from "@/components/portal/portal-profile";
 import { PORTAL_MODULES } from "@/components/portal/portal-modules";
 import { PortalApprovals } from "@/components/portal/portal-approvals";
 import { StaffThread } from "@/components/portal/staff-thread";
+import { unreadCount } from "@/lib/staff-messages";
 import { AdminBlog } from "@/components/dashboard/admin-blog";
 import { MarketAreas } from "@/components/dashboard/market-areas";
 
@@ -129,6 +130,9 @@ export function PortalShell() {
   /* Counted once, here, because the overview and the referrals tab both
      want it and neither should trigger its own request. */
   const [credited, setCredited] = React.useState<number | null>(null);
+  /* Unread from Rego. The same gap existed on this side: an admin could reply
+     and the member would never know unless they happened to open the tab. */
+  const [unread, setUnread] = React.useState(0);
 
   React.useEffect(() => {
     /* Carry the destination. Without ?redirect= somebody who opened
@@ -172,6 +176,19 @@ export function PortalShell() {
     if (entry?.needs && !entry.needs.some((slug) => can(profile, slug))) {
       setTab("overview");
     }
+  }, [profile, tab]);
+
+  React.useEffect(() => {
+    if (!profile) return;
+    let alive = true;
+    /* Re-read when the tab changes, so opening Messages clears the badge
+       without a reload — markRead runs inside the thread on mount. */
+    unreadCount(profile.staff_id, true).then((n) => {
+      if (alive) setUnread(n);
+    });
+    return () => {
+      alive = false;
+    };
   }, [profile, tab]);
 
   const signOut = async () => {
@@ -272,6 +289,16 @@ export function PortalShell() {
                   >
                     <Icon className="h-4 w-4" />
                     {n.label}
+                    {n.id === "messages" && unread > 0 && (
+                      <span
+                        className={cn(
+                          "ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold",
+                          tab === n.id ? "bg-white/25 text-white" : "bg-red-600 text-white"
+                        )}
+                      >
+                        {unread}
+                      </span>
+                    )}
                   </button>
                 );
               })}

@@ -114,6 +114,34 @@ export async function markRead(staffId: string, fromAdmin: boolean): Promise<voi
   }
 }
 
+/**
+ * For an admin: how many unread messages are waiting, per team member.
+ *
+ * WHY THIS EXISTS
+ *   Without it the admin side was a thread nobody would ever open. A member
+ *   could write and be met with silence, because the only way to find the
+ *   message was to guess which of five people had sent one and click into
+ *   them. That is not "received" in any sense the sender would recognise.
+ *
+ * Admins read every row (the admin policy), so this is one query rather than
+ * one per member.
+ */
+export async function unreadByStaff(): Promise<Record<string, number>> {
+  if (!isSupabaseConfigured) return {};
+  const { data, error } = await supabase
+    .from("staff_messages")
+    .select("staff_id")
+    .eq("from_admin", false)
+    .is("read_at", null);
+  if (error || !data) return {};
+
+  const tally: Record<string, number> = {};
+  for (const row of data as { staff_id: string }[]) {
+    tally[row.staff_id] = (tally[row.staff_id] ?? 0) + 1;
+  }
+  return tally;
+}
+
 /** How many messages from the other side are still unopened. */
 export async function unreadCount(
   staffId: string,
