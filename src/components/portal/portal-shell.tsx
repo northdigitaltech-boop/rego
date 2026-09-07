@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   Check,
   ClipboardList,
+  ShieldQuestion,
   FileText,
   Globe2,
   Copy,
@@ -34,6 +35,7 @@ import { PortalLeads } from "@/components/portal/portal-leads";
 import { PortalTasks } from "@/components/portal/portal-tasks";
 import { PortalProfile } from "@/components/portal/portal-profile";
 import { PORTAL_MODULES } from "@/components/portal/portal-modules";
+import { PortalApprovals } from "@/components/portal/portal-approvals";
 import { AdminBlog } from "@/components/dashboard/admin-blog";
 import { MarketAreas } from "@/components/dashboard/market-areas";
 
@@ -48,12 +50,12 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
  *   Plus whichever admin modules they have been granted, from
  *   PORTAL_MODULES — the real admin components, not copies.
  *
- *   Approvals, verification and the listing screens are NOT here.
- *   Not because they are hard, but because the listing policies are
- *   about rows and silent about columns, so an owner can set their
- *   own status. An approval queue on top of that decides nothing.
- *   This note is updated as each one lands, because a stale
- *   "not built yet" is its own small lie.
+ *   Approvals are here as of phase111, which stopped an owner
+ *   setting their own status — an approval queue on top of that
+ *   would have decided nothing. Verification, edit requests and
+ *   the full listings screen are still to come. This note is
+ *   updated as each one lands, because a stale "not built yet" is
+ *   its own small lie.
  *
  * WHY IT MIRRORS THE TRAVELLER DASHBOARD
  *   Same sidebar, same card shapes, same sign-out. Somebody who
@@ -63,7 +65,7 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
 
 type FixedTab =
   | "overview" | "leads" | "tasks" | "referrals"
-  | "areas" | "permissions" | "profile" | "blog" | "places";
+  | "areas" | "permissions" | "profile" | "blog" | "places" | "approvals";
 
 /* A module tab is its id from PORTAL_MODULES. Kept as a plain string so the
    list stays the single place a module is declared — narrowing this to a
@@ -80,6 +82,12 @@ const NAV: {
   needs?: string[];
 }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  {
+    id: "approvals",
+    label: "Approvals",
+    icon: ShieldQuestion,
+    needs: ["view_approvals", "approve_listing", "reject_listing"],
+  },
   { id: "leads", label: "Leads", icon: Users, needs: ["view_leads", "manage_own_leads"] },
   {
     id: "tasks",
@@ -297,6 +305,7 @@ export function PortalShell() {
               action — see /api/admin/blog and /api/admin/markets. */}
           {tab === "blog" && <AdminBlog />}
           {tab === "places" && <MarketAreas />}
+          {tab === "approvals" && <PortalApprovals profile={profile} />}
 
           {/* Whichever admin module they opened. The component is the admin
               one, unchanged; what they may DO in it is decided by the
@@ -410,11 +419,8 @@ function Overview({
         {/* Named plainly rather than shown as empty panels, and kept honest as
             each one lands — a stale "not built" note is its own small lie. */}
         <p className="text-sm text-muted-foreground">
-          Approvals, verification and the listing screens are not here yet.
-          They write to the listing tables, and those need a fix first — an
-          owner can currently change their own listing&apos;s status, so an
-          approval queue built on top would not be deciding anything.
-          Everything you can see on this page is real.
+          Verification, edit requests and the full listings screen are not here
+          yet. Everything you can see on this page is real.
         </p>
         <button
           type="button"
