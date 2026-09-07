@@ -33,6 +33,7 @@ import {
 import { PortalLeads } from "@/components/portal/portal-leads";
 import { PortalTasks } from "@/components/portal/portal-tasks";
 import { PortalProfile } from "@/components/portal/portal-profile";
+import { PORTAL_MODULES } from "@/components/portal/portal-modules";
 import { AdminBlog } from "@/components/dashboard/admin-blog";
 import { MarketAreas } from "@/components/dashboard/market-areas";
 
@@ -44,12 +45,15 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
  *   earned, assigned areas, and effective permissions. Every number
  *   on this page comes from a row that exists.
  *
- *   Evidence and department analytics are named in the permission
- *   list and have no tables yet. They are NOT stubbed here. A
- *   section that looks like a feature and does nothing teaches
- *   somebody to distrust the whole screen, and it hides which parts
- *   are real. This note is updated as each one lands, because a
- *   stale "not built yet" is its own small lie.
+ *   Plus whichever admin modules they have been granted, from
+ *   PORTAL_MODULES — the real admin components, not copies.
+ *
+ *   Approvals, verification and the listing screens are NOT here.
+ *   Not because they are hard, but because the listing policies are
+ *   about rows and silent about columns, so an owner can set their
+ *   own status. An approval queue on top of that decides nothing.
+ *   This note is updated as each one lands, because a stale
+ *   "not built yet" is its own small lie.
  *
  * WHY IT MIRRORS THE TRAVELLER DASHBOARD
  *   Same sidebar, same card shapes, same sign-out. Somebody who
@@ -57,7 +61,14 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
  *   language for the same product is a cost with no payer.
  * ============================================================ */
 
-type Tab = "overview" | "leads" | "tasks" | "referrals" | "areas" | "permissions" | "profile" | "blog" | "places";
+type FixedTab =
+  | "overview" | "leads" | "tasks" | "referrals"
+  | "areas" | "permissions" | "profile" | "blog" | "places";
+
+/* A module tab is its id from PORTAL_MODULES. Kept as a plain string so the
+   list stays the single place a module is declared — narrowing this to a
+   union would mean adding every new module in two files. */
+type Tab = FixedTab | string;
 
 /* `needs` is about DRAWING the tab, not about access. Somebody who reaches
    /portal and types the tab into React devtools sees a screen whose every
@@ -222,7 +233,18 @@ export function PortalShell() {
             </div>
 
             <nav className="mt-2 space-y-1">
-              {NAV.filter(
+              {[
+                ...NAV,
+                /* The admin modules they have been given. Appended rather
+                   than interleaved so the portal's own screens stay where
+                   somebody learned to find them. */
+                ...PORTAL_MODULES.map((m) => ({
+                  id: m.id,
+                  label: m.label,
+                  icon: m.icon,
+                  needs: m.needs,
+                })),
+              ].filter(
                 (n) => !n.needs || n.needs.some((slug) => can(profile, slug))
               ).map((n) => {
                 const Icon = n.icon;
@@ -275,6 +297,15 @@ export function PortalShell() {
               action — see /api/admin/blog and /api/admin/markets. */}
           {tab === "blog" && <AdminBlog />}
           {tab === "places" && <MarketAreas />}
+
+          {/* Whichever admin module they opened. The component is the admin
+              one, unchanged; what they may DO in it is decided by the
+              staff110_* policies on the tables it writes to. */}
+          {PORTAL_MODULES.filter(
+            (m) => m.id === tab && m.needs.some((slug) => can(profile, slug))
+          ).map((m) => (
+            <m.Component key={m.id} />
+          ))}
         </div>
       </div>
     </div>
@@ -379,10 +410,11 @@ function Overview({
         {/* Named plainly rather than shown as empty panels, and kept honest as
             each one lands — a stale "not built" note is its own small lie. */}
         <p className="text-sm text-muted-foreground">
-          Evidence and department analytics appear in your permissions because
-          the permission exists. Their screens are not built yet, so they are
-          not shown as empty sections here. Everything you can see on this page
-          is real.
+          Approvals, verification and the listing screens are not here yet.
+          They write to the listing tables, and those need a fix first — an
+          owner can currently change their own listing&apos;s status, so an
+          approval queue built on top would not be deciding anything.
+          Everything you can see on this page is real.
         </p>
         <button
           type="button"
