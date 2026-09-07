@@ -60,14 +60,32 @@ export async function callerCan(
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
-    const { data, error } = await sb.rpc("staff_can", {
-      p_permission: permission,
-      p_location: location ?? null,
-    });
+    /* p_location is OMITTED when there is none, rather than sent as null.
+       staff_can declares it `uuid default null`, and PostgREST has to infer a
+       type for an explicit JSON null against a uuid parameter — when it
+       cannot, the call errors, and an error here is indistinguishable from a
+       refusal because this function fails closed. Leaving it out uses the
+       function's own default and removes the guesswork. */
+    const args: Record<string, string> = { p_permission: permission };
+    if (location) args.p_location = location;
 
-    if (error) return false;
+    const { data, error } = await sb.rpc("staff_can", args);
+
+    if (error) {
+      /* Server-side only, and only the shape of the failure. The permission
+         slug is not a secret; the token is not logged. Without this, a
+         misconfigured RPC and a genuine "no" look identical from the outside
+         — which is exactly the confusion this whole file has already caused
+         once. */
+      console.error(
+        `[staff-guard] staff_can("${permission}") failed:`,
+        error.message
+      );
+      return false;
+    }
     return data === true;
-  } catch {
+  } catch (e) {
+    console.error(`[staff-guard] staff_can("${permission}") threw:`, e);
     return false;
   }
 }

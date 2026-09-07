@@ -243,7 +243,9 @@ export async function POST(req: Request) {
     const allowed = await callerCan(token, slug, scopeId);
     if (!allowed) {
       return bad(
-        "Your role does not allow that here. It may be the permission, or it may be the area you cover — ask an admin.",
+        `Your role does not allow that here. This needs ${slug}${
+          scopeId ? ", for the area this location sits in" : ""
+        } — ask an admin to check the permission and your areas.`,
         403
       );
     }

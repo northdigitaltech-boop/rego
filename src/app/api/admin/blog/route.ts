@@ -204,8 +204,12 @@ export async function POST(req: Request) {
 
     const allowed = await callerCanAny(token, slugs);
     if (!allowed) {
+      /* Names the permission. "Your role does not allow that" sends somebody
+         to an admin who then has to guess which of thirty-nine switches was
+         meant; this makes the next step obvious to both of them. The slug is
+         not a secret — it is printed in the portal's own permissions list. */
       return bad(
-        "Your role does not allow that. Ask an admin to check your permissions.",
+        `Your role does not allow that. This needs ${slugs.join(" or ")} — ask an admin to add it.`,
         403
       );
     }
