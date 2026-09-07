@@ -107,6 +107,7 @@ import { AdminAbout } from "@/components/dashboard/admin-about";
 import { AdminContact } from "@/components/dashboard/admin-contact";
 import { AdminAds } from "@/components/dashboard/admin-ads";
 import { AdminListingsManager } from "@/components/dashboard/admin-listings-manager";
+import { AdminTeamMessages } from "@/components/dashboard/admin-team-messages";
 import { AdminLegal } from "@/components/dashboard/admin-legal";
 import { AdminCareers } from "@/components/dashboard/admin-careers";
 import { AdminApplications } from "@/components/dashboard/admin-applications";
@@ -978,6 +979,9 @@ export function AdminDashboard() {
           {tab === "activities" && <AdminActivities />}
           {tab === "messages" && (
             <div className="space-y-5">
+              {/* Team conversations first: they are the ones somebody is
+                  waiting on a reply for. Provider chat is below. */}
+              <AdminTeamMessages />
               <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-premium">
                 <h2 className="font-display text-xl font-bold text-forest">
                   Message a provider
