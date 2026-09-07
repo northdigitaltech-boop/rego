@@ -5,7 +5,7 @@ import { createHash } from "crypto";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
-import { callerCan } from "@/lib/staff-guard";
+import { callerCan, isPermissionCheckConfigured } from "@/lib/staff-guard";
 
 /* ============================================================
  * Market & Area Management — the only write path.
@@ -222,6 +222,13 @@ export async function POST(req: Request) {
 
     const slug = needed[action];
     if (!slug) return bad("Admins only.", 403);
+
+    if (!isPermissionCheckConfigured) {
+      return bad(
+        "Permission checks are not configured on this server, so only admins can do this. Set NEXT_PUBLIC_SUPABASE_URL and the Supabase publishable key.",
+        503
+      );
+    }
 
     /* Scoped where it can be. Somebody whose scope is Baltistan should not
        be renaming districts in Punjab, and staff_can() already knows how to

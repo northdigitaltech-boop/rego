@@ -20,7 +20,24 @@ import { createClient } from "@supabase/supabase-js";
  * ============================================================ */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+/* BOTH NAMES, IN THE SAME ORDER AS lib/supabase.ts.
+   I originally read only NEXT_PUBLIC_SUPABASE_ANON_KEY. This project is
+   configured with the newer PUBLISHABLE_KEY, so the variable was empty,
+   callerCan() failed closed, and a content writer with every blog permission
+   was told "your role does not allow that" — a message that blamed the
+   person for a misconfiguration. Read the same pair the rest of the app
+   reads. */
+const ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "";
+
+/** False when the check cannot be performed at all, as opposed to performed
+ *  and refused. The caller needs to tell those apart; the person reading the
+ *  screen needs it more. */
+export const isPermissionCheckConfigured =
+  SUPABASE_URL.startsWith("http") && ANON_KEY.length > 10;
 
 /**
  * True when the caller is an ACTIVE staff member whose role or personal

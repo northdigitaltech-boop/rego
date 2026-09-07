@@ -4,7 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLog } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
-import { callerCanAny } from "@/lib/staff-guard";
+import { callerCanAny, isPermissionCheckConfigured } from "@/lib/staff-guard";
 
 /* ============================================================
  * Blog & News — the only write path.
@@ -192,6 +192,15 @@ export async function POST(req: Request) {
 
     const slugs = needed[action];
     if (!slugs) return bad("Admins only.", 403);
+
+    /* Said plainly, because the alternative is telling somebody their role is
+       wrong when the truth is that this server cannot ask. */
+    if (!isPermissionCheckConfigured) {
+      return bad(
+        "Permission checks are not configured on this server, so only admins can do this. Set NEXT_PUBLIC_SUPABASE_URL and the Supabase publishable key.",
+        503
+      );
+    }
 
     const allowed = await callerCanAny(token, slugs);
     if (!allowed) {
