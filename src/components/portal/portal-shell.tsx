@@ -97,7 +97,11 @@ const NAV: {
 export function PortalShell() {
   const { user, ready, logout } = useAuth();
   const router = useRouter();
-  const profile = useStaffProfile();
+  /* fresh, always. The cached copy is for the navbar; here it would mean a
+     permission granted five minutes ago has not arrived, and the member has
+     no way to tell the difference between "not granted" and "not reloaded".
+     One indexed lookup on page load is the cheaper mistake. */
+  const profile = useStaffProfile({ fresh: true });
   const [tab, setTab] = React.useState<Tab>("overview");
 
   /* Counted once, here, because the overview and the referrals tab both

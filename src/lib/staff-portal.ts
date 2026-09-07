@@ -41,9 +41,18 @@ export interface StaffProfile {
   scopes: StaffScope[];
 }
 
-/* Cached for the tab, not the browser. The navbar asks on every page, and a
-   department change should take effect when they next open Rego rather than
-   whenever a stored copy happens to expire. */
+/* Cached for the tab, not the browser.
+   The cache exists for the NAVBAR, which asks on every page render and only
+   needs to know "staff or not" to pick a link.
+
+   IT IS NOT SAFE FOR THE PORTAL, and that cost me a real bug: an admin
+   granted four blog permissions, and the tab the member already had open
+   went on showing the sidebar it had cached before the grant. From their side
+   the permission simply had not arrived. sessionStorage survives a reload, so
+   "refresh the page" did not help either.
+
+   So the portal loads with `fresh: true` and the cache is only ever a hint
+   for the chrome around it. */
 const CACHE_KEY = "rego_staff_profile";
 
 function readCache(): StaffProfile | null | undefined {
@@ -111,20 +120,22 @@ export async function touchStaffSeen(): Promise<void> {
  * are kept apart so a screen never flashes "you are not on the team" at
  * somebody who is, during the half second before the answer arrives.
  */
-export function useStaffProfile(): StaffProfile | null | undefined {
+export function useStaffProfile(
+  { fresh = false }: { fresh?: boolean } = {}
+): StaffProfile | null | undefined {
   const [profile, setProfile] = React.useState<StaffProfile | null | undefined>(
     undefined
   );
 
   React.useEffect(() => {
     let alive = true;
-    loadStaffProfile().then((p) => {
+    loadStaffProfile({ fresh }).then((p) => {
       if (alive) setProfile(p);
     });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [fresh]);
 
   return profile;
 }
