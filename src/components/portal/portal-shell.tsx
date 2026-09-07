@@ -8,6 +8,7 @@ import {
   Check,
   ClipboardList,
   ShieldQuestion,
+  MessageSquare,
   FileText,
   Globe2,
   Copy,
@@ -36,6 +37,7 @@ import { PortalTasks } from "@/components/portal/portal-tasks";
 import { PortalProfile } from "@/components/portal/portal-profile";
 import { PORTAL_MODULES } from "@/components/portal/portal-modules";
 import { PortalApprovals } from "@/components/portal/portal-approvals";
+import { StaffThread } from "@/components/portal/staff-thread";
 import { AdminBlog } from "@/components/dashboard/admin-blog";
 import { MarketAreas } from "@/components/dashboard/market-areas";
 
@@ -65,7 +67,7 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
 
 type FixedTab =
   | "overview" | "leads" | "tasks" | "referrals"
-  | "areas" | "permissions" | "profile" | "blog" | "places" | "approvals";
+  | "areas" | "permissions" | "profile" | "blog" | "places" | "approvals" | "messages";
 
 /* A module tab is its id from PORTAL_MODULES. Kept as a plain string so the
    list stays the single place a module is declared — narrowing this to a
@@ -107,6 +109,7 @@ const NAV: {
     icon: Globe2,
     needs: ["view_locations", "add_location", "edit_location", "add_attraction"],
   },
+  { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "referrals", label: "My referrals", icon: BadgeCheck },
   { id: "areas", label: "Where I work", icon: MapPin },
   { id: "permissions", label: "What I can do", icon: ShieldCheck },
@@ -306,6 +309,23 @@ export function PortalShell() {
           {tab === "blog" && <AdminBlog />}
           {tab === "places" && <MarketAreas />}
           {tab === "approvals" && <PortalApprovals profile={profile} />}
+          {tab === "messages" && (
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="font-display text-lg font-bold text-forest">
+                Messages with Rego
+              </h2>
+              <p className="mb-4 mt-1 text-sm text-muted-foreground">
+                Between you and the Rego admins. Your colleagues cannot see
+                this thread.
+              </p>
+              <StaffThread
+                staffId={profile.staff_id}
+                senderName={user.name}
+                fromAdmin={false}
+                emptyLine="Nothing yet. Ask anything — this is the place for it."
+              />
+            </section>
+          )}
 
           {/* Whichever admin module they opened. The component is the admin
               one, unchanged; what they may DO in it is decided by the

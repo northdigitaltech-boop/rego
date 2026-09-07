@@ -38,6 +38,8 @@ import {
   type StaffStatus,
 } from "@/lib/staff";
 import { getLocations, getMarkets, type LocationRow } from "@/lib/markets";
+import { StaffThread } from "@/components/portal/staff-thread";
+import { useAuth } from "@/components/auth/auth-context";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -682,6 +684,56 @@ function RolePermissions({
 }
 
 /* ------------------------------------------------------------------
+ * The admin side of the thread.
+ *
+ * Collapsed by default: an admin scanning a member's permissions does not
+ * want a conversation in the way, and opening it is one click.
+ * ------------------------------------------------------------------ */
+function MessagePanel({ member, who }: { member: StaffMemberRow; who: string }) {
+  const { user } = useAuth();
+  const [open, setOpen] = React.useState(false);
+
+  if (!open) {
+    return (
+      <div className="mt-4 border-t border-border pt-3">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-sm font-semibold text-forest hover:underline"
+        >
+          Message {who || member.employee_code}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 border-t border-border pt-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="font-semibold text-forest">
+          Messages with {who || member.employee_code}
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-sm text-muted-foreground hover:text-forest"
+        >
+          Close
+        </button>
+      </div>
+      <StaffThread
+        staffId={member.id}
+        /* Signed as the admin who typed it, not as "Rego" — a correction is
+           easier to take from a person than from an institution. */
+        senderName={user?.name ?? "Rego"}
+        fromAdmin
+        emptyLine="Nothing yet. Anything written here is seen only by this person and by admins."
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
  * Assigning work.
  *
  * The title and the due date can only be set from here — phase108 lets the
@@ -1052,6 +1104,8 @@ function MemberDetail({
               : "Emails them a link to set their password. Goes to the address on their profile."}
           </span>
         </div>
+
+        <MessagePanel member={member} who={who} />
 
         <AssignTask member={member} onError={onError} />
 
