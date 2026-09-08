@@ -194,6 +194,17 @@ export const PORTAL_MODULES: PortalModule[] = [
     ),
   },
   {
+    id: "destination-pages",
+    label: "Destination Pages",
+    icon: MapPin,
+    needs: ["manage_destinations_pages"],
+    Component: load(() =>
+      import("@/components/portal/portal-destinations").then(
+        (m) => m.PortalDestinations
+      )
+    ),
+  },
+  {
     id: "service-requests",
     label: "Service Requests",
     icon: LayoutGrid,

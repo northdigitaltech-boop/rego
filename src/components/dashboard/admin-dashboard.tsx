@@ -2161,7 +2161,10 @@ function VerificationAdmin({
   );
 }
 
-function DestinationsAdmin({
+/* Exported so the staff portal can render the same screen rather than grow a
+   second copy of it. Nothing else about it changes — the admin dashboard
+   still uses it exactly as before. */
+export function DestinationsAdmin({
   rows,
   onChange,
 }: {

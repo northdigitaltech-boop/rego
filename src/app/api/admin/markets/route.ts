@@ -240,6 +240,18 @@ export async function POST(req: Request) {
           ? body.parentId
           : null;
 
+    /* A create with no parent has no location to scope against, so staff_can()
+       would answer on the permission alone and an unscoped member could add a
+       country or a top-level region. Creating one is a decision about which
+       markets Rego is in, not about a destination, so it stays with an admin.
+       Adding a destination always has a parent and is unaffected. */
+    if (action === "create_location" && !scopeId) {
+      return bad(
+        "Choose the area this sits inside first. Creating a top-level region is an admin decision.",
+        403
+      );
+    }
+
     const allowed = await callerCan(token, slug, scopeId);
     if (!allowed) {
       return bad(
