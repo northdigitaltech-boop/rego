@@ -225,9 +225,12 @@ export async function POST(req: Request) {
      slows one runaway client; it is not a fleet-wide cap. A shared store is
      required before this is a real limit — see the architecture doc §10. */
   const ip = clientIp(req);
+  /* category is SecurityCategory, a fixed vocabulary shared with the security
+     centre — "api" is the right bucket for a rate-limited endpoint. The
+     endpoint string is what distinguishes flight searches in the log. */
   const limited = limitAndLog(req, `flight-search:${ip}`, 20, 60_000, {
     endpoint: "/api/flights/search",
-    category: "flights",
+    category: "api",
   });
   if (!limited.ok) {
     return bad("Too many searches in a short time. Wait a minute.", 429);

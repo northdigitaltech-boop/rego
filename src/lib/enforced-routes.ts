@@ -16,4 +16,5 @@ export const ENFORCED_ROUTES = [
   "/api/admin/delete-user",
   "/api/admin/update-user",
   "/api/cyber/ingest",
+  "/api/flights/search",
 ] as const;
