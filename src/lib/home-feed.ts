@@ -29,6 +29,14 @@ import {
 } from "@/lib/roadside";
 import { getPublishedEvents, type EventRow } from "@/lib/events";
 import { getApprovedActivities, type ActivityRow } from "@/lib/activities";
+import {
+  /* Aliased: tour-companies already exports getApprovedCompanies above, and
+     these are a different kind of company entirely. */
+  getApprovedCompanies as getApprovedExpeditionCompanies,
+  getApprovedPros as getApprovedExpeditionPros,
+  type ExpeditionCompanyRow,
+  type ExpeditionProRow,
+} from "@/lib/expeditions";
 import { getApprovedSolo, type SoloTravelerRow } from "@/lib/solo";
 import { getApprovedStories, type StoryRow } from "@/lib/safarnama";
 import { photo } from "@/lib/utils";
@@ -157,6 +165,93 @@ export async function feedActivities(n = 4): Promise<ActivityRow[]> {
   const acts = await getApprovedActivities();
   return [...acts]
     .sort((a, b) => Number(!!b.featured) - Number(!!a.featured) || Number(b.rating) - Number(a.rating))
+    .slice(0, n);
+}
+
+/* ------------------------------------------------------------------
+ * Mountaineering & expeditions, for the homepage.
+ *
+ * Companies and individual professionals are two tables and two detail
+ * routes, but on the homepage they are one row of cards — the same way
+ * /expeditions shows them under one heading with a filter. So they are
+ * normalised here rather than in the component, which then has one shape
+ * to render instead of a union it has to keep testing.
+ *
+ * Every field below is read from the row. Nothing is defaulted into
+ * existence: a company with no peaks recorded shows no peaks, and a
+ * professional with no rate shows no rate.
+ * ------------------------------------------------------------------ */
+export interface ExpeditionCard {
+  id: string;
+  kind: "company" | "pro";
+  href: string;
+  name: string;
+  image: string | null;
+  /** City or district, whichever the row actually has. */
+  location: string | null;
+  /** Peaks for a company, role/title for a professional. Null when unset. */
+  detail: string | null;
+  yearsExperience: number | null;
+  rating: number;
+  reviews: number;
+  verified: boolean;
+  featured: boolean;
+  startingPrice: number | null;
+}
+
+function expeditionCompanyToCard(c: ExpeditionCompanyRow): ExpeditionCard {
+  const peaks = (c.peaks_handled ?? []).filter(Boolean);
+  return {
+    id: c.id,
+    kind: "company",
+    href: `/expeditions/company/${c.id}`,
+    name: c.name,
+    image: c.cover_image || c.logo || null,
+    location: c.city || c.district || null,
+    detail: peaks.length > 0 ? peaks.slice(0, 3).join(", ") : null,
+    yearsExperience: c.years_experience,
+    rating: Number(c.rating) || 0,
+    reviews: Number(c.reviews) || 0,
+    verified: !!c.verified,
+    featured: !!c.featured,
+    startingPrice: c.starting_price,
+  };
+}
+
+function expeditionProToCard(p: ExpeditionProRow): ExpeditionCard {
+  return {
+    id: p.id,
+    kind: "pro",
+    href: `/expeditions/pro/${p.id}`,
+    name: p.full_name,
+    image: p.photo || p.cover_image || null,
+    location: p.city || p.district || null,
+    detail: p.title || p.role || null,
+    yearsExperience: p.years_experience,
+    rating: Number(p.rating) || 0,
+    reviews: Number(p.reviews) || 0,
+    verified: !!p.verified,
+    featured: !!p.featured,
+    startingPrice: p.daily_rate ?? p.package_rate ?? null,
+  };
+}
+
+export async function feedExpeditions(n = 4): Promise<ExpeditionCard[]> {
+  const [companies, pros] = await Promise.all([
+    getApprovedExpeditionCompanies(),
+    getApprovedExpeditionPros(),
+  ]);
+
+  return [
+    ...companies.map(expeditionCompanyToCard),
+    ...pros.map(expeditionProToCard),
+  ]
+    .sort(
+      (a, b) =>
+        Number(b.featured) - Number(a.featured) ||
+        Number(b.verified) - Number(a.verified) ||
+        b.rating - a.rating
+    )
     .slice(0, n);
 }
 

@@ -19,6 +19,7 @@ import { DeferredCreators } from "@/components/home/deferred-creators";
 import { RoadsideProviderGrid } from "@/components/home/roadside-grid";
 import { EventsGrid } from "@/components/home/events-grid";
 import { ActivitiesGrid } from "@/components/home/activities-grid";
+import { ExpeditionsGrid } from "@/components/home/expeditions-grid";
 import { SoloConnectSection } from "@/components/home/solo-connect-section";
 import { SafarnamaSection } from "@/components/home/safarnama-section";
 import { PromoCarousel } from "@/components/home/promo-carousel";
@@ -36,6 +37,7 @@ import {
   feedRoadside,
   feedEvents,
   feedActivities,
+  feedExpeditions,
   feedSolo,
   feedStories,
 } from "@/lib/home-feed";
@@ -74,6 +76,7 @@ export default async function Home() {
     roadside,
     events,
     activities,
+    expeditions,
     solo,
     stories,
   ] = await Promise.all([
@@ -87,6 +90,7 @@ export default async function Home() {
     feedRoadside(4),
     feedEvents(4),
     feedActivities(4),
+    feedExpeditions(4),
     feedSolo(4),
     feedStories(3),
   ]);
@@ -222,6 +226,14 @@ export default async function Home() {
         {/* Activities (below drone creators) — real approved activities,
             falls back to the curated tiles until providers add some. */}
         {activities.length > 0 ? <ActivitiesGrid items={activities} /> : <ActivitiesSection />}
+
+        {/* Mountaineering & Expeditions — straight after Activities, because
+            an expedition is the same impulse one step further. Companies and
+            individual professionals together, as on /expeditions. Renders
+            nothing at all until something is approved: there is no curated
+            fallback here, and a heading over an empty row would advertise a
+            category Rego cannot yet serve. */}
+        <ExpeditionsGrid items={expeditions} />
 
         {/* Roadside Assistance — real provider cards (falls back to service
             categories until providers register). */}
