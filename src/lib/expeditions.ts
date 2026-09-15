@@ -436,6 +436,28 @@ export async function getPublicTeamMembers(): Promise<CompanyStaffGuide[]> {
   });
 }
 
+/** One staff member plus the company they work for, for their profile page. */
+export async function getTeamMemberById(
+  id: string
+): Promise<{ member: ExpeditionTeamMember; company: ExpeditionCompanyRow } | null> {
+  if (!isSupabaseConfigured || !isUuid(id)) return null;
+
+  const { data } = await supabase
+    .from("expedition_team_members")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) return null;
+
+  const member = data as ExpeditionTeamMember;
+  const company = await getCompanyById(member.company_id);
+  /* No company, no page. A staff profile with nobody to send an enquiry to
+     is a dead end, and the company is where the enquiry goes. */
+  if (!company) return null;
+
+  return { member, company };
+}
+
 export async function saveTeamMember(
   m: Partial<ExpeditionTeamMember> & { company_id: string; name: string }
 ) {

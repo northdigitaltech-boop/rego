@@ -248,7 +248,9 @@ function Select({
    making them up. The one action is opening the company, which is where an
    enquiry can actually be sent. */
 function StaffGuideCard({ staff }: { staff: CompanyStaffGuide }) {
-  const href = `/expeditions/company/${staff.company_id}`;
+  /* Their own profile page, so this card behaves like every other card in
+     the grid — View Profile and Book Now, not a single odd button. */
+  const href = `/expeditions/staff/${staff.id}`;
   return (
     <article className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg">
       <Link href={href} className="absolute inset-0 z-10" aria-label={staff.name} />
@@ -304,16 +306,25 @@ function StaffGuideCard({ staff }: { staff: CompanyStaffGuide }) {
           </p>
         )}
 
+        {/* mt-auto so the buttons sit on the baseline the other cards use —
+            those have a price block above them and this one does not, and
+            without it this card's buttons floated higher than its neighbours. */}
         <p className="mt-3 text-xs text-muted-foreground">
           Works with {staff.company_name} — enquiries go through the company.
         </p>
 
-        <div className="relative z-20 mt-3">
+        <div className="relative z-20 mt-auto flex gap-2 pt-3">
           <Link
             href={href}
-            className="block rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5"
+            className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted"
           >
-            View company
+            View Profile
+          </Link>
+          <Link
+            href={`${href}#book`}
+            className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5"
+          >
+            Book Now
           </Link>
         </div>
       </div>
