@@ -192,11 +192,45 @@ import {
   type DestinationRow,
 } from "@/lib/destinations";
 import { AttractionsEditor } from "@/components/dashboard/attractions-editor";
+import { ApprovalQueue } from "@/components/dashboard/approval-queue";
+import { loadPendingApprovals, type PendingListing } from "@/lib/approvals";
 import { supabase, type HotelRow, isSupabaseConfigured } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { useAuth } from "@/components/auth/auth-context";
 import { cn, formatPrice, photo } from "@/lib/utils";
+
+/* ============================================================
+ * The listing types this file loads for itself.
+ *
+ * It grew one loader at a time — getPendingHotels, then
+ * getPendingCompanies, and so on — and three types were added to
+ * Rego after the last time anyone added a loader here. So a
+ * co-working space, a roadside business or an expedition company
+ * registered, waited in the staff portal's queue, and never
+ * appeared in front of Super Admin at all.
+ *
+ * Rather than write three more loaders and three more mappers into
+ * a file this size, anything NOT named here is read through
+ * lib/approvals.ts — the same reader the portal uses — and shown
+ * below the main list. Add a listing type to APPROVAL_TABLES and
+ * it appears in both screens without touching this constant.
+ *
+ * This list exists only so the same row is not shown twice.
+ * ============================================================ */
+const ADMIN_NATIVE_APPROVAL_TABLES = [
+  "hotels",
+  "homestays",
+  "hostels",
+  "tour_companies",
+  "tour_packages",
+  "tour_guides",
+  "transport_providers",
+  "transport_services",
+  "rental_vehicles",
+  "media_providers",
+  "restaurants",
+];
 
 // Shared shape for hotels + homestays in the approvals/verification screens.
 // Both HotelRow and HomestayRow satisfy this structurally.
@@ -583,6 +617,11 @@ export function AdminDashboard() {
   const [pendingRestaurants, setPendingRestaurants] = React.useState<RestaurantRow[]>([]);
   const [allRestaurants, setAllRestaurants] = React.useState<RestaurantRow[]>([]);
   const [pendingEdits, setPendingEdits] = React.useState<PendingEdit[]>([]);
+  /* Listing types this screen has no loader of its own for — see
+     ADMIN_NATIVE_APPROVAL_TABLES at the top of this file for why. */
+  const [otherPending, setOtherPending] = React.useState<PendingListing[] | null>(
+    null
+  );
   const [adminThreads, setAdminThreads] = React.useState<AdminThread[]>([]);
   const [chatThread, setChatThread] = React.useState<BookingRow | null>(null);
   const [newOwnerEmail, setNewOwnerEmail] = React.useState("");
@@ -621,6 +660,9 @@ export function AdminDashboard() {
     const aRestaurants = await getAllRestaurants();
     setAllRestaurants(aRestaurants);
     setPendingEdits(await getPendingEdits());
+    setOtherPending(
+      await loadPendingApprovals({ exclude: ADMIN_NATIVE_APPROVAL_TABLES })
+    );
     // Owner emails across every module → resolve admin↔owner threads.
     const ownerEmails = Array.from(
       new Set(
@@ -692,14 +734,19 @@ export function AdminDashboard() {
     prevEdits.current = n;
   }, [pendingEdits]);
 
+  /* Counted together, because a co-working space waiting is a listing waiting.
+     Splitting the badge would have reproduced the bug in a smaller way: a
+     number that looks like the whole queue and is not. */
+  const approvalsWaiting = pendingProperties.length + (otherPending?.length ?? 0);
+
   const prevApprovals = React.useRef<number | null>(null);
   React.useEffect(() => {
-    const n = pendingProperties.length;
+    const n = approvalsWaiting;
     if (prevApprovals.current !== null && n > prevApprovals.current) {
       notifyPing(`New listing pending approval — ${n} awaiting review`);
     }
     prevApprovals.current = n;
-  }, [pendingProperties.length]);
+  }, [approvalsWaiting]);
 
   // Admin ↔ owner message threads.
   const threadRows: BookingRow[] = adminThreads.map(
@@ -896,9 +943,9 @@ export function AdminDashboard() {
                   >
                     <Icon className="h-4 w-4" />
                     {n.label}
-                    {n.id === "approvals" && pendingProperties.length > 0 && (
+                    {n.id === "approvals" && approvalsWaiting > 0 && (
                       <span className="ml-auto rounded-full bg-gold px-2 text-[10px] font-bold text-forest-900">
-                        {pendingProperties.length}
+                        {approvalsWaiting}
                       </span>
                     )}
                     {n.id === "edits" && pendingEdits.length > 0 && (
@@ -932,7 +979,7 @@ export function AdminDashboard() {
           {tab === "clients" && <AdminClientPasswords />}
 
           {tab === "overview" && (
-            <Overview pending={pendingProperties.length} added={added.length} />
+            <Overview pending={approvalsWaiting} added={added.length} />
           )}
           {tab === "listings" && (
             <ListingsTable
@@ -952,7 +999,10 @@ export function AdminDashboard() {
             />
           )}
           {tab === "approvals" && (
-            <Approvals items={pendingProperties} onAct={act} />
+            <div className="space-y-6">
+              <Approvals items={pendingProperties} onAct={act} />
+              <OtherPendingListings items={otherPending} onDecided={refresh} />
+            </div>
           )}
           {tab === "edits" && (
             <PendingEditsAdmin
@@ -1616,6 +1666,39 @@ function PendingEditsAdmin({
         ))}
       </div>
     </div>
+  );
+}
+
+/* Everything ADMIN_NATIVE_APPROVAL_TABLES does not cover, read through the
+   shared library. Hidden entirely when there is nothing waiting, so on a
+   normal day the Approvals tab looks exactly as it did — this appears only
+   when a registration would otherwise have gone unseen. */
+function OtherPendingListings({
+  items,
+  onDecided,
+}: {
+  items: PendingListing[] | null;
+  onDecided: () => void | Promise<void>;
+}) {
+  if (items !== null && items.length === 0) return null;
+
+  return (
+    <section>
+      <h3 className="mb-1 font-display text-lg font-bold text-forest">
+        Also waiting
+      </h3>
+      <p className="mb-3 text-sm text-muted-foreground">
+        Co-working, roadside, expeditions and the other newer listing types.
+        The same rows the team portal reviews — one status, not a copy.
+      </p>
+      <ApprovalQueue
+        items={items}
+        mayApprove
+        mayReject
+        emptyLine="Nothing waiting here."
+        onDecided={onDecided}
+      />
+    </section>
   );
 }
 

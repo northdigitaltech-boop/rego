@@ -8,6 +8,7 @@ import {
   Check,
   ClipboardList,
   ShieldQuestion,
+  PencilLine,
   MessageSquare,
   FileText,
   Globe2,
@@ -37,6 +38,7 @@ import { PortalTasks } from "@/components/portal/portal-tasks";
 import { PortalProfile } from "@/components/portal/portal-profile";
 import { PORTAL_MODULES } from "@/components/portal/portal-modules";
 import { PortalApprovals } from "@/components/portal/portal-approvals";
+import { PortalEdits } from "@/components/portal/portal-edits";
 import { StaffThread } from "@/components/portal/staff-thread";
 import { unreadCount } from "@/lib/staff-messages";
 import { AdminBlog } from "@/components/dashboard/admin-blog";
@@ -55,8 +57,10 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
  *
  *   Approvals are here as of phase111, which stopped an owner
  *   setting their own status — an approval queue on top of that
- *   would have decided nothing. Verification, edit requests and
- *   the full listings screen are still to come. This note is
+ *   would have decided nothing. Edit requests followed, and needed
+ *   no migration: a queued edit lives in pending_changes on the
+ *   listing row phase111 already lets a reviewer read. Verification
+ *   and the full listings screen are still to come. This note is
  *   updated as each one lands, because a stale "not built yet" is
  *   its own small lie.
  *
@@ -68,7 +72,8 @@ import { MarketAreas } from "@/components/dashboard/market-areas";
 
 type FixedTab =
   | "overview" | "leads" | "tasks" | "referrals"
-  | "areas" | "permissions" | "profile" | "blog" | "places" | "approvals" | "messages";
+  | "areas" | "permissions" | "profile" | "blog" | "places" | "approvals"
+  | "edits" | "messages";
 
 /* A module tab is its id from PORTAL_MODULES. Kept as a plain string so the
    list stays the single place a module is declared — narrowing this to a
@@ -89,6 +94,15 @@ const NAV: {
     id: "approvals",
     label: "Approvals",
     icon: ShieldQuestion,
+    needs: ["view_approvals", "approve_listing", "reject_listing"],
+  },
+  {
+    /* Same permissions as Approvals on purpose: a queued edit is a decision
+       about a listing, and inventing a separate permission would mean a
+       migration to grant something nobody would think to look for. */
+    id: "edits",
+    label: "Edit requests",
+    icon: PencilLine,
     needs: ["view_approvals", "approve_listing", "reject_listing"],
   },
   { id: "leads", label: "Leads", icon: Users, needs: ["view_leads", "manage_own_leads"] },
@@ -336,6 +350,7 @@ export function PortalShell() {
           {tab === "blog" && <AdminBlog />}
           {tab === "places" && <MarketAreas />}
           {tab === "approvals" && <PortalApprovals profile={profile} />}
+          {tab === "edits" && <PortalEdits profile={profile} />}
           {tab === "messages" && (
             <section className="rounded-2xl border border-border bg-card p-5">
               <h2 className="font-display text-lg font-bold text-forest">
