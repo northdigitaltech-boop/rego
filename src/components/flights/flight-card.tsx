@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  AlertTriangle,
   ChevronDown,
   Clock,
   Luggage,
@@ -46,22 +45,21 @@ export function FlightCard({ offer }: { offer: FlightOffer }) {
 
   return (
     <article className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg">
-      {offer.isMock && (
-        /* Non-negotiable. A screenshot of this card must never be mistakable
-           for a real fare. */
-        <p className="flex items-center gap-2 bg-amber-100 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-amber-900">
-          <AlertTriangle className="h-3.5 w-3.5" />
-          Mock data — development only, not a real fare
-        </p>
-      )}
-
       <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[1fr_auto]">
         <div className="min-w-0 space-y-4">
-          <ItineraryRow itinerary={outbound} carrierName={offer.validatingCarrierName} carrierCode={offer.validatingCarrierCode} />
+          <ItineraryRow
+            itinerary={outbound}
+            carrierName={offer.validatingCarrierName}
+            carrierCode={offer.validatingCarrierCode}
+          />
           {inbound && (
             <>
               <div className="border-t border-dashed border-border" />
-              <ItineraryRow itinerary={inbound} carrierName={offer.validatingCarrierName} carrierCode={offer.validatingCarrierCode} />
+              <ItineraryRow
+                itinerary={inbound}
+                carrierName={offer.validatingCarrierName}
+                carrierCode={offer.validatingCarrierCode}
+              />
             </>
           )}
 
@@ -155,7 +153,10 @@ function ItineraryRow({
   return (
     <div className="flex items-center gap-4">
       <div className="hidden w-12 shrink-0 sm:block">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-forest-50 text-xs font-bold text-forest-600">
+        <span
+          title={carrierName}
+          className="grid h-10 w-10 place-items-center rounded-xl bg-forest-50 text-xs font-bold text-forest-600"
+        >
           {carrierCode}
         </span>
       </div>
@@ -199,7 +200,10 @@ function ItineraryRow({
         </div>
       </div>
 
-      <p className="hidden w-32 shrink-0 truncate text-xs text-muted-foreground lg:block">
+      {/* Wider than it was (w-32), and wrapping rather than truncating.
+          "Pakistan International Airlines" was cutting to "Pakistan
+          Internatio…", which is worse than either showing it or not. */}
+      <p className="hidden w-40 shrink-0 text-xs leading-tight text-muted-foreground lg:block">
         {carrierName}
       </p>
     </div>
