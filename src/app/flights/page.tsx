@@ -12,6 +12,8 @@ import {
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FlightSearch } from "@/components/flights/flight-search";
+import { FlightSearchWidget } from "@/components/flights/flight-search-widget";
+import { flightFlags } from "@/lib/flights/registry";
 
 export const metadata: Metadata = {
   title: "Flights to Gilgit Baltistan",
@@ -56,6 +58,28 @@ const ROUTES = [
 ];
 
 export default function FlightsPage() {
+  /* ============================================================
+   * ONE PAGE, TWO SEARCH EXPERIENCES.
+   *
+   * With the flag OFF — which is every environment until REGO can
+   * actually ticket — this page is exactly what it has always
+   * been: compare fares here, book on the airline's own site. That
+   * is a real service, it is indexed under "Flights to Gilgit
+   * Baltistan", and it must keep working through however long
+   * accreditation takes.
+   *
+   * With the flag ON, the hero swaps to the provider-backed search
+   * and the two sentences describing the hand-off change with it.
+   * Those sentences are not decoration — "your card details never
+   * touch Rego" stops being true the moment REGO takes payment,
+   * and a page that still said it would be lying to the customer
+   * on the screen where they decide to trust it.
+   *
+   * Everything below the hero — routes, airlines, weather advice,
+   * concierge — is unchanged either way.
+   * ============================================================ */
+  const liveSearch = flightFlags.enabled();
+
   return (
     <>
       <Navbar />
@@ -71,12 +95,13 @@ export default function FlightsPage() {
                 Fly to Gilgit &amp; Skardu
               </h1>
               <p className="mt-2 text-white/85">
-                Compare live fares on PIA, Airblue and Air Sial, then book on the
-                airline checkout — or let our team arrange it for you.
+                {liveSearch
+                  ? "Compare airlines, fares and baggage, and book without leaving Rego."
+                  : "Compare live fares on PIA, Airblue and Air Sial, then book on the airline checkout — or let our team arrange it for you."}
               </p>
             </div>
             <div className="mt-6">
-              <FlightSearch />
+              {liveSearch ? <FlightSearchWidget /> : <FlightSearch />}
             </div>
           </div>
         </section>
@@ -154,7 +179,11 @@ export default function FlightsPage() {
             <InfoCard
               icon={ShieldCheck}
               title="Secure checkout"
-              body="Payment and ticketing happen on the airline or partner site — your card details never touch Rego."
+              body={
+                liveSearch
+                  ? "Payment is handled by our payment provider — Rego never stores your card details."
+                  : "Payment and ticketing happen on the airline or partner site — your card details never touch Rego."
+              }
             />
           </div>
         </section>
