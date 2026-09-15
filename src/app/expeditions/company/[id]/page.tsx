@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ShieldCheck, Star, MapPin, Phone, Mail, Globe, TriangleAlert, Check, Award, Users, Mountain, CalendarDays, UserRound } from "lucide-react";
+import { ShieldCheck, Star, MapPin, Globe, TriangleAlert, Check, Award, Users, Mountain, CalendarDays, UserRound } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -175,7 +175,17 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
               {team.length > 0 && (
                 <section>
                   <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-forest"><Users className="h-5 w-5 text-forest-600" /> Meet the Team</h2>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  {/* One column when there is one member. Two columns left a
+                      long bio squeezed into half the width with the other
+                      half blank — the narrower the column, the longer the
+                      card, which is the opposite of what the space wanted. */}
+                  <div
+                    className={
+                      team.length > 1
+                        ? "grid gap-3 sm:grid-cols-2"
+                        : "grid gap-3"
+                    }
+                  >
                     {team.map((m) => (
                       <div key={m.id} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-soft">
                         <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-muted">
@@ -253,15 +263,24 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
                   />
                 </div>
 
-                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Or reach them directly
-                </p>
-                <div className="mt-2 space-y-2">
-                  {c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Phone className="h-4 w-4 text-forest-600" /> {c.phone}</a>}
-                  {c.whatsapp && <a href={`https://wa.me/${c.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl bg-gradient-forest px-3 py-2.5 text-sm font-semibold text-white">WhatsApp</a>}
-                  {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Mail className="h-4 w-4 text-forest-600" /> Email</a>}
-                  {c.website && <a href={c.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Globe className="h-4 w-4 text-forest-600" /> Website</a>}
-                </div>
+                {/* Phone, WhatsApp and email are deliberately NOT here.
+                    Requests go through Rego so there is a record of who asked
+                    for what, which is what makes the Requests tab, the
+                    approval trail and any later dispute possible. The
+                    provider still gets the phone number in the enquiry.
+                    Website stays: it is not a way around the request. */}
+                {c.website && (
+                  <div className="mt-3">
+                    <a
+                      href={c.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"
+                    >
+                      <Globe className="h-4 w-4 text-forest-600" /> Website
+                    </a>
+                  </div>
+                )}
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                   <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                   Mountaineering involves serious risk. Verify credentials, insurance, permits and weather before committing.

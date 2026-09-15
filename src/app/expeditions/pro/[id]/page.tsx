@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ShieldCheck, Star, MapPin, Phone, TriangleAlert, Check, Mountain } from "lucide-react";
+import { ShieldCheck, Star, MapPin, TriangleAlert, Check, Mountain } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -108,13 +108,10 @@ export default async function ProDetail({ params }: { params: Promise<{ id: stri
                   />
                 </div>
 
-                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Or reach them directly
-                </p>
-                <div className="mt-2 space-y-2">
-                  {p.phone && <a href={`tel:${p.phone}`} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Phone className="h-4 w-4 text-forest-600" /> {p.phone}</a>}
-                  {p.whatsapp && <a href={`https://wa.me/${p.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl bg-gradient-forest px-3 py-2.5 text-sm font-semibold text-white">WhatsApp</a>}
-                </div>
+                {/* Phone and WhatsApp removed on purpose — same reason as the
+                    company page: the request goes through Rego so there is a
+                    record of it. They get the traveller's number in the
+                    enquiry, and can call straight back. */}
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                   <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                   Mountaineering involves serious risk. Verify credentials, insurance and permits before committing.
