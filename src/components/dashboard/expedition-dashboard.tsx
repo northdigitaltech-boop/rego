@@ -1,9 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Save, Check, LogOut, User as UserIcon, ShieldCheck, Clock, Plus, Trash2, Pencil, Users, Package } from "lucide-react";
+import { Loader2, Save, Check, LogOut, User as UserIcon, ShieldCheck, Clock, Plus, Trash2, Pencil, Users, Package, Inbox, Mountain } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
+import { ContactAdminButton } from "@/components/chat/contact-admin-button";
 import { AvatarUpload, ImageUpload, MultiImageUpload } from "@/components/ui/image-upload";
 import { type User } from "@/components/auth/auth-context";
 import {
@@ -85,6 +88,7 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
   const [tab, setTab] = React.useState<
     "profile" | "team" | "packages" | "requests"
   >("profile");
+  const drill = useDashboardDrill();
 
   const load = React.useCallback(async () => {
     const [c, p, r, pk, rt] = await Promise.all([
@@ -98,92 +102,154 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
 
   const type = company ? "company" : pro ? "individual" : null;
 
+  /* Registration comes before any of the shell: there is no profile to put
+     a sidebar around yet. */
+  if (!type) {
+    return (
+      <div className="container-px py-8">
+        <div className="mb-6">
+          <h1 className="font-display text-2xl font-bold text-forest">
+            Mountaineering &amp; Expeditions
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Set up your expedition profile.
+          </p>
+        </div>
+        {/* Was ProfileTypePicker, which wrote a row named "My Expedition
+            Company" the moment a card was tapped. */}
+        <ExpeditionRegisterWizard user={user} onDone={load} />
+      </div>
+    );
+  }
+
+  /* The nav, built for whichever profile type this account is. An individual
+     has no team and no packages, so those entries do not exist for them
+     rather than being drawn and refused. */
+  const nav: { id: typeof tab; label: string; icon: typeof UserIcon }[] =
+    type === "company"
+      ? [
+          { id: "profile", label: "Company Profile", icon: UserIcon },
+          { id: "requests", label: "Requests", icon: Inbox },
+          { id: "team", label: "Team", icon: Users },
+          { id: "packages", label: "Packages & Pricing", icon: Package },
+        ]
+      : [
+          { id: "profile", label: "My Profile", icon: UserIcon },
+          { id: "requests", label: "Requests", icon: Inbox },
+        ];
+
+  const status = type === "company" ? company!.status : pro!.status;
+  const verified = type === "company" ? company!.verified : pro!.verified;
+  const displayName =
+    (type === "company" ? company!.name : pro!.full_name) || user.name;
+  const avatar = type === "company" ? company!.logo : pro!.photo;
+
   return (
-    <div className="container-px py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-forest">Mountaineering &amp; Expeditions</h1>
-          <p className="text-sm text-muted-foreground">Manage your expedition profile.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {type === "company" && company && <VerifyBadge status={company.status} verified={company.verified} />}
-          {type === "individual" && pro && <VerifyBadge status={pro.status} verified={pro.verified} />}
-          <Button variant="outline" onClick={onSignOut}><LogOut className="h-4 w-4" /> Sign out</Button>
-        </div>
+    <div className="container-px py-10">
+      <div>
+        <h1 className="font-display text-3xl font-bold text-forest">
+          Mountaineering &amp; Expeditions
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          Manage your profile and the requests travellers send you.
+        </p>
       </div>
 
-      {!type ? (
-        /* Was ProfileTypePicker, which wrote a row named "My Expedition
-           Company" the moment a card was tapped. */
-        <ExpeditionRegisterWizard user={user} onDone={load} />
-      ) : type === "company" ? (
-        <>
-          <div className="mb-6 flex flex-wrap gap-2">
-            {(
-              [
-                ["profile", "Company Profile"],
-                ["requests", "Requests"],
-                ["team", "Team"],
-                ["packages", "Packages & Pricing"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                className={
-                  "rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 " +
-                  (tab === id
-                    ? "bg-gradient-forest text-white shadow-soft"
-                    : "border border-border bg-card text-forest hover:bg-muted")
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {tab === "profile" && <CompanyForm company={company!} peaks={peaks} routes={routes} onSaved={load} />}
-          {tab === "requests" && <ExpeditionRequests ownerEmail={user.email} />}
-          {tab === "team" && <TeamManager companyId={company!.id} roles={roles} />}
-          {tab === "packages" && (
-            <PackagesManager company={company!} peaks={peaks} routes={routes} />
-          )}
-        </>
-      ) : (
-        /* An individual had no tabs at all — just the form — because there
-           was nothing else to show. Now there is. */
-        <>
-          <div className="mb-6 flex flex-wrap gap-2">
-            {(
-              [
-                ["profile", "My Profile"],
-                ["requests", "Requests"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                className={
-                  "rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 " +
-                  (tab === id
-                    ? "bg-gradient-forest text-white shadow-soft"
-                    : "border border-border bg-card text-forest hover:bg-muted")
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {tab === "requests" ? (
-            <ExpeditionRequests ownerEmail={user.email} />
-          ) : (
-            /* Any company-only tab left over from switching profile type
-               falls back to the form rather than rendering nothing. */
-            <ProForm pro={pro!} roles={roles} peaks={peaks} routes={routes} onSaved={load} />
-          )}
-        </>
+      {status !== "approved" && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Your profile is <strong>{status}</strong>. It becomes visible to
+          travellers once an admin approves it.
+        </div>
       )}
+
+      {/* Same shell as every other provider dashboard: 240px sticky sidebar,
+          avatar, icon nav, contact-admin and sign-out at the foot. It used to
+          be a row of pills, which is why it did not look like the others. */}
+      <div
+        className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash"
+        {...drill.gridProps}
+      >
+        <DashboardBack onClick={drill.back} />
+        <aside>
+          <div className="sticky top-24 rounded-3xl border border-border/70 bg-card p-3 shadow-premium">
+            <div className="flex items-center gap-3 border-b border-border p-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-gold text-forest-900">
+                {avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatar} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Mountain className="h-6 w-6" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-forest">{displayName}</p>
+                <span className="mt-1 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold text-gold-700">
+                  {type === "company" ? "Expedition Company" : "Expedition Professional"}
+                </span>
+              </div>
+            </div>
+
+            <nav className="mt-2 space-y-1">
+              {nav.map((n) => {
+                const Icon = n.icon;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => setTab(n.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      tab === n.id
+                        ? "bg-gradient-forest text-white shadow-soft"
+                        : "text-forest hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {n.label}
+                  </button>
+                );
+              })}
+              <div className="my-2 border-t border-border" />
+              <div className="px-3 py-1">
+                <VerifyBadge status={status} verified={verified} />
+              </div>
+              <ContactAdminButton
+                ownerEmail={user.email}
+                ownerName={user.name}
+                ownerAvatar={user.avatar}
+              />
+              <button
+                onClick={onSignOut}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"
+              >
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        <div>
+          {tab === "requests" && <ExpeditionRequests ownerEmail={user.email} />}
+
+          {type === "company" ? (
+            <>
+              {tab === "profile" && (
+                <CompanyForm company={company!} peaks={peaks} routes={routes} onSaved={load} />
+              )}
+              {tab === "team" && <TeamManager companyId={company!.id} roles={roles} />}
+              {tab === "packages" && (
+                <PackagesManager company={company!} peaks={peaks} routes={routes} />
+              )}
+            </>
+          ) : (
+            /* An individual has no team or packages tab, so anything that is
+               not "requests" is the profile — including a stale tab left over
+               from a company session in the same browser. */
+            tab !== "requests" && (
+              <ProForm pro={pro!} roles={roles} peaks={peaks} routes={routes} onSaved={load} />
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }

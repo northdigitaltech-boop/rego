@@ -44,6 +44,10 @@ import {
   getApprovedRentals,
   getApprovedProviders,
 } from "@/lib/transport";
+import {
+  getPublicTeamMembers,
+  type CompanyStaffGuide,
+} from "@/lib/expeditions";
 
 export function generateStaticParams() {
   return allCategories.map((c) => ({ slug: c.slug }));
@@ -122,11 +126,19 @@ export default async function CategoryPage({
     if (x.length > 0) dbHotels = x.map(packageToListing);
   }
 
-  // Tour guides render with their own filtered card grid.
+  /* Tour guides render with their own filtered card grid — plus expedition
+     company staff, who are mountain guides a traveller should find here.
+     They keep their own card shape; see GuideCategoryView for why they are
+     not converted into TourGuideRow. */
   let dbGuides: TourGuideRow[] | null = null;
+  let staffGuides: CompanyStaffGuide[] = [];
   if (category.slug === "guides") {
-    const g = await getApprovedGuides();
-    if (g.length > 0) dbGuides = g;
+    const [g, s] = await Promise.all([getApprovedGuides(), getPublicTeamMembers()]);
+    staffGuides = s;
+    /* The grid opens if EITHER source has rows. Before, an empty tour_guides
+       table meant the whole view was skipped and expedition staff would have
+       had nowhere to appear. */
+    if (g.length > 0 || s.length > 0) dbGuides = g;
   }
 
   // Photographers & videographers render with their own filtered grid.
@@ -254,6 +266,7 @@ export default async function CategoryPage({
         ) : dbGuides ? (
           <GuideCategoryView
             guides={dbGuides}
+            staff={staffGuides}
             heading={category.name}
             subheading={category.tagline}
             query={query}

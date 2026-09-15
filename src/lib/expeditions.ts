@@ -368,6 +368,74 @@ export async function getTeamMembers(companyId: string): Promise<ExpeditionTeamM
   return (data as ExpeditionTeamMember[]) ?? [];
 }
 
+/* ------------------------------------------------------------------
+ * Team members across every approved company, for the Guides section.
+ *
+ * A team member is staff, not a listing: no page of their own, no rate,
+ * no rating, and they cannot be booked directly. So this returns the
+ * company alongside them — the card links there, and the enquiry goes
+ * to the company that employs them. Nothing is invented to make them
+ * look like an independent guide.
+ *
+ * One `.in()` rather than a query per company: this feeds a directory
+ * page, and a request per company is the N+1 that makes it slow as
+ * Rego grows.
+ * ------------------------------------------------------------------ */
+export interface CompanyStaffGuide {
+  id: string;
+  name: string;
+  role: string | null;
+  photo: string | null;
+  years_experience: number | null;
+  peaks_summited: string[] | null;
+  certifications: string[] | null;
+  bio: string | null;
+  company_id: string;
+  company_name: string;
+  company_city: string | null;
+  company_verified: boolean;
+}
+
+export async function getPublicTeamMembers(): Promise<CompanyStaffGuide[]> {
+  if (!isSupabaseConfigured) return [];
+
+  const companies = await getApprovedCompanies();
+  if (companies.length === 0) return [];
+
+  const byId = new Map(companies.map((c) => [c.id, c]));
+  const { data } = await supabase
+    .from("expedition_team_members")
+    .select("*")
+    .in(
+      "company_id",
+      companies.map((c) => c.id)
+    )
+    .order("display_order", { ascending: true });
+
+  return ((data as ExpeditionTeamMember[]) ?? []).flatMap((m) => {
+    const c = byId.get(m.company_id);
+    /* A member whose company is not approved should not surface. The `.in()`
+       already handles that; this is the belt for the braces. */
+    if (!c) return [];
+    return [
+      {
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        photo: m.photo,
+        years_experience: m.years_experience,
+        peaks_summited: m.peaks_summited,
+        certifications: m.certifications,
+        bio: m.bio,
+        company_id: c.id,
+        company_name: c.name,
+        company_city: c.city,
+        company_verified: !!c.verified,
+      },
+    ];
+  });
+}
+
 export async function saveTeamMember(
   m: Partial<ExpeditionTeamMember> & { company_id: string; name: string }
 ) {

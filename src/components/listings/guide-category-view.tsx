@@ -10,6 +10,7 @@ import {
   Languages,
   Award,
   Briefcase,
+  Mountain,
   SlidersHorizontal,
   Search,
   X,
@@ -19,19 +20,39 @@ import { useWishlist } from "@/lib/wishlist";
 import { SortBar, sortItems, type SortId } from "@/components/listings/sort-bar";
 import { type Listing } from "@/lib/data";
 import { type TourGuideRow } from "@/lib/tour-companies";
+import { type CompanyStaffGuide } from "@/lib/expeditions";
 import { cn, formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
 import { ListingBadges } from "@/components/ui/listing-badges";
 
 const WHATSAPP_FALLBACK = "923001234567";
 
+/* ============================================================
+ * Expedition company staff appear in this grid alongside listed
+ * guides, because a traveller looking for a mountain guide should
+ * find them here.
+ *
+ * They are NOT turned into TourGuideRow. Staff have no rate, no
+ * rating and no listing page, so a converted row would have to
+ * invent "from PKR 0 / day" and a Book Now button pointing at a
+ * page that does not exist. They get their own card in the same
+ * grid: real fields only, and the link goes to the company that
+ * employs them, where the quote form is.
+ *
+ * Filters that cannot apply to them — price, rating — remove them
+ * when actively used, rather than silently keeping them in a
+ * filtered list they do not satisfy.
+ * ============================================================ */
+
 export function GuideCategoryView({
   guides,
+  staff = [],
   heading,
   subheading,
   query = "",
 }: {
   guides: TourGuideRow[];
+  staff?: CompanyStaffGuide[];
   heading: string;
   subheading: string;
   query?: string;
@@ -86,6 +107,32 @@ export function GuideCategoryView({
     reviews: g.reviews,
     featured: g.featured,
   }));
+
+  /* Staff are filtered on the fields they actually have. A price or rating
+     filter excludes them outright — they have neither, and pretending a
+     missing rate is 0 would put them at the top of "cheapest first". */
+  const shownStaff =
+    maxPrice !== "all" || minRating !== "all" || availableOnly
+      ? []
+      : staff.filter((s) => {
+          if (type !== "all" && (s.role || "Guide") !== type) return false;
+          if (language !== "all") return false; // languages are not recorded for staff
+          if (location !== "all" && s.company_city !== location) return false;
+          if (minExp !== "all" && (s.years_experience ?? 0) < Number(minExp)) return false;
+          if (link === "independent") return false; // they work for a company
+          if (verifiedOnly && !s.company_verified) return false;
+          if (
+            needle &&
+            ![s.name, s.role ?? "", s.company_name, s.company_city ?? "", (s.peaks_summited ?? []).join(" ")]
+              .join(" ")
+              .toLowerCase()
+              .includes(needle)
+          )
+            return false;
+          return true;
+        });
+
+  const total = shown.length + shownStaff.length;
 
   return (
     <div className="bg-background">
@@ -151,12 +198,12 @@ export function GuideCategoryView({
             >
               Available now
             </button>
-            <span className="ml-auto text-xs text-muted-foreground">{shown.length} guide{shown.length === 1 ? "" : "s"}</span>
+            <span className="ml-auto text-xs text-muted-foreground">{total} guide{total === 1 ? "" : "s"}</span>
           </div>
           <SortBar value={sort} onChange={setSort} className="mt-3" />
         </div>
 
-        {sorted.length === 0 ? (
+        {total === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-muted/40 py-20 text-center text-muted-foreground">
             No guides match your filters.
           </div>
@@ -164,6 +211,9 @@ export function GuideCategoryView({
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sorted.map((g) => (
               <GuideCard key={g.id} guide={g} typeLabel={typeOf(g)} />
+            ))}
+            {shownStaff.map((s) => (
+              <StaffGuideCard key={`staff:${s.id}`} staff={s} />
             ))}
           </div>
         )}
@@ -190,6 +240,84 @@ function Select({
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </label>
+  );
+}
+
+/* Same grid, different card. No price, no rating, no wishlist and no Book
+   Now — staff have none of those, and a card that showed them would be
+   making them up. The one action is opening the company, which is where an
+   enquiry can actually be sent. */
+function StaffGuideCard({ staff }: { staff: CompanyStaffGuide }) {
+  const href = `/expeditions/company/${staff.company_id}`;
+  return (
+    <article className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg">
+      <Link href={href} className="absolute inset-0 z-10" aria-label={staff.name} />
+      <div className="relative h-48 overflow-hidden bg-muted">
+        {staff.photo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={photo(staff.photo)}
+            alt={staff.name}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <span className="grid h-full w-full place-items-center">
+            <Mountain className="h-10 w-10 text-forest-600/40" />
+          </span>
+        )}
+        <div className="absolute inset-x-0 top-0 z-20 p-3">
+          <span className="rounded-full bg-gradient-forest px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-soft">
+            {staff.role || "Expedition staff"}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex items-center gap-1.5">
+          <h3 className="font-display text-base font-semibold leading-snug text-forest">
+            {staff.name}
+          </h3>
+          {staff.company_verified && (
+            <BadgeCheck className="h-4 w-4 shrink-0 text-forest-600" />
+          )}
+        </div>
+
+        <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-forest-600">
+          <Briefcase className="h-3.5 w-3.5" /> {staff.company_name}
+        </p>
+
+        {staff.years_experience != null && (
+          <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Award className="h-3.5 w-3.5" /> {staff.years_experience} yrs experience
+          </p>
+        )}
+
+        {staff.peaks_summited && staff.peaks_summited.length > 0 && (
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+            Summits: {staff.peaks_summited.join(", ")}
+          </p>
+        )}
+
+        {staff.company_city && (
+          <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" /> {staff.company_city}
+          </p>
+        )}
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Works with {staff.company_name} — enquiries go through the company.
+        </p>
+
+        <div className="relative z-20 mt-3">
+          <Link
+            href={href}
+            className="block rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5"
+          >
+            View company
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }
 

@@ -195,7 +195,23 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
                           {m.peaks_summited && m.peaks_summited.length > 0 && (
                             <p className="mt-1 text-xs text-forest-600">Summits: {m.peaks_summited.join(", ")}</p>
                           )}
-                          {m.bio && <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground">{m.bio}</p>}
+                          {m.certifications && m.certifications.length > 0 && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Certifications: {m.certifications.join(", ")}
+                            </p>
+                          )}
+                          {/* Was line-clamp-3, which cut a guide's bio off
+                              mid-sentence with no way to read the rest — the
+                              card had no detail page to expand into. The bio
+                              is the part that persuades somebody to trust a
+                              person with their life at altitude, so it is
+                              shown in full. whitespace-pre-line keeps the
+                              paragraphs the member actually typed. */}
+                          {m.bio && (
+                            <p className="mt-1.5 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+                              {m.bio}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
