@@ -24,6 +24,7 @@ import {
   formatTime,
   stopsLabel,
 } from "@/lib/flights/format";
+import { FlightRequestButton } from "@/components/flights/flight-request-button";
 import type { FlightItinerary, FlightOffer } from "@/lib/flights/types";
 
 /* ============================================================
@@ -211,18 +212,20 @@ export default async function FlightOfferPage({
                   </div>
                 </dl>
 
-                {/* Booking is a later phase. A disabled button that explains
-                    itself beats a live one that fails at the next screen. */}
-                <button
-                  type="button"
-                  disabled
-                  className="mt-4 w-full cursor-not-allowed rounded-xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground"
-                >
-                  Continue to booking
-                </button>
-                <p className="mt-2 text-center text-xs text-muted-foreground">
-                  Booking opens once Rego&apos;s airline ticketing is live.
-                </p>
+                {/* Rego cannot issue tickets yet, so this does not pretend to
+                    book. It hands the itinerary to the team, who book it the
+                    way they already do — the same promise the concierge
+                    section of /flights has always made, now attached to a
+                    specific flight the customer actually chose.
+
+                    An EXPIRED offer still gets the button. For a real booking
+                    that would be wrong; for an enquiry it is the opposite —
+                    somebody who found this flight an hour ago still wants it,
+                    and the team is told to requote. */}
+                <FlightRequestButton
+                  offerId={row.id}
+                  priceLabel={formatMoney(offer.fare.customerTotal)}
+                />
 
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                   <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />

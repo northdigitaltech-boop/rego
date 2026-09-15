@@ -92,11 +92,18 @@ export default function FlightsPage() {
                 <Plane className="h-3.5 w-3.5" /> Flights
               </span>
               <h1 className="mt-3 font-display text-3xl font-bold text-white sm:text-4xl">
-                Fly to Gilgit &amp; Skardu
+                {liveSearch ? "Fly with Rego" : "Fly to Gilgit & Skardu"}
               </h1>
-              <p className="mt-2 text-white/85">
+
+              {/* The subline carries the destinations the H1 used to.
+                  "Fly with Rego" is a brand headline, not a description of
+                  the page, and this page ranks for "flights to Gilgit
+                  Baltistan" — so Skardu, Gilgit and Pakistan stay visible in
+                  the copy directly beneath it rather than disappearing with
+                  the old heading. */}
+              <p className="mt-2 max-w-xl text-lg text-white/90">
                 {liveSearch
-                  ? "Compare airlines, fares and baggage, and book without leaving Rego."
+                  ? "Skardu, Gilgit, Dubai, Kuala Lumpur — compare airlines and fares, then plan the rest of the trip with the hotels, guides and transport already waiting on Rego."
                   : "Compare live fares on PIA, Airblue and Air Sial, then book on the airline checkout — or let our team arrange it for you."}
               </p>
             </div>

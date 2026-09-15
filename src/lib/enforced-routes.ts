@@ -18,4 +18,5 @@ export const ENFORCED_ROUTES = [
   "/api/cyber/ingest",
   "/api/flights/search",
   "/api/admin/flight-markup",
+  "/api/flights/request",
 ] as const;
