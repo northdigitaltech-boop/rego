@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Globe,
+  Plane,
   Newspaper,
   ImagePlus,
   Info,
@@ -961,6 +962,23 @@ export function AdminDashboard() {
                   </button>
                 );
               })}
+              {/* A LINK, not a tab.
+                  Flights lives on its own route rather than inside this file,
+                  which is already ~2,700 lines in one client component. An
+                  anchor here costs nothing and does not touch the Tab union
+                  or the tab logic — but without it the flights admin is
+                  reachable only by typing the URL, which is the same as not
+                  existing. */}
+              <Link
+                href="/admin/flights"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"
+              >
+                <Plane className="h-4 w-4" />
+                Flights
+              </Link>
+
+              <div className="my-2 border-t border-border" />
+
               <button
                 onClick={handleSignOut}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-forest hover:bg-muted"
