@@ -9,6 +9,7 @@ import { getCompanyById, getTeamMembers, getActivePackages, packagePriceLabel } 
 import { buildMetadata } from "@/lib/seo";
 import { formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
+import { ExpeditionQuoteButton } from "@/components/expeditions/expedition-booking-modal";
 
 export const revalidate = 60;
 
@@ -146,6 +147,23 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
                               </div>
                             </div>
                           )}
+
+                          {/* Per-package, so the enquiry arrives naming the
+                              package and prefilled with its peak, route and
+                              length — the provider should not have to ask
+                              which one somebody meant. */}
+                          <div className="mt-4 sm:max-w-xs">
+                            <ExpeditionQuoteButton
+                              subjectKind="package"
+                              subjectId={p.id}
+                              subjectTitle={`${p.title} — ${c.name}`}
+                              ownerEmail={p.owner_email ?? c.owner_email}
+                              defaultPeak={p.peak}
+                              defaultRoute={p.route}
+                              defaultDays={p.duration_days}
+                              label="Request this package"
+                            />
+                          </div>
                         </div>
                       </article>
                     ))}
@@ -205,8 +223,24 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
                 ) : (
                   <p className="font-display text-lg font-bold text-forest">Custom quotation</p>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">Contact the company to plan your expedition. In-platform quotations are coming soon.</p>
-                <div className="mt-4 space-y-2">
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Send the details and they will come back to you with a quote.
+                  Nothing is booked until you agree terms with them directly.
+                </p>
+
+                <div className="mt-4">
+                  <ExpeditionQuoteButton
+                    subjectKind="company"
+                    subjectId={c.id}
+                    subjectTitle={c.name}
+                    ownerEmail={c.owner_email}
+                  />
+                </div>
+
+                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Or reach them directly
+                </p>
+                <div className="mt-2 space-y-2">
                   {c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Phone className="h-4 w-4 text-forest-600" /> {c.phone}</a>}
                   {c.whatsapp && <a href={`https://wa.me/${c.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl bg-gradient-forest px-3 py-2.5 text-sm font-semibold text-white">WhatsApp</a>}
                   {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Mail className="h-4 w-4 text-forest-600" /> Email</a>}

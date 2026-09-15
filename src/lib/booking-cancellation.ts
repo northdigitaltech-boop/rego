@@ -7,7 +7,7 @@
  * one the button offered. When those two drift apart the user
  * sees a dead button and no explanation.
  *
- * REGO HAS TEN BOOKING TABLES, NOT ONE
+ * REGO HAS ELEVEN BOOKING TABLES, NOT ONE
  *   A hotel booking and a guide booking live in different
  *   tables with different column names, and the traveller's
  *   dashboard flattens all of them into one list — which loses
@@ -17,7 +17,7 @@
  *   table name that arrived in a request body.
  * ============================================================ */
 
-/** The ten kinds, and the table each one lives in. */
+/** The eleven kinds, and the table each one lives in. */
 export const BOOKING_TABLES = {
   hotel: "bookings",
   homestay: "homestay_bookings",
@@ -29,6 +29,9 @@ export const BOOKING_TABLES = {
   restaurant: "restaurant_bookings",
   activity: "activity_bookings",
   coworking: "coworking_bookings",
+  /* phase114. Created with the phase93 cancellation columns already on it,
+     so the cancel route works on row one rather than after a backfill. */
+  expedition: "expedition_bookings",
 } as const;
 
 export type BookingKind = keyof typeof BOOKING_TABLES;
@@ -49,7 +52,8 @@ export function tableForKind(kind: string): string | null {
 }
 
 /**
- * The columns phase93 adds to all ten booking tables.
+ * The columns phase93 adds to the ten booking tables that existed then, and
+ * that phase114 creates on expedition_bookings directly.
  *
  * Every one is optional, and that is not defensive typing — it is the shape
  * of the data. A booking made before phase93 has none of these, a booking

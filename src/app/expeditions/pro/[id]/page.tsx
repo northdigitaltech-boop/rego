@@ -9,6 +9,7 @@ import { getProById, getRoles, roleName } from "@/lib/expeditions";
 import { buildMetadata } from "@/lib/seo";
 import { formatPrice } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
+import { ExpeditionQuoteButton } from "@/components/expeditions/expedition-booking-modal";
 
 export const revalidate = 60;
 
@@ -93,8 +94,24 @@ export default async function ProDetail({ params }: { params: Promise<{ id: stri
                 )}
                 {p.package_rate ? <p className="text-sm text-muted-foreground">Package: {formatPrice(p.package_rate)}</p> : null}
                 <p className="mt-1 text-xs font-semibold capitalize text-forest-600">{p.availability_status || "available"}</p>
-                <p className="mt-2 text-xs text-muted-foreground">Contact to plan your expedition. In-platform hiring &amp; quotations are coming soon.</p>
-                <div className="mt-4 space-y-2">
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Send the details and they will come back to you. Nothing is
+                  booked until you agree terms with them directly.
+                </p>
+
+                <div className="mt-4">
+                  <ExpeditionQuoteButton
+                    subjectKind="professional"
+                    subjectId={p.id}
+                    subjectTitle={p.full_name}
+                    ownerEmail={p.owner_email}
+                  />
+                </div>
+
+                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Or reach them directly
+                </p>
+                <div className="mt-2 space-y-2">
                   {p.phone && <a href={`tel:${p.phone}`} className="flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-forest hover:bg-muted"><Phone className="h-4 w-4 text-forest-600" /> {p.phone}</a>}
                   {p.whatsapp && <a href={`https://wa.me/${p.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl bg-gradient-forest px-3 py-2.5 text-sm font-semibold text-white">WhatsApp</a>}
                 </div>

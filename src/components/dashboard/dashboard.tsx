@@ -287,6 +287,29 @@ export function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myBookings]);
 
+  /* Which of the provider's services is currently open (multi-service
+     accounts).
+
+     THIS MUST STAY ABOVE THE EARLY RETURN BELOW.
+       It used to sit further down, after `if (!ready || !user) return …`,
+       which breaks the Rules of Hooks and threw "Rendered more hooks than
+       during the previous render" on /dashboard — intermittently, which is
+       what made it look random:
+
+         first render, session still resolving → ready is false → the early
+         return fires → React records N hooks for this component.
+         next render, ready is true → execution reaches this line → N+1.
+         React compares the two counts and throws.
+
+       So it only happened when the FIRST render hit the loading branch: a
+       hard refresh or a cold visit failed, a soft navigation with the
+       session already warm did not. `next.config` has
+       eslint.ignoreDuringBuilds, so react-hooks/rules-of-hooks never got to
+       say so at build time.
+
+     Every hook in this component belongs above the early return. */
+  const [activeService, setActiveService] = React.useState<string | undefined>(undefined);
+
   if (!ready || !user) {
     return (
       <div className="container-px py-24 text-center text-muted-foreground">
@@ -301,9 +324,6 @@ export function Dashboard() {
     logout();
     router.push("/");
   };
-
-  // Which of the provider's services is currently open (multi-service accounts).
-  const [activeService, setActiveService] = React.useState<string | undefined>(undefined);
 
   if (user.role === "partner") {
     // A provider may run several services from one account. `activeService`

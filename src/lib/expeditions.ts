@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isUuid } from "@/lib/hotels";
 import { type Listing } from "@/lib/data";
+import { type CancellationFields } from "@/lib/booking-cancellation";
 
 /* ================================================================== */
 /* Types                                                               */
@@ -409,4 +410,121 @@ export async function deletePackage(id: string) {
 export function packagePriceLabel(p: ExpeditionPackageRow): string {
   if (p.price_per_person == null) return "Quote on request";
   return `${p.currency} ${Number(p.price_per_person).toLocaleString()} / person`;
+}
+
+/* ==================================================================
+ * Bookings — phase114
+ *
+ * The eleventh booking table in an established pattern, not a new
+ * system. Shaped like activity_bookings so the traveller dashboard,
+ * the cancel route and admin analytics already know how to read it.
+ *
+ * ONE ROW, THREE POSSIBLE SUBJECTS
+ *   A traveller can want a company, an individual professional, or
+ *   one of a company's packages. subject_kind says which, and the
+ *   database CHECK refuses a row that sets the wrong id for its kind
+ *   — so a caller cannot half-fill this and have it stored.
+ *
+ * NOTHING HERE IS AUTHORISATION
+ *   Who may read a booking is decided by the phase114 policies: the
+ *   traveller who sent it, the provider it went to, and an admin.
+ *   These functions get an empty list from Postgres, not from a
+ *   filter written here.
+ * ================================================================== */
+
+export type ExpeditionSubjectKind = "company" | "professional" | "package";
+
+export interface ExpeditionBookingRow extends CancellationFields {
+  id: string;
+  subject_kind: ExpeditionSubjectKind;
+  company_id: string | null;
+  pro_id: string | null;
+  package_id: string | null;
+  subject_title: string | null;
+  owner_email: string | null;
+  customer_email: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  peak: string | null;
+  route: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  days: number | null;
+  people: number;
+  experience_level: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface ExpeditionBookingInput {
+  subject_kind: ExpeditionSubjectKind;
+  company_id?: string | null;
+  pro_id?: string | null;
+  package_id?: string | null;
+  subject_title: string | null;
+  owner_email: string | null;
+  customer_email: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  peak?: string | null;
+  route?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  days?: number | null;
+  people: number;
+  experience_level?: string | null;
+  notes?: string | null;
+}
+
+export async function createExpeditionBooking(input: ExpeditionBookingInput) {
+  return supabase.from("expedition_bookings").insert(input).select().single();
+}
+
+/** For a provider: everything sent to them, newest first. */
+export async function getExpeditionBookingsByOwner(
+  email: string
+): Promise<ExpeditionBookingRow[]> {
+  if (!isSupabaseConfigured || !email) return [];
+  const { data } = await supabase
+    .from("expedition_bookings")
+    .select("*")
+    .eq("owner_email", email)
+    .order("created_at", { ascending: false });
+  return (data as ExpeditionBookingRow[]) ?? [];
+}
+
+/** For a traveller: everything they have asked for. */
+export async function getExpeditionBookingsByCustomer(
+  email: string
+): Promise<ExpeditionBookingRow[]> {
+  if (!isSupabaseConfigured || !email) return [];
+  const { data } = await supabase
+    .from("expedition_bookings")
+    .select("*")
+    .eq("customer_email", email)
+    .order("created_at", { ascending: false });
+  return (data as ExpeditionBookingRow[]) ?? [];
+}
+
+/** For an admin. The policy, not this function, is what limits it. */
+export async function getAllExpeditionBookings(): Promise<ExpeditionBookingRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from("expedition_bookings")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as ExpeditionBookingRow[]) ?? [];
+}
+
+export async function setExpeditionBookingStatus(
+  id: string,
+  status: "accepted" | "rejected" | "completed"
+) {
+  return supabase.from("expedition_bookings").update({ status }).eq("id", id);
+}
+
+/** Same shape as every other reference in Rego, so support can read it aloud. */
+export function expeditionBookingRef(id: string) {
+  return "EXP-" + id.replace(/-/g, "").slice(0, 8).toUpperCase();
 }

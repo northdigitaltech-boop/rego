@@ -15,6 +15,7 @@ import {
   type ExpeditionTeamMember, type ExpeditionPackageRow, type PackageGroupTier,
 } from "@/lib/expeditions";
 import { ExpeditionRegisterWizard } from "@/components/dashboard/expedition-register";
+import { ExpeditionRequests } from "@/components/dashboard/expedition-requests";
 
 const COMPANY_SERVICES = [
   "Complete expedition packages", "Base camp trekking", "Mountain guide services", "Trekking guide services",
@@ -81,7 +82,9 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
   const [roles, setRoles] = React.useState<ExpeditionRole[]>([]);
   const [peaks, setPeaks] = React.useState<ExpeditionPeak[]>([]);
   const [routes, setRoutes] = React.useState<ExpeditionRoute[]>([]);
-  const [tab, setTab] = React.useState<"profile" | "team" | "packages">("profile");
+  const [tab, setTab] = React.useState<
+    "profile" | "team" | "packages" | "requests"
+  >("profile");
 
   const load = React.useCallback(async () => {
     const [c, p, r, pk, rt] = await Promise.all([
@@ -119,6 +122,7 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
             {(
               [
                 ["profile", "Company Profile"],
+                ["requests", "Requests"],
                 ["team", "Team"],
                 ["packages", "Packages & Pricing"],
               ] as const
@@ -139,13 +143,46 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
             ))}
           </div>
           {tab === "profile" && <CompanyForm company={company!} peaks={peaks} routes={routes} onSaved={load} />}
+          {tab === "requests" && <ExpeditionRequests ownerEmail={user.email} />}
           {tab === "team" && <TeamManager companyId={company!.id} roles={roles} />}
           {tab === "packages" && (
             <PackagesManager company={company!} peaks={peaks} routes={routes} />
           )}
         </>
       ) : (
-        <ProForm pro={pro!} roles={roles} peaks={peaks} routes={routes} onSaved={load} />
+        /* An individual had no tabs at all — just the form — because there
+           was nothing else to show. Now there is. */
+        <>
+          <div className="mb-6 flex flex-wrap gap-2">
+            {(
+              [
+                ["profile", "My Profile"],
+                ["requests", "Requests"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={
+                  "rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 " +
+                  (tab === id
+                    ? "bg-gradient-forest text-white shadow-soft"
+                    : "border border-border bg-card text-forest hover:bg-muted")
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {tab === "requests" ? (
+            <ExpeditionRequests ownerEmail={user.email} />
+          ) : (
+            /* Any company-only tab left over from switching profile type
+               falls back to the form rather than rendering nothing. */
+            <ProForm pro={pro!} roles={roles} peaks={peaks} routes={routes} onSaved={load} />
+          )}
+        </>
       )}
     </div>
   );
