@@ -120,16 +120,28 @@ function findRoutes(origin: string, destination: string, maxStops: number): Mock
 /* Time helpers                                                        */
 /* ------------------------------------------------------------------ */
 
-function isoWithOffset(dateIso: string, minuteOfDay: number, offsetMinutes: number): string {
-  const base = new Date(`${dateIso}T00:00:00Z`);
-  base.setUTCMinutes(base.getUTCMinutes() + minuteOfDay - offsetMinutes);
+/* ------------------------------------------------------------------
+ * Times are carried as a UTC INSTANT (milliseconds) and only turned into
+ * a string at the last moment, with the offset of the airport it belongs to.
+ *
+ * The first version of this formatted departures correctly and then built
+ * arrivals with `new Date(...).toISOString()` — which always returns UTC. So
+ * ISB→DXB showed "departs 04:25, arrives 02:20, 2h 55m": the departure in
+ * Islamabad time, the arrival in UTC, and a duration that matched neither.
+ *
+ * Every timestamp now goes through isoAt() with an explicit offset. There is
+ * no path that produces a bare Z string.
+ * ------------------------------------------------------------------ */
+
+/** Local clock time at an airport, as an ISO string carrying its offset. */
+function isoAt(instantMs: number, offsetMinutes: number): string {
+  const local = new Date(instantMs + offsetMinutes * 60_000);
 
   const sign = offsetMinutes >= 0 ? "+" : "-";
   const abs = Math.abs(offsetMinutes);
   const oh = String(Math.floor(abs / 60)).padStart(2, "0");
   const om = String(abs % 60).padStart(2, "0");
 
-  const local = new Date(base.getTime() + offsetMinutes * 60_000);
   const y = local.getUTCFullYear();
   const mo = String(local.getUTCMonth() + 1).padStart(2, "0");
   const d = String(local.getUTCDate()).padStart(2, "0");
@@ -139,8 +151,10 @@ function isoWithOffset(dateIso: string, minuteOfDay: number, offsetMinutes: numb
   return `${y}-${mo}-${d}T${h}:${mi}:00${sign}${oh}:${om}`;
 }
 
-const addMinutesIso = (iso: string, minutes: number): string =>
-  new Date(new Date(iso).getTime() + minutes * 60_000).toISOString();
+/** The UTC instant of a local departure time on a given date. */
+function instantOf(dateIso: string, minuteOfDay: number, offsetMinutes: number): number {
+  return Date.parse(`${dateIso}T00:00:00Z`) + (minuteOfDay - offsetMinutes) * 60_000;
+}
 
 /* ------------------------------------------------------------------ */
 /* Fare building                                                       */
@@ -201,6 +215,25 @@ export class MockFlightProvider implements FlightProvider {
       hashString(`${origin}${destination}${leg.departureDate}${request.cabin}`)
     );
 
+    /* The return leg. A round trip arrives as two legs; the second is the way
+       home, and an offer must carry both or the customer is shown half of
+       what they asked for. */
+    const returnLeg = request.tripType === "round_trip" ? request.legs[1] : null;
+    const returnRoutes = returnLeg
+      ? findRoutes(
+          returnLeg.origin.toUpperCase(),
+          returnLeg.destination.toUpperCase(),
+          request.maxStops ?? 2
+        )
+      : [];
+
+    if (returnLeg && returnRoutes.length === 0) {
+      /* Nothing flies back in the fixtures. Returning outbound-only offers
+         would be worse than returning none: the customer would book a flight
+         home that does not exist. */
+      return [];
+    }
+
     const offers: FlightOffer[] = [];
 
     for (const route of routes) {
@@ -209,12 +242,21 @@ export class MockFlightProvider implements FlightProvider {
            the results list from looking machine-generated. */
         if (route.length > 1 && family.code === "ECOLITE" && rand() > 0.5) continue;
 
+        /* Pair each outbound with one return rather than every combination:
+           N×M offers is how a results page becomes unreadable. Real inventory
+           is priced as a round trip, not as a cartesian product. */
+        const returnRoute = returnLeg
+          ? returnRoutes[Math.min(routes.indexOf(route), returnRoutes.length - 1)]
+          : null;
+
         const offer = this.buildOffer({
           route,
+          returnRoute,
           family,
           request,
           rand,
           departureDate: leg.departureDate,
+          returnDate: returnLeg?.departureDate ?? null,
         });
         offers.push(offer);
       }
@@ -225,40 +267,37 @@ export class MockFlightProvider implements FlightProvider {
     );
   }
 
-  private buildOffer(input: {
+  /** One leg → one itinerary. Times computed as instants, formatted locally. */
+  private buildItinerary(input: {
     route: MockHop[];
-    family: (typeof MOCK_FARE_FAMILIES)[number];
-    request: FlightSearchRequest;
-    rand: () => number;
+    cabin: CabinClass;
     departureDate: string;
-  }): FlightOffer {
-    const { route, family, request, rand, departureDate } = input;
-    const cabin: CabinClass = request.cabin;
+    rand: () => number;
+    keySuffix: string;
+  }): FlightItinerary {
+    const { route, cabin, departureDate, rand, keySuffix } = input;
 
     const segments: FlightSegment[] = [];
     const layovers: FlightLayover[] = [];
-    let cursorIso: string | null = null;
+    let cursorMs = 0;
 
     route.forEach((hop, i) => {
       const originAirport = MOCK_AIRPORTS[hop.from];
       const destAirport = MOCK_AIRPORTS[hop.to];
 
-      const departureAt =
+      const departMs =
         i === 0
-          ? isoWithOffset(departureDate, hop.departMinuteOfDay, originAirport.utcOffsetMinutes)
+          ? instantOf(departureDate, hop.departMinuteOfDay, originAirport.utcOffsetMinutes)
           : /* Connect 75–240 minutes after the previous arrival. */
-            addMinutesIso(cursorIso!, 75 + Math.floor(rand() * 165));
+            cursorMs + (75 + Math.floor(rand() * 165)) * 60_000;
 
-      const arrivalAt = addMinutesIso(departureAt, hop.durationMinutes);
+      const arriveMs = departMs + hop.durationMinutes * 60_000;
 
-      if (i > 0 && cursorIso) {
-        const wait = Math.round(
-          (new Date(departureAt).getTime() - new Date(cursorIso).getTime()) / 60_000
-        );
+      if (i > 0) {
         layovers.push({
           airportCode: hop.from,
           airportName: originAirport.name,
-          durationMinutes: wait,
+          durationMinutes: Math.round((departMs - cursorMs) / 60_000),
           changeOfAirport: false,
           requiresRecheck:
             originAirport.countryCode !== destAirport.countryCode ? null : false,
@@ -266,7 +305,7 @@ export class MockFlightProvider implements FlightProvider {
       }
 
       segments.push({
-        id: `mock-seg-${hop.carrier}${hop.flightNumber}-${i}`,
+        id: `mock-seg-${hop.carrier}${hop.flightNumber}-${keySuffix}-${i}`,
         carrierCode: hop.carrier,
         carrierName: MOCK_AIRLINES[hop.carrier]?.name ?? hop.carrier,
         operatingCarrierCode: null,
@@ -275,11 +314,12 @@ export class MockFlightProvider implements FlightProvider {
         originCode: hop.from,
         originName: originAirport.name,
         originTerminal: null,
-        departureAt,
+        /* Each end formatted with ITS OWN airport's offset. */
+        departureAt: isoAt(departMs, originAirport.utcOffsetMinutes),
         destinationCode: hop.to,
         destinationName: destAirport.name,
         destinationTerminal: null,
-        arrivalAt,
+        arrivalAt: isoAt(arriveMs, destAirport.utcOffsetMinutes),
         durationMinutes: hop.durationMinutes,
         aircraftCode: hop.aircraft,
         aircraftName: hop.aircraftName,
@@ -287,25 +327,63 @@ export class MockFlightProvider implements FlightProvider {
         bookingClass: null,
       });
 
-      cursorIso = arrivalAt;
+      cursorMs = arriveMs;
     });
 
-    const totalDurationMinutes = Math.round(
-      (new Date(segments[segments.length - 1].arrivalAt).getTime() -
-        new Date(segments[0].departureAt).getTime()) /
-        60_000
+    /* Elapsed time from the first departure instant to the last arrival
+       instant — not a subtraction of two local clock strings, which would be
+       wrong by the difference between the two time zones. */
+    const firstDepartMs = instantOf(
+      departureDate,
+      route[0].departMinuteOfDay,
+      MOCK_AIRPORTS[route[0].from].utcOffsetMinutes
     );
 
-    const itinerary: FlightItinerary = {
-      id: `mock-itin-${segments.map((s) => s.id).join("_")}`,
+    return {
+      id: `mock-itin-${keySuffix}-${segments.map((s) => s.id).join("_")}`,
       segments,
       layovers,
-      totalDurationMinutes,
+      totalDurationMinutes: Math.round((cursorMs - firstDepartMs) / 60_000),
       stopCount: segments.length - 1,
     };
+  }
 
-    /* Fare: sum the hops, apply cabin and family, scale by party size. */
-    const hopTotal = route.reduce((sum, h) => sum + hopFare(h), 0);
+  private buildOffer(input: {
+    route: MockHop[];
+    returnRoute: MockHop[] | null;
+    family: (typeof MOCK_FARE_FAMILIES)[number];
+    request: FlightSearchRequest;
+    rand: () => number;
+    departureDate: string;
+    returnDate: string | null;
+  }): FlightOffer {
+    const { route, returnRoute, family, request, rand, departureDate, returnDate } = input;
+    const cabin: CabinClass = request.cabin;
+
+    const itineraries: FlightItinerary[] = [
+      this.buildItinerary({ route, cabin, departureDate, rand, keySuffix: "out" }),
+    ];
+
+    /* The return leg. Its absence was a real bug: a round-trip search came
+       back showing only the outbound, with no indication the return had been
+       dropped — the worst kind, because the result looks complete. */
+    if (returnRoute && returnDate) {
+      itineraries.push(
+        this.buildItinerary({
+          route: returnRoute,
+          cabin,
+          departureDate: returnDate,
+          rand,
+          keySuffix: "ret",
+        })
+      );
+    }
+
+    const segments = itineraries[0].segments;
+
+    /* Fare: sum the hops on every leg, apply cabin and family, scale by party. */
+    const allHops = returnRoute ? [...route, ...returnRoute] : route;
+    const hopTotal = allHops.reduce((sum, h) => sum + hopFare(h), 0);
     const perUnit = hopTotal * CABIN_MULTIPLIER[cabin] * family.multiplier;
     const units = passengerUnits(request.passengers);
     const baseAmount = Math.round(perUnit * units);
@@ -349,12 +427,15 @@ export class MockFlightProvider implements FlightProvider {
     };
 
     const validating = segments[0].carrierCode;
+    /* Keyed on every itinerary, so the outbound and the round trip that
+       shares it are different offers rather than colliding on one id. */
+    const offerKey = hashString(itineraries.map((it) => it.id).join("|") + family.code);
 
     return {
-      id: `mock-offer-${hashString(itinerary.id + family.code)}`,
+      id: `mock-offer-${offerKey}`,
       providerId: PROVIDER_ID,
-      providerOfferId: `MOCK-${hashString(itinerary.id + family.code)}`,
-      itineraries: [itinerary],
+      providerOfferId: `MOCK-${offerKey}`,
+      itineraries,
       fare,
       validatingCarrierCode: validating,
       validatingCarrierName: MOCK_AIRLINES[validating]?.name ?? validating,

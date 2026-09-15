@@ -110,7 +110,12 @@ create index if not exists airlines_iata_idx on public.airlines (iata_code);
 /* ============================================================
  * updated_at
  * ============================================================ */
-create or replace function public.touch_updated_at()
+/* Prefixed, like every other touch function in this schema
+   (touch_staff_seen, touch_expedition_updated_at, touch_sub_updated_at).
+   A bare public.touch_updated_at() would be the single most likely name for
+   a future migration — or a Supabase template — to define and silently
+   replace, and a replaced trigger function fails quietly. */
+create or replace function public.touch_flight_updated_at()
 returns trigger
 language plpgsql
 as $fn$
@@ -121,11 +126,11 @@ end $fn$;
 
 drop trigger if exists trg_airports_touch on public.airports;
 create trigger trg_airports_touch before update on public.airports
-  for each row execute function public.touch_updated_at();
+  for each row execute function public.touch_flight_updated_at();
 
 drop trigger if exists trg_airlines_touch on public.airlines;
 create trigger trg_airlines_touch before update on public.airlines
-  for each row execute function public.touch_updated_at();
+  for each row execute function public.touch_flight_updated_at();
 
 
 /* ============================================================
@@ -285,6 +290,6 @@ select
  *   drop table if exists public.airports;
  *   drop table if exists public.airlines;
  *
- * public.touch_updated_at() is intentionally NOT dropped — later phases
- * use it, and it is harmless on its own.
+ * public.touch_flight_updated_at() is intentionally NOT dropped — phase117
+ * uses it, and it is harmless on its own.
  * ------------------------------------------------------------------ */

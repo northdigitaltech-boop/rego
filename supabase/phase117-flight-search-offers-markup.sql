@@ -29,6 +29,22 @@ begin
   end if;
 end $$;
 
+/* Defined here as well as in phase116, on purpose.
+   A migration must not depend on WHICH REVISION of an earlier migration was
+   run. An early phase116 created this function under a different name, and a
+   database that had it produced "42883: function does not exist" here —
+   which is a versioning problem masquerading as a missing dependency.
+   `create or replace` with an identical body is idempotent, so defining it
+   in both files costs nothing and removes the ordering trap entirely. */
+create or replace function public.touch_flight_updated_at()
+returns trigger
+language plpgsql
+as $fn$
+begin
+  new.updated_at = now();
+  return new;
+end $fn$;
+
 
 /* ============================================================
  * SEARCHES — an audit and analytics trail, not a cache key
@@ -120,7 +136,15 @@ create table if not exists public.flight_offers (
 );
 
 create index if not exists flight_offers_search_idx on public.flight_offers (search_id);
-create index if not exists flight_offers_live_idx on public.flight_offers (expires_at) where expires_at > now();
+
+/* Plain index on expires_at, NOT a partial index.
+   `... where expires_at > now()` is the obvious thing to write and Postgres
+   refuses it: 42P17, "functions in index predicate must be marked
+   IMMUTABLE". now() is STABLE — it changes between statements — so an index
+   built on it could never stay correct. A plain b-tree on expires_at answers
+   the same `expires_at > now()` queries at this table's size. */
+create index if not exists flight_offers_live_idx on public.flight_offers (expires_at);
+
 create index if not exists flight_offers_route_idx on public.flight_offers (origin, destination, departure_at);
 
 
@@ -177,7 +201,7 @@ create index if not exists fmr_active_idx on public.flight_markup_rules (is_acti
 
 drop trigger if exists trg_fmr_touch on public.flight_markup_rules;
 create trigger trg_fmr_touch before update on public.flight_markup_rules
-  for each row execute function public.touch_updated_at();
+  for each row execute function public.touch_flight_updated_at();
 
 
 /* ============================================================

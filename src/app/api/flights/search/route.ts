@@ -394,8 +394,24 @@ export async function POST(req: Request) {
     .select("id, provider_offer_id");
 
   if (saveError) {
-    console.warn("[flights/search] could not persist offers:", saveError.message);
-    return bad("We found flights but could not hold the prices. Please search again.", 500);
+    /* The correlation id goes to the customer too. "Please search again" was
+       the original wording and it was wrong: this failure is structural — a
+       missing table, a constraint, a bad column — so retrying produces the
+       identical error and wastes the person's time while telling us nothing. */
+    console.warn(
+      "[flights/search] could not persist offers:",
+      JSON.stringify({ correlationId, message: saveError.message, code: saveError.code })
+    );
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "We found flights but could not save the prices, so we cannot show " +
+          "them safely. This has been logged and our team can see it.",
+        correlationId,
+      },
+      { status: 500 }
+    );
   }
 
   /* Swap in the stored row ids. From here on the browser refers to offers by
