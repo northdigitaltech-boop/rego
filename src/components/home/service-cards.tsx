@@ -19,7 +19,7 @@ import { Reveal } from "@/components/ui/reveal";
  *  - food     → restaurants (image-forward tiles)
  * ============================================================ */
 
-export type ServiceCardVariant = "default" | "person" | "brand" | "spec" | "journey" | "food";
+import { type ServiceCardVariant } from "@/components/home/service-card-variants";
 
 /* Wrap used to compute a framer-motion delay from index. Reveal takes the
    same index and staggers with a CSS transition-delay instead. */
@@ -237,15 +237,7 @@ export function ServiceCard({
   return <ListingCard listing={listing} hidePrice={hidePrice} />;
 }
 
-/** Grid column classes tuned per card form (and how many items exist, so a
- *  single listing fills the row instead of leaving half the section empty). */
-export function gridForVariant(v: ServiceCardVariant, count = 4): string {
-  if (v === "spec" || v === "journey") {
-    return count <= 1
-      ? "grid grid-cols-1 gap-3"
-      : "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5";
-  }
-  if (count === 1) return "grid grid-cols-1 gap-3 sm:max-w-sm";
-  if (count === 2) return "grid grid-cols-2 gap-3 sm:gap-5 lg:max-w-3xl";
-  return "grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4";
-}
+/* gridForVariant and ServiceCardVariant moved to ./service-card-variants,
+   which has no "use client" — a server component cannot import a function
+   from a client module. Re-exported here so existing imports keep working. */
+export { gridForVariant, type ServiceCardVariant } from "@/components/home/service-card-variants";

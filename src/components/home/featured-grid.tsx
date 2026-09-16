@@ -12,7 +12,13 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { HotelCarousel } from "@/components/home/hotel-carousel";
-import { ServiceCard, gridForVariant, type ServiceCardVariant } from "@/components/home/service-cards";
+import { ServiceCard } from "@/components/home/service-cards";
+/* From the neutral module, not service-cards — that one is "use client", and
+   a server component cannot call a function exported from a client module. */
+import {
+  gridForVariant,
+  type ServiceCardVariant,
+} from "@/components/home/service-card-variants";
 import { Reveal } from "@/components/ui/reveal";
 import { type Listing } from "@/lib/data";
 import { cn } from "@/lib/utils";
