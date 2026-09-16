@@ -92,7 +92,7 @@ export default function FlightsPage() {
                 <Plane className="h-3.5 w-3.5" /> Flights
               </span>
               <h1 className="mt-3 font-display text-3xl font-bold text-white sm:text-4xl">
-                {liveSearch ? "Fly with Rego" : "Fly to Gilgit & Skardu"}
+                {liveSearch ? "Book with Rego" : "Fly to Gilgit & Skardu"}
               </h1>
 
               {/* The subline carries the destinations the H1 used to.

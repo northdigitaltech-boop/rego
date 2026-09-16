@@ -35,6 +35,14 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
  * text input, which is exactly what it replaced.
  * ============================================================ */
 
+/**
+ * Levels that contain places rather than being one.
+ *
+ * Kept as data next to the query it filters, so the reason is visible: a
+ * provider is based in a city or a valley, not in a Division or a Country.
+ */
+const CONTAINER_TYPES = new Set(["country", "region", "division"]);
+
 /** Cached for the tab: every form on the page would otherwise fetch it. */
 let cache: string[] | null = null;
 let inFlight: Promise<string[]> | null = null;
@@ -45,27 +53,61 @@ async function loadPlaces(): Promise<string[]> {
   if (!isSupabaseConfigured) return [];
 
   inFlight = (async () => {
-    const names = new Set<string>();
+    /* Keyed by lowercase name, so "GILGIT" and "Gilgit" are ONE suggestion.
+       A plain Set of strings deduped only exact matches, which is why the
+       list showed both — locations spells it one way, destinations the
+       other, and neither is wrong. */
+    const byKey = new Map<string, string>();
+
+    /** Keeps the better-looking spelling when the same place arrives twice. */
+    const offer = (raw?: string | null) => {
+      const name = raw?.trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, name);
+        return;
+      }
+      /* Prefer the one that is not shouting. "Gilgit" over "GILGIT",
+         "Astore Valley" over "ASTORE VALLEY" — both are the same place and
+         the form should suggest the readable one. */
+      const existingIsShouting = existing === existing.toUpperCase();
+      const incomingIsShouting = name === name.toUpperCase();
+      if (existingIsShouting && !incomingIsShouting) byKey.set(key, name);
+    };
+
     try {
       /* Both tables, because they hold different things: locations is the
          administrative tree (districts, cities, valleys), destinations is
          the smaller set travellers browse. A provider might reasonably type
          either. */
       const [loc, dest] = await Promise.all([
-        supabase.from("locations").select("name").limit(500),
+        supabase.from("locations").select("name, location_type").limit(500),
         supabase.from("destinations").select("name").limit(200),
       ]);
-      for (const r of (loc.data ?? []) as { name?: string }[]) {
-        if (r.name?.trim()) names.add(r.name.trim());
+
+      for (const r of (loc.data ?? []) as {
+        name?: string;
+        location_type?: string;
+      }[]) {
+        /* Administrative containers are not places anyone is BASED in. A
+           provider says "Gilgit" or "Hunza", never "Gilgit Division" or
+           "Pakistan" — and offering those invites a listing filed against a
+           whole province, which no traveller's filter will ever match. */
+        if (CONTAINER_TYPES.has(r.location_type ?? "")) continue;
+        offer(r.name);
       }
+
       for (const r of (dest.data ?? []) as { name?: string }[]) {
-        if (r.name?.trim()) names.add(r.name.trim());
+        offer(r.name);
       }
     } catch {
       /* Offline, or the tables are not there. An empty list means the input
          behaves exactly as it did before this existed. */
     }
-    cache = [...names].sort((a, b) => a.localeCompare(b));
+
+    cache = [...byKey.values()].sort((a, b) => a.localeCompare(b));
     inFlight = null;
     return cache;
   })();
