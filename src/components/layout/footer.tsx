@@ -48,8 +48,32 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.2fr]">
           {/* Brand */}
           <div className="max-w-xs">
-            <Link href="/" aria-label="Rego home" className="inline-block">
+            {/* The ™ sits OUTSIDE the logo image rather than being baked into
+                it. Two reasons: the logo file stays a clean mark that can be
+                reused on merchandise, print and partner material where a ™
+                may not belong; and the symbol keeps its own text size and
+                colour instead of scaling with — and blurring alongside — the
+                artwork.
+
+                `relative` on the wrapper and `absolute` on the symbol pins it
+                to the top-right of the logo's own box, so it tracks the mark
+                at any height rather than floating at a fixed offset.
+
+                aria-hidden: a screen reader announcing "trade mark" after the
+                brand name on every page is noise, and the accessible name
+                already comes from the link's aria-label. */}
+            <Link
+              href="/"
+              aria-label="Rego home"
+              className="relative inline-block"
+            >
               <BrandLogo className="h-20 w-auto mix-blend-screen" />
+              <span
+                aria-hidden="true"
+                className="absolute -right-3 top-1 text-[10px] font-semibold leading-none text-white/70"
+              >
+                ™
+              </span>
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-white/65">
               Rego is your complete travel marketplace for exploring the beauty
