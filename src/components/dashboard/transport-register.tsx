@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { NameInput } from "@/components/ui/name-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { attachStashedReferral } from "@/lib/referral";
 import {
@@ -174,9 +175,9 @@ export function TransportRegisterWizard({
       content: (
         <>
           <L label="Business name" required>
-            <input
+            <NameInput
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={setName}
               className="auth-input"
               placeholder="e.g. Hunza Rides & Rentals"
               autoFocus

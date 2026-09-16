@@ -5,6 +5,7 @@ import { Building2, UserRound } from "lucide-react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { NameInput } from "@/components/ui/name-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { attachStashedReferral } from "@/lib/referral";
 import {
@@ -176,9 +177,9 @@ export function ExpeditionRegisterWizard({
       content: (
         <>
           <L label={isCompany ? "Company name" : "Your full name"} required>
-            <input
+            <NameInput
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={setName}
               className="auth-input"
               placeholder={isCompany ? "e.g. Baltoro Expeditions" : ""}
               autoFocus

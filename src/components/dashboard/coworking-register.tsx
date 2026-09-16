@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { NameInput } from "@/components/ui/name-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { attachStashedReferral } from "@/lib/referral";
 import {
@@ -108,10 +109,10 @@ export function CoworkingRegisterWizard({
       content: (
         <>
           <L label="Name of the space" required>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="auth-input" placeholder="e.g. Karakoram Co-work" autoFocus />
+            <NameInput value={name} onChange={setName} className="auth-input" placeholder="e.g. Karakoram Co-work" autoFocus />
           </L>
           <L label="Owner / manager name">
-            <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className="auth-input" />
+            <NameInput value={ownerName} onChange={setOwnerName} className="auth-input" />
           </L>
           <div className="grid gap-4 sm:grid-cols-2">
             <L label="Phone">

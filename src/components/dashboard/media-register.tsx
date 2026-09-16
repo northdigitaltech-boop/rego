@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { NameInput } from "@/components/ui/name-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { attachStashedReferral } from "@/lib/referral";
 import {
@@ -132,7 +133,7 @@ export function MediaRegisterWizard({
       content: (
         <>
           <L label="Your name or studio name" required>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="auth-input" autoFocus />
+            <NameInput value={name} onChange={setName} className="auth-input" autoFocus />
           </L>
           <L label="What do you do?">
             <select value={serviceType} onChange={(e) => setServiceType(e.target.value)} className="auth-input">

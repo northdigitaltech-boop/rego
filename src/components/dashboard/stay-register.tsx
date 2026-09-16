@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { ImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
+import { NameInput } from "@/components/ui/name-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
 import { attachStashedReferral } from "@/lib/referral";
 import {
@@ -238,9 +239,9 @@ export function StayRegisterWizard({
       content: (
         <>
           <L label={c.nameLabel} required>
-            <input
+            <NameInput
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={setTitle}
               className="auth-input"
               placeholder={c.namePlaceholder}
               autoFocus
