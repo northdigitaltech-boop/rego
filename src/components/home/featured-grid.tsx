@@ -1,4 +1,12 @@
-"use client";
+/* NOT a client component — it has no state, no effects and no handlers.
+   It was marked "use client" only because it imports three components that
+   are, and that is not a reason: a server component may render client ones.
+
+   The cost of the old marking: this file appears eight times on the
+   homepage, and every one of those instances was a client boundary the
+   browser had to hydrate before the page settled. The interactive parts —
+   Reveal, ServiceCard, HotelCarousel — are still client components and still
+   hydrate. The wrapper around them no longer needs to. */
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";

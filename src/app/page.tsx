@@ -13,7 +13,6 @@ import {
   RentalsSection,
   RoadsideSection,
   EventsSection,
-  PlatformStats,
 } from "@/components/home/curated-sections";
 import { DeferredCreators } from "@/components/home/deferred-creators";
 import { RoadsideProviderGrid } from "@/components/home/roadside-grid";
@@ -24,7 +23,7 @@ import { SoloConnectSection } from "@/components/home/solo-connect-section";
 import { SafarnamaSection } from "@/components/home/safarnama-section";
 import { PromoCarousel } from "@/components/home/promo-carousel";
 import { DeferredMarketing } from "@/components/home/deferred-marketing";
-import { NewsletterSection } from "@/components/home/newsletter-section";
+import { DeferredTail } from "@/components/home/deferred-tail";
 import { getActiveAdSlides } from "@/lib/ad-slides";
 import {
   feedHotels,
@@ -257,11 +256,10 @@ export default async function Home() {
         {/* AI CTA, Why Us & Testimonials — lazy-loaded (non-SEO marketing tail). */}
         <DeferredMarketing />
 
-        {/* Platform Statistics */}
-        <PlatformStats />
-
-        {/* Newsletter signup (premium email-capture band) */}
-        <NewsletterSection />
+        {/* Platform statistics and the newsletter band, on the same terms:
+            below fifteen other sections, no SEO weight, and their JavaScript
+            was loading on arrival for readers who never scrolled that far. */}
+        <DeferredTail />
       </main>
       <Footer />
     </>
