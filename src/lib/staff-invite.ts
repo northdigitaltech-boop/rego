@@ -70,8 +70,13 @@ export async function sendStaffInvite(
       Hello ${esc(who)},
     </p>
     <p style="margin:0 0 14px;font-size:15px;line-height:1.6;">
-      ${input.invitedBy ? `${esc(input.invitedBy)} has added you` : "You have been added"}
-      to the team at Rego${position ? ` as <strong>${position}</strong>` : ""}.
+      ${/* The inviter's personal email is deliberately NOT printed here.
+             It read as "northdigitaltech@gmail.com has added you", which
+             makes a company invitation look like it came from a stranger's
+             private address — and it publishes an admin's email to every
+             new joiner, including anyone the address is later forwarded to.
+             The invitation is from Rego, not from one person's inbox. */ ""}
+      You have been added to the team at Rego${position ? ` as <strong>${position}</strong>` : ""}.
       Your employee code is <strong>${esc(input.employeeCode)}</strong>.
     </p>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;">

@@ -252,7 +252,23 @@ export async function POST(req: Request) {
           email,
           options: {
             redirectTo: absoluteUrl("/reset-password?welcome=1"),
-            data: fullName ? { full_name: fullName } : undefined,
+            /* `role` in user metadata is what RoleSetupGate reads as
+               "this person has already been given a role" — it checks
+               Boolean(meta.role), nothing more.
+
+               Without it, a staff member who set their password landed on
+               "How will you use Rego? Traveller / Business Partner", which
+               is a question they should never be asked: an admin already
+               decided, and neither answer is true. Worse, answering it would
+               have made them a traveller or a partner.
+
+               This does NOT change what they can do. Permissions come from
+               staff_members and staff_can(); user.role still comes from the
+               profiles row. This only stops the gate firing. */
+            data: {
+              role: "staff",
+              ...(fullName ? { full_name: fullName } : {}),
+            },
           },
         });
 
