@@ -41,6 +41,7 @@ import { getLocations, getMarkets, type LocationRow } from "@/lib/markets";
 import { StaffThread } from "@/components/portal/staff-thread";
 import { useAuth } from "@/components/auth/auth-context";
 import { unreadByStaff } from "@/lib/staff-messages";
+import { StaffAnalyticsPanel } from "@/components/dashboard/staff-analytics-panel";
 import { cn } from "@/lib/utils";
 
 /* ============================================================
@@ -1152,6 +1153,18 @@ function MemberDetail({
         <AssignTask member={member} onError={onError} />
 
         <RemoveMember member={member} onRemoved={onRemoved} onError={onError} />
+      </div>
+
+      {/* ---- performance ----
+          Directly under the member's card and above permissions, because
+          "what have they done" is the question an admin opens this screen
+          with; "what may they do" is the one they open it with second.
+
+          The member sees this same panel in their own portal. Measuring
+          somebody and hiding the measurement from them is the part that
+          makes it surveillance rather than management. */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <StaffAnalyticsPanel staffId={member.id} title="Performance" />
       </div>
 
       {/* ---- scope ---- */}

@@ -33,6 +33,8 @@ import {
   useStaffProfile,
   type StaffProfile,
 } from "@/lib/staff-portal";
+import { usePortalSession } from "@/lib/use-portal-session";
+import { StaffAnalyticsPanel } from "@/components/dashboard/staff-analytics-panel";
 import { PortalLeads } from "@/components/portal/portal-leads";
 import { PortalTasks } from "@/components/portal/portal-tasks";
 import { PortalProfile } from "@/components/portal/portal-profile";
@@ -140,6 +142,11 @@ export function PortalShell() {
      One indexed lookup on page load is the cheaper mistake. */
   const profile = useStaffProfile({ fresh: true, watch: true });
   const [tab, setTab] = React.useState<Tab>("overview");
+
+  /* Records that the portal is open. Only runs once we know this is a staff
+     member — the RPC returns null for anyone else, but calling it every
+     minute for a signed-in traveller who wandered here is pointless noise. */
+  usePortalSession(!!profile);
 
   /* Counted once, here, because the overview and the referrals tab both
      want it and neither should trigger its own request. */
