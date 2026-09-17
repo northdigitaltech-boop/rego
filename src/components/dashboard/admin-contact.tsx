@@ -94,7 +94,7 @@ export function AdminContact() {
             <input className="auth-input" value={c.detailsHeading} onChange={(e) => set("detailsHeading", e.target.value)} />
           </L>
           <L label="Phone">
-            <input className="auth-input" value={c.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+92 316 1290604" />
+            <input className="auth-input" value={c.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+92 317 3045038" />
           </L>
           <L label="Email">
             <input type="email" className="auth-input" value={c.email} onChange={(e) => set("email", e.target.value)} />

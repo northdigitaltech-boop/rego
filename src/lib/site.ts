@@ -33,11 +33,11 @@ export const siteConfig = {
    * ---------------------------------------------------------------- */
 
   /** Dialled number. Keep the country code, no spaces. */
-  contactPhone: "+923161290604",
+  contactPhone: "+923173045038",
   /** Same number, spaced for display. */
-  contactPhoneDisplay: "+92 316 1290604",
+  contactPhoneDisplay: "+92 317 3045038",
   /** WhatsApp number — digits only, no "+" and no spaces. */
-  whatsapp: "923161290604",
+  whatsapp: "923173045038",
   /** Shown publicly — footer, contact page, structured data. */
   contactEmail: "info@rego.services",
   address: "Skardu, Gilgit Baltistan, Pakistan",

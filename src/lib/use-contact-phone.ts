@@ -39,7 +39,7 @@ let inFlight: Promise<void> | null = null;
 
 function spaced(raw: string): string {
   const digits = raw.replace(/[^\d+]/g, "");
-  // +923161290604 → +92 316 1290604
+  // +923173045038 → +92 317 3045038
   const m = digits.match(/^(\+92)(\d{3})(\d{7})$/);
   return m ? `${m[1]} ${m[2]} ${m[3]}` : raw;
 }
