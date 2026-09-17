@@ -34,6 +34,7 @@ import {
   type StaffProfile,
 } from "@/lib/staff-portal";
 import { usePortalSession } from "@/lib/use-portal-session";
+import { useApprovalAlerts } from "@/lib/use-approval-alerts";
 import { StaffAnalyticsPanel } from "@/components/dashboard/staff-analytics-panel";
 import { PortalLeads } from "@/components/portal/portal-leads";
 import { PortalTasks } from "@/components/portal/portal-tasks";
@@ -147,6 +148,16 @@ export function PortalShell() {
      member — the RPC returns null for anyone else, but calling it every
      minute for a signed-in traveller who wandered here is pointless noise. */
   usePortalSession(!!profile);
+
+  /* Approvals waiting, polled — and a ping when a NEW one lands. Only for
+     members who can actually act on them: alerting somebody about work they
+     are not permitted to do is noise they cannot clear. */
+  const canReview =
+    !!profile &&
+    (can(profile, "approve_listing") ||
+      can(profile, "reject_listing") ||
+      can(profile, "view_approvals"));
+  const approvalsWaiting = useApprovalAlerts(canReview);
 
   /* Counted once, here, because the overview and the referrals tab both
      want it and neither should trigger its own request. */
@@ -318,6 +329,22 @@ export function PortalShell() {
                         )}
                       >
                         {unread}
+                      </span>
+                    )}
+                    {/* Gold rather than red: approvals are work waiting, not
+                        something going wrong. Red is already saying "somebody
+                        messaged you and you have not replied", and two reds
+                        competing teaches people to ignore both. */}
+                    {n.id === "approvals" && approvalsWaiting > 0 && (
+                      <span
+                        className={cn(
+                          "ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold",
+                          tab === n.id
+                            ? "bg-white/25 text-white"
+                            : "bg-gold text-forest-900"
+                        )}
+                      >
+                        {approvalsWaiting}
                       </span>
                     )}
                   </button>
