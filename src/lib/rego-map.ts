@@ -42,6 +42,7 @@ export const MAP_CATEGORIES: MapCategory[] = [
      filing an 8,000m peak, the glacier below it and the camp at its foot all
      under "Trekking Routes" answers neither. */
   { slug: "peaks", name: "Mountains & Peaks", icon: "Triangle", color: "#475569", emoji: "🏔️" },
+  { slug: "passes", name: "Mountain Passes", icon: "MoveUpRight", color: "#0f172a", emoji: "⛰️" },
   { slug: "glaciers", name: "Glaciers", icon: "Snowflake", color: "#38bdf8", emoji: "🧊" },
   { slug: "base-camps", name: "Base Camps & Trek Camps", icon: "TentTree", color: "#7c2d12", emoji: "🏕️" },
   { slug: "roads", name: "Roads", icon: "Route", color: "#6b7280", emoji: "🛣️" },
