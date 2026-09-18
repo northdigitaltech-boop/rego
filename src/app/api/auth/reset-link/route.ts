@@ -44,6 +44,14 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/* RFC 5321's limit for a forward path. Nothing longer is a deliverable
+   address, so anything longer is someone probing — and a bounded length is
+   what keeps a quadratic address parser bounded. Dependabot has an open
+   O(n²) advisory against nodemailer's addressparser; this endpoint is
+   unauthenticated and passes its input to sendMail, so it caps the input
+   rather than relying on the library being fixed. */
+const MAX_EMAIL_LEN = 254;
+
 function adminClient(): SupabaseClient {
   return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 }
@@ -105,7 +113,7 @@ export async function POST(req: Request) {
   }
 
   const email = String(body.email ?? "").trim().toLowerCase();
-  if (!email || !EMAIL_RE.test(email)) {
+  if (!email || email.length > MAX_EMAIL_LEN || !EMAIL_RE.test(email)) {
     /* A malformed address is the one thing worth saying plainly — it cannot
        be used to probe for accounts, because no account has it. */
     return NextResponse.json(

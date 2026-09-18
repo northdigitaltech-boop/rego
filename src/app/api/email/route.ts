@@ -74,7 +74,10 @@ export async function POST(req: Request) {
     html?: unknown;
   };
 
-  if (typeof to !== "string" || !EMAIL_RE.test(to.trim())) {
+  /* 254 is RFC 5321's forward-path limit — longer is not a deliverable
+     address, and a bounded length keeps a quadratic address parser bounded.
+     See the note in /api/auth/reset-link. */
+  if (typeof to !== "string" || to.trim().length > 254 || !EMAIL_RE.test(to.trim())) {
     return NextResponse.json({ ok: false, error: "Invalid recipient" }, { status: 400 });
   }
   if (typeof subject !== "string" || subject.length === 0 || subject.length > MAX_SUBJECT) {
