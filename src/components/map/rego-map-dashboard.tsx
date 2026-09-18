@@ -14,7 +14,8 @@ import { getApprovedStories, type StoryRow } from "@/lib/safarnama";
 import {
   MAP_CATEGORIES, mapCategory, categoryName, GB_CENTER, GB_BOUNDS, GB_PLACES, DEFAULT_ROADS,
   haversineKm, roadKm, driveTime, fuelEstimate, difficultyFor, linkedProfileUrl, getVerifiedReports,
-  type MapPlaceRow, type RoadRouteRow, type RoadAlertRow, type MapReportRow,
+  isLocated,
+  type MapPlaceRow, type LocatedPlace, type RoadRouteRow, type RoadAlertRow, type MapReportRow,
 } from "@/lib/rego-map";
 import { photo, cn } from "@/lib/utils";
 import { siteConfig, contactLinks } from "@/lib/site";
@@ -61,8 +62,13 @@ const getSaved = (): string[] => { try { return JSON.parse(localStorage.getItem(
 
 const esc = (s: string) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 
-// Rich HTML for the Leaflet popup that opens right at a place pin.
-function placePopupHtml(p: MapPlaceRow, userLoc: [number, number] | null) {
+/* Rich HTML for the Leaflet popup that opens right at a place pin.
+
+   Takes a LocatedPlace, not a MapPlaceRow: there is no popup without a pin,
+   and typing it this way means the compiler rejects any future caller that
+   tries to open one for a place with no coordinates rather than quietly
+   printing "null,null" into a Google Maps link. */
+function placePopupHtml(p: LocatedPlace, userLoc: [number, number] | null) {
   const cat = mapCategory(p.category);
   const dist = userLoc ? haversineKm(userLoc, [p.latitude, p.longitude]) : null;
   const dir = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}${userLoc ? `&origin=${userLoc[0]},${userLoc[1]}` : ""}`;
@@ -217,7 +223,9 @@ export function RegoMapDashboard({
   React.useEffect(() => {
     const L = LRef.current; if (!L || !placeLayer.current) return;
     placeLayer.current.clearLayers();
-    for (const p of filtered) {
+    /* Places with no confirmed coordinates are skipped — they stay in the
+       list panel, where the phone number is still worth having. */
+    for (const p of filtered.filter(isLocated)) {
       const cat = mapCategory(p.category);
       L.marker([p.latitude, p.longitude], { icon: emojiIcon(L, cat?.emoji ?? "📍", cat?.color ?? "#1f5f45") })
         .addTo(placeLayer.current)
@@ -493,9 +501,12 @@ function PlaceDetail({ place: p, userLoc, onFly }: { place: MapPlaceRow; userLoc
   const cat = mapCategory(p.category);
   const [saved, setSaved] = React.useState(false);
   React.useEffect(() => { setSaved(getSaved().includes(p.id)); }, [p.id]);
-  const dist = userLoc ? haversineKm(userLoc, [p.latitude, p.longitude]) : null;
+  const located = isLocated(p);
+  const dist = located && userLoc ? haversineKm(userLoc, [p.latitude, p.longitude]) : null;
   const profileUrl = p.linked_profile_url || linkedProfileUrl(p.linked_service_type, p.linked_service_id);
-  const dir = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}${userLoc ? `&origin=${userLoc[0]},${userLoc[1]}` : ""}`;
+  const dir = located
+    ? `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}${userLoc ? `&origin=${userLoc[0]},${userLoc[1]}` : ""}`
+    : null;
   const toggleSave = () => { const c = getSaved(); const n = c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]; localStorage.setItem(SAVED_KEY, JSON.stringify(n)); setSaved(n.includes(p.id)); };
   return (
     <div className="space-y-3">
@@ -511,9 +522,10 @@ function PlaceDetail({ place: p, userLoc, onFly }: { place: MapPlaceRow; userLoc
       </div>
       {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
       {p.contact_number && <a href={`tel:${p.contact_number}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-forest-600"><Phone className="h-4 w-4" /> {p.contact_number}</a>}
+      {!located && <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">Exact location not confirmed yet — use the phone number above.</p>}
       <div className="grid grid-cols-2 gap-2">
-        <a href={dir} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-forest px-3 py-2 text-sm font-semibold text-white"><Navigation className="h-4 w-4" /> Directions</a>
-        <button onClick={() => onFly(p.latitude, p.longitude)} className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"><MapPin className="h-4 w-4" /> Center</button>
+        {dir && <a href={dir} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-forest px-3 py-2 text-sm font-semibold text-white"><Navigation className="h-4 w-4" /> Directions</a>}
+        {located && <button onClick={() => onFly(p.latitude!, p.longitude!)} className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"><MapPin className="h-4 w-4" /> Center</button>}
         <button onClick={toggleSave} className={cn("flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold", saved ? "border-gold bg-gold/10 text-gold-700" : "border-border text-forest hover:bg-muted")}><Bookmark className="h-4 w-4" /> {saved ? "Saved" : "Save"}</button>
         <button onClick={() => { navigator.clipboard?.writeText(window.location.href); }} className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest hover:bg-muted">Share</button>
       </div>
@@ -739,7 +751,7 @@ function OfflinePanel({ places, onOpen }: { places: MapPlaceRow[]; onOpen: (p: M
           {saved.map((p) => (
             <button key={p.id} onClick={() => onOpen(p)} className="flex w-full items-center gap-2 rounded-xl border border-border p-2.5 text-left hover:bg-muted">
               <span>{mapCategory(p.category)?.emoji}</span>
-              <span className="min-w-0"><span className="block truncate text-sm font-semibold text-forest">{p.name}</span><span className="block text-xs text-muted-foreground">{p.latitude.toFixed(3)}, {p.longitude.toFixed(3)}</span></span>
+              <span className="min-w-0"><span className="block truncate text-sm font-semibold text-forest">{p.name}</span><span className="block text-xs text-muted-foreground">{isLocated(p) ? `${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}` : "Location not set"}</span></span>
             </button>
           ))}
         </div>

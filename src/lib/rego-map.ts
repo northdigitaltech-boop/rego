@@ -133,8 +133,13 @@ export interface MapPlaceRow {
   region?: string | null;
   district: string | null;
   city: string | null;
-  latitude: number;
-  longitude: number;
+  /* Optional since phase124. A place can be recorded — name, district, phone
+     number — before anyone has confirmed exactly where it is, which is the
+     difference between having the record and not having it. Null means "not
+     located yet", never 0,0: the Gulf of Guinea is a real coordinate and a
+     marker there is worse than no marker. */
+  latitude: number | null;
+  longitude: number | null;
   description: string | null;
   photos: string[] | null;
   contact_number: string | null;
@@ -148,6 +153,24 @@ export interface MapPlaceRow {
   published: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/** A pin whose position is known — safe to put on the map. */
+export type LocatedPlace = MapPlaceRow & { latitude: number; longitude: number };
+
+/**
+ * Whether this place can be drawn.
+ *
+ * A type guard rather than a boolean, so `places.filter(isLocated)` hands the
+ * map code coordinates TypeScript already knows are numbers — no non-null
+ * assertions scattered through the marker loops, and no way to forget one.
+ *
+ * Checks for a finite number, not just non-null: a bad import writing NaN into
+ * the column would otherwise sail through and give Leaflet an unplaceable
+ * marker, which it reports as a stack trace rather than a missing pin.
+ */
+export function isLocated(p: MapPlaceRow): p is LocatedPlace {
+  return Number.isFinite(p.latitude) && Number.isFinite(p.longitude);
 }
 
 export interface RoadRouteRow {
@@ -323,11 +346,16 @@ export async function getDistances(): Promise<DistanceRow[]> {
 }
 
 /* ---------------- Writes: places ---------------- */
+/**
+ * Name and category are the only things a pin cannot be saved without.
+ *
+ * Coordinates left the required list in phase124: a place with a name, a
+ * district and a phone number is a useful record even before anyone has
+ * stood at the door with a GPS.
+ */
 export type MapPlaceInput = Partial<Omit<MapPlaceRow, "id" | "created_at" | "updated_at">> & {
   name: string;
   category: string;
-  latitude: number;
-  longitude: number;
 };
 /**
  * Postgres "column does not exist".

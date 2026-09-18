@@ -11,7 +11,7 @@ import {
 import {
   MAP_CATEGORIES, mapCategory, categoryName, GB_CENTER, GB_BOUNDS, GB_PLACES,
   DEFAULT_ROADS, haversineKm, roadKm, driveTime, fuelEstimate, difficultyFor,
-  linkedProfileUrl, LINK_SERVICE_TYPES, type MapPlaceRow, type RoadRouteRow,
+  linkedProfileUrl, LINK_SERVICE_TYPES, isLocated, type MapPlaceRow, type RoadRouteRow,
   type RoadAlertRow,
 } from "@/lib/rego-map";
 import { RegoMapReport } from "@/components/map/rego-map-report";
@@ -186,7 +186,10 @@ export function RegoMapExplorer({
     const L = LRef.current;
     if (!L || !placeLayer.current) return;
     placeLayer.current.clearLayers();
-    for (const p of filtered) {
+    /* A place with no confirmed coordinates cannot be a marker. It still
+       appears in the list beside the map, where its phone number and district
+       are useful — it just has nowhere to be drawn. */
+    for (const p of filtered.filter(isLocated)) {
       const cat = mapCategory(p.category);
       const m = L.marker([p.latitude, p.longitude], {
         icon: emojiIcon(L, cat?.emoji ?? "📍", cat?.color ?? "#1f5f45"),
@@ -344,9 +347,14 @@ function PlaceCard({ place: p, userLoc, onFly }: { place: MapPlaceRow; userLoc: 
   const [saved, setSaved] = React.useState(false);
   const [shareMsg, setShareMsg] = React.useState("");
   React.useEffect(() => { setSaved(getSaved().includes(p.id)); }, [p.id]);
-  const dist = userLoc ? haversineKm(userLoc, [p.latitude, p.longitude]) : null;
+  /* Everything that needs a position is gated on this. Directions to a place
+     we cannot locate would be directions to nowhere. */
+  const located = isLocated(p);
+  const dist = located && userLoc ? haversineKm(userLoc, [p.latitude, p.longitude]) : null;
   const profileUrl = p.linked_profile_url || linkedProfileUrl(p.linked_service_type, p.linked_service_id);
-  const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}${userLoc ? `&origin=${userLoc[0]},${userLoc[1]}` : ""}`;
+  const dirUrl = located
+    ? `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}${userLoc ? `&origin=${userLoc[0]},${userLoc[1]}` : ""}`
+    : null;
 
   const toggleSave = () => {
     const cur = getSaved();
@@ -392,9 +400,19 @@ function PlaceCard({ place: p, userLoc, onFly }: { place: MapPlaceRow; userLoc: 
         <a href={`tel:${p.contact_number}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-forest-600"><Phone className="h-4 w-4" /> {p.contact_number}</a>
       )}
 
+      {!located && (
+        <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+          Exact location not confirmed yet — use the phone number above.
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
-        <a href={dirUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-forest px-3 py-2 text-sm font-semibold text-white"><Navigation className="h-4 w-4" /> Directions</a>
-        <button onClick={() => onFly(p.latitude, p.longitude)} className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"><MapPin className="h-4 w-4" /> Center</button>
+        {dirUrl && (
+          <a href={dirUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-lg bg-gradient-forest px-3 py-2 text-sm font-semibold text-white"><Navigation className="h-4 w-4" /> Directions</a>
+        )}
+        {located && (
+          <button onClick={() => onFly(p.latitude!, p.longitude!)} className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"><MapPin className="h-4 w-4" /> Center</button>
+        )}
         <button onClick={toggleSave} className={cn("flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold", saved ? "border-gold bg-gold/10 text-gold-700" : "border-border text-forest hover:bg-muted")}>
           {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />} {saved ? "Saved" : "Save"}
         </button>

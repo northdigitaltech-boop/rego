@@ -15,7 +15,7 @@ import {
   getRoutes, createRoute, deleteRoute,
   getAllAlerts, createAlert, deleteAlert,
   getDistances, createDistance, deleteDistance,
-  getAllReports, setReportStatus, deleteReport,
+  getAllReports, setReportStatus, deleteReport, isLocated,
   type MapPlaceRow, type RoadRouteRow, type RoadAlertRow, type DistanceRow, type MapReportRow,
 } from "@/lib/rego-map";
 import { cn } from "@/lib/utils";
@@ -130,8 +130,8 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
       /* Full precision, not rounded for display. The table shows three decimals
          — saving that back would move a pin by up to a hundred metres every
          time somebody opened it to fix a phone number. */
-      latitude: String(p.latitude),
-      longitude: String(p.longitude),
+      latitude: p.latitude == null ? "" : String(p.latitude),
+      longitude: p.longitude == null ? "" : String(p.longitude),
       description: p.description ?? "",
       contact_number: p.contact_number ?? "",
       status: p.status,
@@ -157,8 +157,18 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!f.name.trim() || !f.latitude || !f.longitude) { setNote("Name, latitude and longitude are required."); return; }
-    if (!Number.isFinite(Number(f.latitude)) || !Number.isFinite(Number(f.longitude))) {
+    if (!f.name.trim()) { setNote("A name is required."); return; }
+
+    /* Coordinates are optional since phase124 — but half a coordinate is not a
+       location, and one number with the other missing is a typo, not a
+       decision. */
+    const hasLat = f.latitude.trim() !== "";
+    const hasLng = f.longitude.trim() !== "";
+    if (hasLat !== hasLng) {
+      setNote("Give both latitude and longitude, or leave both empty.");
+      return;
+    }
+    if (hasLat && (!Number.isFinite(Number(f.latitude)) || !Number.isFinite(Number(f.longitude)))) {
       setNote("Latitude and longitude must be numbers.");
       return;
     }
@@ -167,7 +177,9 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
     const payload = {
       name: f.name.trim(), category: f.category,
       region: f.region.trim() || null, district: f.district.trim() || null, city: f.city.trim() || null,
-      latitude: Number(f.latitude), longitude: Number(f.longitude), description: f.description.trim() || null,
+      latitude: hasLat ? Number(f.latitude) : null,
+      longitude: hasLng ? Number(f.longitude) : null,
+      description: f.description.trim() || null,
       contact_number: f.contact_number.trim() || null, status: f.status, is_verified: verified,
       source: f.source.trim() || null, photos: photo ? [photo] : null,
       is_linked_service: linked, linked_service_type: linked ? linkType : null,
@@ -242,8 +254,16 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
             onChange={setPlace}
           />
           <L label="Contact number"><input className="auth-input" value={f.contact_number} onChange={(e) => set("contact_number", e.target.value)} /></L>
-          <L label="Latitude"><input className="auth-input" value={f.latitude} onChange={(e) => set("latitude", e.target.value)} placeholder="35.29" /></L>
-          <L label="Longitude"><input className="auth-input" value={f.longitude} onChange={(e) => set("longitude", e.target.value)} placeholder="75.63" /></L>
+          <L label="Latitude (optional)"><input className="auth-input" value={f.latitude} onChange={(e) => set("latitude", e.target.value)} placeholder="35.29" /></L>
+          <L label="Longitude (optional)"><input className="auth-input" value={f.longitude} onChange={(e) => set("longitude", e.target.value)} placeholder="75.63" /></L>
+          {/* Said here rather than only after saving, because "why is my pin
+              not on the map" is the question this answers. */}
+          {!f.latitude.trim() && !f.longitude.trim() && (
+            <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-3">
+              Leave both empty to record the place without a location — it is saved and listed,
+              but no marker appears on the map until you add coordinates.
+            </p>
+          )}
           <L label="Source"><input className="auth-input" value={f.source} onChange={(e) => set("source", e.target.value)} /></L>
           <L label="Description" full><textarea rows={2} className="auth-input resize-none" value={f.description} onChange={(e) => set("description", e.target.value)} /></L>
           <L label="Photo" full><ImageUpload value={photo} onChange={setPhoto} /></L>
@@ -293,17 +313,46 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
                 return (
                   <tr key={p.id} className="border-b border-border/60">
                     <td className="p-3">
-                      <div className="flex items-center gap-1.5 font-semibold text-forest">{p.name}{p.is_verified && <BadgeCheck className="h-3.5 w-3.5 text-gold" />}</div>
-                      <p className="text-xs text-muted-foreground">{p.latitude.toFixed(3)}, {p.longitude.toFixed(3)}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 font-semibold text-forest">
+                        {p.name}
+                        {p.is_verified && <BadgeCheck className="h-3.5 w-3.5 text-gold" />}
+                        {/* Hidden pins were invisible in this list before — the only
+                            clue was which icon the publish button happened to show,
+                            which is the wrong place to learn that a rescue station
+                            is not on the map. */}
+                        {!p.published && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            <EyeOff className="h-3 w-3" /> Hidden
+                          </span>
+                        )}
+                        {p.source?.includes(PIN_UNVERIFIED) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                            <AlertTriangle className="h-3 w-3" /> Pin not verified
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {isLocated(p)
+                          ? `${p.latitude.toFixed(3)}, ${p.longitude.toFixed(3)}`
+                          : "No coordinates — not shown on the map"}
+                      </p>
                     </td>
                     <td className="p-3 text-muted-foreground">{categoryName(p.category)}</td>
                     <td className="p-3 text-muted-foreground">{p.district || "—"}</td>
                     <td className="p-3 text-muted-foreground">{p.is_linked_service ? <a href={p.linked_profile_url ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-forest-600 underline"><ExternalLink className="h-3 w-3" /> {p.linked_service_type}</a> : "—"}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-1">
+                        <button title="Edit" type="button" disabled={busyRow} onClick={() => startEdit(p)} className={cn("rounded-md border p-1.5", editing?.id === p.id ? "border-gold/50 bg-gold/15 text-gold-700" : "border-border text-forest hover:bg-muted")}><Pencil className="h-3.5 w-3.5" /></button>
                         <button title={p.is_verified ? "Unverify" : "Verify"} disabled={busyRow} onClick={() => act(p.id, () => setPlaceVerified(p.id, !p.is_verified))} className={cn("rounded-md border p-1.5", p.is_verified ? "border-gold/40 bg-gold/15 text-gold-700" : "border-border text-forest hover:bg-muted")}><BadgeCheck className="h-3.5 w-3.5" /></button>
                         <button title={p.published ? "Hide" : "Publish"} disabled={busyRow} onClick={() => act(p.id, () => updatePlace(p.id, { published: !p.published }))} className="rounded-md border border-border p-1.5 text-forest hover:bg-muted">{p.published ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}</button>
-                        <button title="Delete" disabled={busyRow} onClick={() => { if (confirm(`Delete “${p.name}”?`)) act(p.id, () => deletePlace(p.id)); }} className="rounded-md border border-red-200 p-1.5 text-red-600 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /></button>
+                        <button title="Delete" disabled={busyRow} onClick={() => {
+                          if (!confirm(`Delete “${p.name}”?`)) return;
+                          /* Clear the form first if this is the pin open in it —
+                             otherwise "Save changes" would write to a row that no
+                             longer exists and report a failure nobody can explain. */
+                          if (editing?.id === p.id) reset();
+                          act(p.id, () => deletePlace(p.id));
+                        }} className="rounded-md border border-red-200 p-1.5 text-red-600 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     </td>
                   </tr>
