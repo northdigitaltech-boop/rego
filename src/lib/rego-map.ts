@@ -129,6 +129,8 @@ export interface MapPlaceRow {
   id: string;
   name: string;
   category: string;
+  /** Region / province. Added in phase122 — null on pins created before it. */
+  region?: string | null;
   district: string | null;
   city: string | null;
   latitude: number;
@@ -327,11 +329,33 @@ export type MapPlaceInput = Partial<Omit<MapPlaceRow, "id" | "created_at" | "upd
   latitude: number;
   longitude: number;
 };
+/**
+ * Postgres "column does not exist".
+ *
+ * `region` arrived in phase122. Between deploying this code and running that
+ * migration, an insert carrying the column fails outright — and the visible
+ * result is that nobody can add a map pin at all, for a field that is optional.
+ * So the write drops `region` and goes again, which keeps the form working on
+ * a database that has not caught up. Once phase122 is applied the retry never
+ * fires.
+ */
+const UNDEFINED_COLUMN = "42703";
+
+function withoutRegion<T extends { region?: string | null }>(input: T): Omit<T, "region"> {
+  const { region: _ignored, ...rest } = input;
+  return rest;
+}
+
 export async function createPlace(input: MapPlaceInput) {
-  return supabase.from("map_places").insert(input).select().single();
+  const first = await supabase.from("map_places").insert(input).select().single();
+  if (first.error?.code !== UNDEFINED_COLUMN || !("region" in input)) return first;
+  return supabase.from("map_places").insert(withoutRegion(input)).select().single();
 }
 export async function updatePlace(id: string, input: Partial<MapPlaceInput>) {
-  return supabase.from("map_places").update({ ...input, updated_at: new Date().toISOString() }).eq("id", id);
+  const patch = { ...input, updated_at: new Date().toISOString() };
+  const first = await supabase.from("map_places").update(patch).eq("id", id);
+  if (first.error?.code !== UNDEFINED_COLUMN || !("region" in patch)) return first;
+  return supabase.from("map_places").update(withoutRegion(patch)).eq("id", id);
 }
 export async function deletePlace(id: string) {
   return supabase.from("map_places").delete().eq("id", id);

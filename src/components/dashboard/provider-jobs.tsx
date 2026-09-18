@@ -21,13 +21,13 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DistrictSelect } from "@/components/ui/location-select";
 import {
   EMPLOYMENT_TYPES,
   WORKPLACE_TYPES,
   EXPERIENCE_LEVELS,
   SALARY_PERIODS,
   JOB_CATEGORIES,
-  GB_DISTRICTS,
   APPLICANT_STATUSES,
   statusMeta,
   salaryLabel,
@@ -321,10 +321,8 @@ export function ProviderPostJob({
         </div>
 
         <L label="District">
-          <select className="auth-input" value={f.district} onChange={(e) => set("district", e.target.value)}>
-            <option value="">Choose…</option>
-            {GB_DISTRICTS.map((d) => <option key={d}>{d}</option>)}
-          </select>
+          {/* Real districts from the locations table, not a hand-kept copy. */}
+          <DistrictSelect value={f.district} onChange={(v) => set("district", v)} />
         </L>
         <L label="City / area">
           <input className="auth-input" value={f.city} onChange={(e) => set("city", e.target.value)} placeholder="e.g. Skardu" />

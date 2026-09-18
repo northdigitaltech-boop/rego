@@ -3,10 +3,12 @@
 import * as React from "react";
 import {
   Loader2, Trash2, CheckCircle2, XCircle, BadgeCheck, Plus, Search, ExternalLink,
+  Pencil, Save, EyeOff, AlertTriangle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { PlaceSelect, RegionDistrictPlace } from "@/components/ui/location-select";
 import {
   MAP_CATEGORIES, categoryName, LINK_SERVICE_TYPES, linkedProfileUrl, ALERT_TYPES,
   getAllPlaces, createPlace, updatePlace, deletePlace, setPlaceVerified,
@@ -70,11 +72,31 @@ export function AdminRegoMap() {
 }
 
 /* ---------------- Pins ---------------- */
+
+/**
+ * Marker written into `source` by the phase123 seed for a pin whose exact
+ * location has not been confirmed.
+ *
+ * WHY IT IS A STRING IN AN EXISTING COLUMN AND NOT A NEW ONE
+ *   A rescue station seeded at its district's coordinates is not where the
+ *   station is — it is roughly where the district is. Those rows ship
+ *   unpublished, so nobody is ever navigated to them, but the admin list has
+ *   to say so loudly, because the one dangerous outcome here is somebody
+ *   publishing an emergency pin that points at the wrong place.
+ *
+ *   A column would be tidier and would need a migration, a type change and a
+ *   read path in four components. This needs no schema at all and is removed
+ *   by the act of correcting the pin.
+ */
+const PIN_UNVERIFIED = "PIN NOT VERIFIED";
+
+const BLANK = {
+  name: "", category: MAP_CATEGORIES[0].slug, region: "", district: "", city: "", latitude: "", longitude: "",
+  description: "", contact_number: "", status: "open", source: "",
+};
+
 function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => void }) {
-  const [f, setF] = React.useState({
-    name: "", category: MAP_CATEGORIES[0].slug, district: "", city: "", latitude: "", longitude: "",
-    description: "", contact_number: "", status: "open", source: "",
-  });
+  const [f, setF] = React.useState(BLANK);
   const [photo, setPhoto] = React.useState("");
   const [verified, setVerified] = React.useState(false);
   const [linked, setLinked] = React.useState(false);
@@ -82,25 +104,91 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
   const [linkId, setLinkId] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [note, setNote] = React.useState("");
+  /** The pin being changed, or null when the form is adding a new one. */
+  const [editing, setEditing] = React.useState<MapPlaceRow | null>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
 
-  const add = async (e: React.FormEvent) => {
+  const reset = () => {
+    setEditing(null);
+    setF(BLANK);
+    setPhoto("");
+    setVerified(false);
+    setLinked(false);
+    setLinkId("");
+    setNote("");
+  };
+
+  const startEdit = (p: MapPlaceRow) => {
+    setEditing(p);
+    setF({
+      name: p.name,
+      category: p.category,
+      region: p.region ?? "",
+      district: p.district ?? "",
+      city: p.city ?? "",
+      /* Full precision, not rounded for display. The table shows three decimals
+         — saving that back would move a pin by up to a hundred metres every
+         time somebody opened it to fix a phone number. */
+      latitude: String(p.latitude),
+      longitude: String(p.longitude),
+      description: p.description ?? "",
+      contact_number: p.contact_number ?? "",
+      status: p.status,
+      source: p.source ?? "",
+    });
+    setPhoto(p.photos?.[0] ?? "");
+    setVerified(p.is_verified);
+    setLinked(p.is_linked_service);
+    setLinkType(p.linked_service_type || LINK_SERVICE_TYPES[0].type);
+    setLinkId(p.linked_service_id ?? "");
+    setNote("");
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  /* Stable, because RegionDistrictPlace backfills the region from a saved
+     district inside an effect that depends on this callback. A fresh function
+     every render would re-run that effect every render. */
+  const setPlace = React.useCallback(
+    (v: { region: string; district: string; place: string }) =>
+      setF((p) => ({ ...p, region: v.region, district: v.district, city: v.place })),
+    []
+  );
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.name.trim() || !f.latitude || !f.longitude) { setNote("Name, latitude and longitude are required."); return; }
+    if (!Number.isFinite(Number(f.latitude)) || !Number.isFinite(Number(f.longitude))) {
+      setNote("Latitude and longitude must be numbers.");
+      return;
+    }
     setBusy(true); setNote("");
     const linked_profile_url = linked ? linkedProfileUrl(linkType, linkId.trim()) : null;
-    const { error } = await createPlace({
-      name: f.name.trim(), category: f.category, district: f.district.trim() || null, city: f.city.trim() || null,
+    const payload = {
+      name: f.name.trim(), category: f.category,
+      region: f.region.trim() || null, district: f.district.trim() || null, city: f.city.trim() || null,
       latitude: Number(f.latitude), longitude: Number(f.longitude), description: f.description.trim() || null,
       contact_number: f.contact_number.trim() || null, status: f.status, is_verified: verified,
       source: f.source.trim() || null, photos: photo ? [photo] : null,
       is_linked_service: linked, linked_service_type: linked ? linkType : null,
       linked_service_id: linked ? linkId.trim() || null : null, linked_profile_url,
-    });
+    };
+
+    const { error } = editing
+      ? await updatePlace(editing.id, payload)
+      : await createPlace(payload);
     setBusy(false);
-    if (error) { setNote("Could not save pin."); return; }
-    setF({ ...f, name: "", latitude: "", longitude: "", description: "", contact_number: "" });
-    setPhoto(""); setLinkId(""); setNote("Pin added.");
+    if (error) { setNote(editing ? "Could not save changes." : "Could not save pin."); return; }
+
+    if (editing) {
+      reset();
+      setNote("Pin updated.");
+    } else {
+      /* District and city survive, because adding several pins in one district
+         is the normal way this form gets used. */
+      setF({ ...f, name: "", latitude: "", longitude: "", description: "", contact_number: "" });
+      setPhoto(""); setLinkId(""); setNote("Pin added.");
+    }
     onChange();
   };
 
@@ -111,14 +199,48 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
 
   return (
     <div className="space-y-5">
-      <form onSubmit={add} className="rounded-3xl border border-border bg-card p-5 shadow-premium">
-        <h3 className="font-display text-base font-bold text-forest">Add map pin</h3>
+      <form
+        ref={formRef}
+        onSubmit={submit}
+        className={cn(
+          "rounded-3xl border bg-card p-5 shadow-premium",
+          editing ? "border-gold/60 ring-1 ring-gold/30" : "border-border"
+        )}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-display text-base font-bold text-forest">
+            {editing ? `Edit “${editing.name}”` : "Add map pin"}
+          </h3>
+          {editing && (
+            <button
+              type="button"
+              onClick={reset}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-forest hover:bg-muted"
+            >
+              Cancel — add a new pin instead
+            </button>
+          )}
+        </div>
+        {editing && editing.source?.includes(PIN_UNVERIFIED) && (
+          <p className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              This pin sits at the district’s coordinates, not at the place itself — it was
+              recorded without a confirmed location. Replace the latitude and longitude with the
+              real ones, clear the “{PIN_UNVERIFIED}” note from Source, then publish it.
+            </span>
+          </p>
+        )}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <L label="Name"><input className="auth-input" value={f.name} onChange={(e) => set("name", e.target.value)} /></L>
           <L label="Category"><select className="auth-input" value={f.category} onChange={(e) => set("category", e.target.value)}>{MAP_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></L>
           <L label="Status"><select className="auth-input" value={f.status} onChange={(e) => set("status", e.target.value)}><option value="open">Open</option><option value="closed">Closed</option><option value="seasonal">Seasonal</option></select></L>
-          <L label="District"><input className="auth-input" value={f.district} onChange={(e) => set("district", e.target.value)} /></L>
-          <L label="City / Area"><input className="auth-input" value={f.city} onChange={(e) => set("city", e.target.value)} /></L>
+          {/* Chosen from the places Rego already knows about, so the map's
+              district filter matches every pin instead of most of them. */}
+          <RegionDistrictPlace
+            value={{ region: f.region, district: f.district, place: f.city }}
+            onChange={setPlace}
+          />
           <L label="Contact number"><input className="auth-input" value={f.contact_number} onChange={(e) => set("contact_number", e.target.value)} /></L>
           <L label="Latitude"><input className="auth-input" value={f.latitude} onChange={(e) => set("latitude", e.target.value)} placeholder="35.29" /></L>
           <L label="Longitude"><input className="auth-input" value={f.longitude} onChange={(e) => set("longitude", e.target.value)} placeholder="75.63" /></L>
@@ -144,7 +266,11 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
             <input type="checkbox" checked={verified} onChange={(e) => setVerified(e.target.checked)} /> Verified
           </label>
           <Button type="submit" variant="gold" className="rounded-lg" disabled={busy}>
-            {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Plus className="h-4 w-4" /> Add pin</>}
+            {busy
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
+              : editing
+                ? <><Save className="h-4 w-4" /> Save changes</>
+                : <><Plus className="h-4 w-4" /> Add pin</>}
           </Button>
           {note && <span className="text-sm font-semibold text-forest-600">{note}</span>}
         </div>
@@ -211,8 +337,8 @@ function RoutesTab({ routes, onChange }: { routes: RoadRouteRow[]; onChange: () 
         <h3 className="font-display text-base font-bold text-forest">Add / update road</h3>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <L label="Road name"><input className="auth-input" value={f.road_name} onChange={(e) => set("road_name", e.target.value)} /></L>
-          <L label="Start"><input className="auth-input" value={f.start_point} onChange={(e) => set("start_point", e.target.value)} /></L>
-          <L label="End"><input className="auth-input" value={f.end_point} onChange={(e) => set("end_point", e.target.value)} /></L>
+          <PlaceSelect label="Start" value={f.start_point} onChange={(v) => set("start_point", v)} />
+          <PlaceSelect label="End" value={f.end_point} onChange={(v) => set("end_point", v)} />
           <L label="Distance (km)"><input className="auth-input" value={f.distance_km} onChange={(e) => set("distance_km", e.target.value)} /></L>
           <L label="Estimated time"><input className="auth-input" value={f.estimated_time} onChange={(e) => set("estimated_time", e.target.value)} placeholder="6–7 h" /></L>
           <L label="Road type"><select className="auth-input" value={f.road_type} onChange={(e) => set("road_type", e.target.value)}><option>highway</option><option>metalled</option><option>jeep-track</option><option>unpaved</option></select></L>
@@ -247,7 +373,7 @@ function AlertsTab({ alerts, onChange }: { alerts: RoadAlertRow[]; onChange: () 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <L label="Alert type"><select className="auth-input" value={f.alert_type} onChange={(e) => set("alert_type", e.target.value)}>{ALERT_TYPES.map((t) => <option key={t}>{t}</option>)}</select></L>
           <L label="Road name"><input className="auth-input" value={f.road_name} onChange={(e) => set("road_name", e.target.value)} /></L>
-          <L label="Location"><input className="auth-input" value={f.location} onChange={(e) => set("location", e.target.value)} /></L>
+          <PlaceSelect label="Location" value={f.location} onChange={(v) => set("location", v)} />
           <L label="Latitude"><input className="auth-input" value={f.latitude} onChange={(e) => set("latitude", e.target.value)} /></L>
           <L label="Longitude"><input className="auth-input" value={f.longitude} onChange={(e) => set("longitude", e.target.value)} /></L>
           <L label="Alert level"><select className="auth-input" value={f.alert_level} onChange={(e) => set("alert_level", e.target.value)}><option>low</option><option>medium</option><option>high</option><option>critical</option></select></L>
@@ -281,8 +407,8 @@ function DistancesTab({ distances, onChange }: { distances: DistanceRow[]; onCha
       <form onSubmit={add} className="rounded-3xl border border-border bg-card p-5 shadow-premium">
         <h3 className="font-display text-base font-bold text-forest">Add distance</h3>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <L label="From"><input className="auth-input" value={f.from_location} onChange={(e) => set("from_location", e.target.value)} /></L>
-          <L label="To"><input className="auth-input" value={f.to_location} onChange={(e) => set("to_location", e.target.value)} /></L>
+          <PlaceSelect label="From" value={f.from_location} onChange={(v) => set("from_location", v)} />
+          <PlaceSelect label="To" value={f.to_location} onChange={(v) => set("to_location", v)} />
           <L label="Distance (km)"><input className="auth-input" value={f.distance_km} onChange={(e) => set("distance_km", e.target.value)} /></L>
           <L label="Estimated time"><input className="auth-input" value={f.estimated_time} onChange={(e) => set("estimated_time", e.target.value)} /></L>
           <L label="Road type"><select className="auth-input" value={f.road_type} onChange={(e) => set("road_type", e.target.value)}><option>highway</option><option>metalled</option><option>jeep-track</option></select></L>

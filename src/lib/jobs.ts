@@ -51,6 +51,14 @@ export const JOB_CATEGORIES = [
   "Other",
 ] as const;
 
+/**
+ * @deprecated Kept only so nothing that still imports it breaks.
+ *
+ * The job form now reads districts from public.locations via DistrictSelect.
+ * This array was a second, hand-maintained copy of the same list — it went
+ * stale the moment an admin renamed a district, and nothing reported that.
+ * Do not add to it; add the location instead.
+ */
 export const GB_DISTRICTS = [
   "Skardu",
   "Shigar",
