@@ -12,6 +12,7 @@ import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReferralCapture } from "@/components/referral-capture";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { CookieBanner } from "@/components/consent/cookie-banner";
 import { IosSplash } from "@/components/pwa/ios-splash";
 
 // Montserrat is the single brand font for the entire site (headings, body,
@@ -177,10 +178,16 @@ export default function RootLayout({
           {/* Remembers ?ref= from a team member's link, on whatever page it
               lands on. Renders nothing. */}
           <ReferralCapture />
+          {/* Asks before anything is stored on the visitor's device, and
+              renders nothing once they have answered either way. Nothing on
+              the site is withheld while it waits. */}
+          <CookieBanner />
         </Providers>
         {/* Loads after the page is interactive, so it costs nothing on the
-            metric Google actually measures. Renders nothing at all when
-            NEXT_PUBLIC_GA_ID is unset. */}
+            metric Google actually measures. Renders nothing at all until the
+            visitor accepts the cookie notice, or when NEXT_PUBLIC_GA_ID is
+            unset. Also runs Rego's own once-a-day visit counter, which is
+            gated on the same answer. */}
         <GoogleAnalytics />
 
         {/* Real-user Core Web Vitals, reported to Vercel.

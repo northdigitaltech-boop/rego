@@ -4,6 +4,9 @@ import * as React from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 
+import { useConsent } from "@/lib/consent";
+import { useVisitTracker } from "@/lib/use-visit-tracker";
+
 /* ============================================================
  * Google Analytics 4.
  *
@@ -78,6 +81,25 @@ function RouteChangeTracker() {
 }
 
 export function GoogleAnalytics() {
+  /* Rego's own visit counter. It lives here because this component is already
+     mounted once in the root layout, and it is gated on the same answer. */
+  useVisitTracker();
+
+  /* ------------------------------------------------------------------
+     GA DOES NOT LOAD UNTIL THE VISITOR SAYS YES
+
+     gtag.js writes _ga cookies the moment it runs. Loading it and hoping
+     to suppress that afterwards is the pattern regulators keep fining
+     people for — the storage has already happened by then.
+
+     Returning null keeps the script off the page entirely. Nothing to
+     disable, nothing to clean up, nothing recorded. A visitor who accepts
+     gets the script on the next render, because useConsent() subscribes
+     to the change rather than reading the cookie once.
+     ------------------------------------------------------------------ */
+  const consent = useConsent();
+  if (consent !== "granted") return null;
+
   /* No ID configured — render nothing at all. This is what keeps development
      and preview deployments out of the reporting. */
   if (!GA_ID) return null;

@@ -15,6 +15,7 @@ import {
 import { BrandLogo } from "@/components/layout/logo";
 import { HelplineLink } from "@/components/layout/helpline-link";
 import { legalPolicies } from "@/lib/legal";
+import { CookieSettingsLink } from "@/components/consent/cookie-settings-link";
 import { siteConfig, contactLinks, companyRegistration } from "@/lib/site";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
 
@@ -248,6 +249,11 @@ export function Footer() {
                 </Link>
               </li>
             ))}
+            {/* Lets a visitor take their consent back. Required for the
+                banner's consent to count for anything. */}
+            <li>
+              <CookieSettingsLink className="text-white/65 transition-colors hover:text-gold" />
+            </li>
           </ul>
         </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { getConsent } from "@/lib/consent";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 /**
@@ -61,6 +62,12 @@ export interface TrackInput {
 /** Fire-and-forget: never throws, never blocks the UI. */
 export async function trackEvent(input: TrackInput): Promise<void> {
   if (!isSupabaseConfigured || typeof window === "undefined") return;
+  /* Nothing is recorded, and no visitor id is created, until the visitor has
+     agreed. visitorId() below WRITES to localStorage, so calling it without
+     permission is the act the cookie banner exists to ask about — and a
+     banner promising "we only count you if you say yes" while listing views
+     are logged anyway is not a consent notice, it is decoration. */
+  if (getConsent() !== "granted") return;
   try {
     await supabase.from("listing_analytics_events").insert({
       owner_email: input.ownerEmail ?? null,

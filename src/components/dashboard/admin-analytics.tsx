@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { AdminVisitors } from "@/components/dashboard/admin-visitors";
 import {
   MODULES,
   statsFromRows,
@@ -101,6 +102,11 @@ function AnalyticsOverview({ onOpen }: { onOpen: (m: ModuleConfig) => void }) {
           Every service in one place. Click a module to manage its owners, listings and approvals.
         </p>
       </div>
+
+      {/* Traffic first: how many people arrived is the question that frames
+          every number below it. site_visit_summary refuses non-admins, so
+          this renders empty rather than leaking for anyone else. */}
+      <AdminVisitors />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULES.map((m) => {
