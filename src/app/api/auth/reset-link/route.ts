@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { clientIp } from "@/lib/rate-limit";
-import { limitAndLog } from "@/lib/rate-limit-guard";
+import { limitAndLogShared } from "@/lib/rate-limit-guard";
 import { enforceIpBlock } from "@/lib/ip-block";
 import { emailLayout, emailButton } from "@/lib/email-layout";
 import { sendMail, isSmtpConfigured } from "@/lib/mailer";
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
   /* Tight on purpose. This is an unauthenticated endpoint that causes email
      to be sent to an address in the request body; the limiter is the second
      line after the captcha, not the first. */
-  const limited = limitAndLog(req, `reset-link:${ip}`, 5, 15 * 60_000, {
+  const limited = await limitAndLogShared(req, `reset-link:${ip}`, 5, 15 * 60_000, {
     endpoint: "/api/auth/reset-link",
     category: "auth",
   });

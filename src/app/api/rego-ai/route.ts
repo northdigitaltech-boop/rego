@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { clientIp } from "@/lib/rate-limit";
-import { limitAndLog } from "@/lib/rate-limit-guard";
+import { limitAndLogShared } from "@/lib/rate-limit-guard";
 import { answerQuery, buildSystemPrompt } from "@/lib/rego-ai";
 import { enforceIpBlock } from "@/lib/ip-block";
 import {
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
   if (!allowedHost(req)) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
-  const rl = limitAndLog(req, `regoai:${clientIp(req)}`, 20, 60_000, { endpoint: "/api/rego-ai", category: "api" });
+  const rl = await limitAndLogShared(req, `regoai:${clientIp(req)}`, 20, 60_000, { endpoint: "/api/rego-ai", category: "api" });
   if (!rl.ok) {
     return NextResponse.json(
       { ok: false, error: "Too many requests. Please slow down." },
