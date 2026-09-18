@@ -33,9 +33,33 @@ async function safe<T>(fn: () => Promise<T[]>): Promise<T[]> {
   }
 }
 
+/**
+ * A Date that is definitely serializable.
+ *
+ * ---------------------------------------------------------------------------
+ * THIS IS WHY A SITEMAP BUILD FAILS
+ *
+ * `new Date("not a date")` does not throw — it returns Invalid Date, quietly.
+ * Next then calls .toISOString() on it while writing the XML, and THAT throws
+ * RangeError: Invalid time value. The build fails on /sitemap.xml with no clue
+ * which of twenty tables held the bad timestamp.
+ *
+ * One null, one empty string or one malformed timestamp anywhere in jobs,
+ * blog posts, hotels, guides, stories or SEO content was enough to stop a
+ * deployment. That is far too much power for a single cell in a table an
+ * admin can edit.
+ * ---------------------------------------------------------------------------
+ */
+function toDate(value: unknown, fallback: Date): Date {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? fallback : value;
+  if (typeof value !== "string" || !value.trim()) return fallback;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? fallback : d;
+}
+
 type Row = { id: string; updated_at?: string | null; created_at?: string | null };
 const when = (r: Row, fallback: Date) =>
-  r.updated_at ? new Date(r.updated_at) : r.created_at ? new Date(r.created_at) : fallback;
+  toDate(r.updated_at ?? r.created_at, fallback);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -55,6 +79,59 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!categoryHasOwnPage(c.slug)) continue;
     add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
   }
+  // --- Legal & policy pages (static, cannot fail) ---
+  add("/legal", { changeFrequency: "monthly", priority: 0.4 });
+  for (const p of legalPolicies) add(`/legal/${p.slug}`, { changeFrequency: "monthly", priority: 0.3 });
+
+  /* ------------------------------------------------------------------
+     Everything below this line reads the database.
+
+     WHY IT IS ALL INSIDE ONE try
+       safe() already catches a failing QUERY. It does not catch anything
+       that goes wrong AFTER the rows come back — a bad timestamp, a row
+       shaped differently than expected, a slug that is not a string. Those
+       threw straight out of this function, and a sitemap that throws does
+       not become an empty sitemap: it fails the route, which fails
+       `next build`, which fails the deployment. The entire site stops
+       shipping because one cell in one table is malformed.
+
+       The header of this file already said a sitemap must never 500. It
+       could, until now.
+
+       On failure the static pages above are still returned — a smaller
+       sitemap, which crawlers handle fine, instead of no deployment.
+     ------------------------------------------------------------------ */
+  try {
+    await addDatabaseUrls(urls, now);
+  } catch {
+    /* Intentionally silent: there is nothing a crawler or a visitor can do
+       about it, and the static half of the sitemap is still correct. */
+  }
+
+  /* Deduplicate, and drop anything that cannot be serialized.
+
+     A destination present both in the hardcoded list in lib/data.ts and in
+     the locations table would otherwise appear twice, and a duplicated URL
+     in a sitemap is a signal that the site does not know its own structure.
+
+     The validity check is the belt to toDate()'s braces: it guarantees that
+     whatever any future code path pushes, this function returns something
+     Next can write out. */
+  const seen = new Set<string>();
+  return urls.filter((u) => {
+    const key = String(u.url);
+    if (!key || seen.has(key)) return false;
+    if (u.lastModified instanceof Date && Number.isNaN(u.lastModified.getTime())) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Everything that needs the database. Pushes into `urls`; may throw. */
+async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date): Promise<void> {
+  const add = (path: string, opts: Partial<MetadataRoute.Sitemap[number]> = {}) =>
+    urls.push({ url: absoluteUrl(path), lastModified: now, changeFrequency: "weekly", priority: 0.6, ...opts });
+
   /* From the database, not the built-in list — otherwise a destination added
      in the admin never gets crawled, and one deleted there is still offered
      to Google. getDestinations() falls back to the built-in list on its own
@@ -64,17 +141,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (d?.slug) add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7 });
   }
 
-  // --- Legal & policy pages ---
-  add("/legal", { changeFrequency: "monthly", priority: 0.4 });
-  for (const p of legalPolicies) add(`/legal/${p.slug}`, { changeFrequency: "monthly", priority: 0.3 });
-
   // --- Published jobs (SEO-friendly /jobs/[slug] routes) ---
   const jobs = await safe(getPublishedJobs);
   for (const j of (jobs as { slug?: string | null; updated_at?: string }[])) {
     if (!j?.slug) continue;
     urls.push({
       url: absoluteUrl(`/jobs/${j.slug}`),
-      lastModified: j.updated_at ? new Date(j.updated_at) : now,
+      lastModified: toDate(j.updated_at, now),
       changeFrequency: "daily",
       priority: 0.7,
     });
@@ -89,7 +162,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl(`/blog-news/${post.slug}`),
       // Content date, not build date — a lastmod that moves every deploy
       // teaches crawlers to ignore it.
-      lastModified: new Date(post.updated_at || post.published_at || now),
+      lastModified: toDate(post.updated_at || post.published_at, now),
       changeFrequency: "monthly",
       priority: 0.7,
     });
@@ -153,17 +226,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  /* Deduplicate. A destination that exists both in the hardcoded list in
-     lib/data.ts and in the locations table would otherwise appear twice,
-     and a duplicated URL in a sitemap is a signal that the site does not
-     know its own structure. */
-  const seen = new Set<string>();
-  return urls.filter((u) => {
-    const key = String(u.url);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 /**
@@ -212,7 +274,27 @@ async function safeMarketPages(): Promise<
 
     const out: { path: string; service: string | null; lastModified: Date }[] = [];
 
+    /* ------------------------------------------------------------------
+       A BUDGET, BECAUSE THIS LOOP IS TWO ROUND TRIPS PER ROW
+
+       Every candidate costs a getLocationSeo and a listing_count_at, run
+       one after another. That was harmless while the market module was off
+       and the RPC returned nothing. The moment areas are made public it
+       becomes hundreds of sequential queries inside a route that Next
+       generates at build time with a timeout — and a route that times out
+       three times fails the build, with an error that says nothing about
+       why.
+
+       So: stop after DEADLINE_MS and return what has been collected. A
+       sitemap missing its newest area pages until the next revalidation is
+       a smaller problem than a site that will not deploy.
+       ------------------------------------------------------------------ */
+    const DEADLINE_MS = 20_000;
+    const startedAt = Date.now();
+
     for (const r of rows) {
+      if (Date.now() - startedAt > DEADLINE_MS) break;
+
       const seo = await getLocationSeo(r.location_id, r.service_slug).catch(() => null);
       const listingCount = await countFor(r.location_id);
 
@@ -235,9 +317,7 @@ async function safeMarketPages(): Promise<
         service: r.service_slug,
         /* lastmod reflects when the CONTENT changed, not when we deployed.
            A lastmod that moves on every build teaches crawlers to ignore it. */
-        lastModified: r.content_updated_at
-          ? new Date(r.content_updated_at)
-          : new Date(),
+        lastModified: toDate(r.content_updated_at, new Date()),
       });
     }
 
