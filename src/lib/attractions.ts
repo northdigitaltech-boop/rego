@@ -133,11 +133,30 @@ export const SUGGESTED_ATTRACTIONS: Record<string, Preset[]> = {
     { name: "Tato Village", type: "Valley", blurb: "The last road point before the walk in." },
     { name: "Raikot Bridge", type: "Bridge", blurb: "Start of the jeep track up from the Karakoram Highway." },
   ],
+  /* Shigar is two destinations in one list. The first block is the valley
+     floor — places reachable by road in a day. The second is the Baltoro,
+     which is an expedition, and travellers searching for K2 are not looking
+     for the same trip as travellers searching for a heritage hotel. The
+     order reflects that: road-accessible first, then the walk in. */
   shigar: [
+    { name: "Shigar Valley", type: "Valley", blurb: "The valley between Skardu and the Baltoro — orchards, terraces and old Balti villages." },
     { name: "Shigar Fort (Fong Khar)", type: "Fort", blurb: "A restored palace that now works as a heritage hotel." },
     { name: "Amburiq Mosque", type: "Heritage", blurb: "A 14th-century carved wooden mosque." },
-    { name: "Askole", type: "Trek", blurb: "The last village before K2 and the Baltoro Glacier." },
-    { name: "Blind Lake", type: "Lake", blurb: "A hidden lake reached by a short walk." },
+    { name: "Sarfaranga Cold Desert", type: "Desert", blurb: "Sand flats on the Shigar river beneath snow peaks, and home of the jeep rally." },
+    { name: "Blind Lake (Zharba Tso)", type: "Lake", blurb: "A hidden lake reached by a short walk." },
+    { name: "Askole Village", type: "Valley", blurb: "The last village before K2 and the Baltoro Glacier, and where the jeep road ends." },
+    { name: "Braldu Valley", type: "Valley", blurb: "The valley beyond Askole that carries the route in towards the Baltoro." },
+    { name: "Baltoro Glacier", type: "Glacier", blurb: "One of the longest glaciers outside the polar regions, and the way in to the 8,000m peaks." },
+    { name: "Paiju Camp", type: "Trek", blurb: "The campsite at the snout of the Baltoro, where the glacier walk begins." },
+    { name: "Urdukas", type: "Viewpoint", blurb: "A camp on the rock terraces above the glacier, facing the Trango Towers." },
+    { name: "Goro (Baltoro trekking area)", type: "Trek", blurb: "Camps out on the open ice between Urdukas and Concordia." },
+    { name: "Concordia", type: "Viewpoint", blurb: "Where the Baltoro and Godwin-Austen glaciers meet, ringed by four 8,000m peaks." },
+    { name: "K2", type: "Mountain", blurb: "At 8,611m, the second-highest mountain on earth." },
+    { name: "K2 Base Camp", type: "Trek", blurb: "The foot of K2, at the head of the Godwin-Austen glacier." },
+    { name: "Broad Peak", type: "Mountain", blurb: "8,051m, standing beside K2 above Concordia." },
+    { name: "Broad Peak Base Camp", type: "Trek", blurb: "Camp at the foot of Broad Peak, on the Godwin-Austen glacier." },
+    { name: "Gasherbrum I", type: "Mountain", blurb: "8,080m, also known as Hidden Peak." },
+    { name: "Gasherbrum II", type: "Mountain", blurb: "8,035m, on the Pakistan–China frontier." },
   ],
   khaplu: [
     { name: "Khaplu Palace", type: "Fort", blurb: "A beautifully restored royal residence, open to visitors." },

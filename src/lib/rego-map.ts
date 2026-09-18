@@ -25,9 +25,25 @@ export const MAP_CATEGORIES: MapCategory[] = [
   { slug: "viewpoints", name: "Viewpoints", icon: "Binoculars", color: "#0891b2", emoji: "🔭" },
   { slug: "lakes", name: "Lakes", icon: "Waves", color: "#0284c7", emoji: "🌊" },
   { slug: "rivers", name: "Rivers", icon: "Waves", color: "#0ea5e9", emoji: "〰️" },
+  { slug: "waterfalls", name: "Waterfalls", icon: "Droplets", color: "#0e7490", emoji: "💧" },
   { slug: "parks", name: "Parks", icon: "Trees", color: "#16a34a", emoji: "🌲" },
+  /* Valleys, villages, deserts and heritage sites were all landing in
+     "Tourist Spots", which is where four different kinds of place go to
+     become indistinguishable. A traveller filtering for a valley and a
+     traveller filtering for a rock carving want different days out. */
+  { slug: "valleys", name: "Valleys & Meadows", icon: "MountainSnow", color: "#166534", emoji: "🏞️" },
+  { slug: "villages", name: "Cultural Villages", icon: "Home", color: "#9a3412", emoji: "🏘️" },
+  { slug: "deserts", name: "Deserts", icon: "Sun", color: "#ca8a04", emoji: "🏜️" },
+  { slug: "heritage", name: "Heritage & Archaeology", icon: "ScrollText", color: "#78350f", emoji: "🗿" },
   { slug: "camping", name: "Camping Sites", icon: "Tent", color: "#15803d", emoji: "⛺" },
   { slug: "trekking", name: "Trekking Routes", icon: "Footprints", color: "#4d7c0f", emoji: "🥾" },
+  /* The Baltoro side of Shigar is the reason these exist. A traveller looking
+     for K2 and one looking for the trail to it want different things, and
+     filing an 8,000m peak, the glacier below it and the camp at its foot all
+     under "Trekking Routes" answers neither. */
+  { slug: "peaks", name: "Mountains & Peaks", icon: "Triangle", color: "#475569", emoji: "🏔️" },
+  { slug: "glaciers", name: "Glaciers", icon: "Snowflake", color: "#38bdf8", emoji: "🧊" },
+  { slug: "base-camps", name: "Base Camps & Trek Camps", icon: "TentTree", color: "#7c2d12", emoji: "🏕️" },
   { slug: "roads", name: "Roads", icon: "Route", color: "#6b7280", emoji: "🛣️" },
   { slug: "road-alerts", name: "Road Alerts", icon: "TriangleAlert", color: "#ea580c", emoji: "⚠️" },
   { slug: "petrol", name: "Petrol Pumps", icon: "Fuel", color: "#7c3aed", emoji: "⛽" },
