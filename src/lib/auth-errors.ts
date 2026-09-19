@@ -73,9 +73,38 @@ export function friendlyAuthError(raw: string): FriendlyError {
   }
 
   if (/captcha/.test(m)) {
+    /* ------------------------------------------------------------------
+       Supabase passes Cloudflare's reason through in brackets, e.g.
+       "captcha protection: request disallowed (invalid-input-secret)".
+       Collapsing all of them into one message threw away the only clue
+       that says whose problem it is — and sent people to refresh the
+       page for a fault a refresh cannot fix.
+
+       Three of these are worth telling apart:
+         invalid-input-secret    the SECRET in Supabase does not pair with
+                                 NEXT_PUBLIC_TURNSTILE_SITE_KEY. No amount
+                                 of retrying will help; an admin must fix it.
+         timeout-or-duplicate    the token expired (~5 min) or was already
+                                 spent. Ticking the box again works.
+         invalid-input-response  malformed token, or the site key is not
+                                 allowed on this hostname in Cloudflare —
+                                 www.rego.services and rego.services are
+                                 different hostnames to Turnstile.
+       ------------------------------------------------------------------ */
+    if (/invalid-input-secret|invalid-secret/.test(m)) {
+      return {
+        message:
+          "The security check is misconfigured on our side. Please contact us — retrying won't help.",
+      };
+    }
+    if (/timeout-or-duplicate/.test(m)) {
+      return {
+        message: "That security check expired. Tick the box again and resubmit.",
+      };
+    }
     return {
       message:
-        "The security check didn't pass. Refresh the page and try once more.",
+        "The security check didn't pass. Tick the box again and resubmit.",
     };
   }
 
