@@ -31,6 +31,8 @@ import {
   Ban,
   FileText,
   Eye,
+  EyeOff,
+  Loader2,
   ChevronDown,
   Pencil,
   Clock,
@@ -62,6 +64,12 @@ import {
   type Listing,
 } from "@/lib/data";
 import { feedAllListings } from "@/lib/home-feed";
+import {
+  getAllManagedListings,
+  adminHideListing,
+  adminDeleteListing,
+  type ManagedListing,
+} from "@/lib/admin-actions";
 import {
   listAll,
   addListing,
@@ -1192,15 +1200,57 @@ function ListingsTable({
   const [q, setQ] = React.useState("");
   // Real, approved listings from the database (no sample data).
   const [dbListings, setDbListings] = React.useState<Listing[] | null>(null);
-  React.useEffect(() => {
+
+  /* ------------------------------------------------------------------
+     WHICH TABLE DID EACH ROW COME FROM?
+
+     feedAllListings() flattens eleven tables into one uniform Listing,
+     and a Listing carries no table name — so this screen could show a
+     listing and had no way to act on it. Category is not enough either:
+     "Transport" alone is four different tables (transports,
+     transport_services, rental_vehicles, transport_providers).
+
+     getAllManagedListings() already returns the table alongside each id,
+     so one extra fetch gives the mapping. A row whose id is absent from
+     that map simply gets no buttons rather than a guessed table — the
+     safe direction for an action that is permanent.
+     ------------------------------------------------------------------ */
+  const [managed, setManaged] = React.useState<ManagedListing[]>([]);
+  const [busy, setBusy] = React.useState<string | null>(null);
+
+  const load = React.useCallback(() => {
     let active = true;
     feedAllListings().then((rows) => {
       if (active) setDbListings(rows);
+    });
+    getAllManagedListings().then((rows) => {
+      if (active) setManaged(rows);
     });
     return () => {
       active = false;
     };
   }, []);
+
+  React.useEffect(() => load(), [load]);
+
+  const tableById = React.useMemo(() => {
+    const m = new Map<string, string>();
+    for (const l of managed) m.set(l.id, l.table);
+    return m;
+  }, [managed]);
+
+  /* Hide and delete both reload afterwards, so the row leaving the list is
+     the database's answer and not an optimistic guess. */
+  const act = async (key: string, fn: () => Promise<unknown>) => {
+    setBusy(key);
+    try {
+      await fn();
+      setDbListings(null);
+      load();
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const match = (l: { title?: string; location?: string; category?: string }) => {
     if (!q.trim()) return true;
@@ -1381,7 +1431,16 @@ function ListingsTable({
                 </td>
               </tr>
             ))}
-            {listingRows.map((l) => (
+            {listingRows.map((l) => {
+              const table = tableById.get(l.id);
+              const key = `${table}:${l.id}`;
+              const isBusy = busy === key;
+              /* What the confirm dialogs name. Titles repeat across a fleet —
+                 three vehicles called "Car" is normal — so the location and
+                 price go in too, because they are what distinguishes the row
+                 on this screen. */
+              const what = `"${l.title}" — ${l.location}, ${formatPrice(l.price)}`;
+              return (
               <tr key={l.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3">
                   <Link
@@ -1407,10 +1466,55 @@ function ListingsTable({
                       <Star className="h-3.5 w-3.5 fill-gold text-gold" />
                       {l.rating.toFixed(1)}
                     </span>
+
+                    {table && (
+                      <>
+                        <button
+                          disabled={isBusy}
+                          title="Take off the public site — reversible from Manage Listings"
+                          aria-label="Hide from the site"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Hide ${what} from the site?\n\nIt stays in the database and can be restored from Manage Listings.`
+                              )
+                            ) {
+                              act(key, () => adminHideListing(table, l.id));
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] font-semibold text-forest hover:bg-muted disabled:opacity-50"
+                        >
+                          {isBusy ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <EyeOff className="h-3.5 w-3.5" />
+                          )}
+                          Hide
+                        </button>
+                        <button
+                          disabled={isBusy}
+                          title="Delete permanently — cannot be undone"
+                          aria-label="Delete permanently"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Permanently delete ${what}?\n\nThis cannot be undone. To take it off the site without losing it, use Hide instead.`
+                              )
+                            ) {
+                              act(key, () => adminDeleteListing(table, l.id));
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
