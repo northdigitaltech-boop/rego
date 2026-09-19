@@ -184,10 +184,40 @@ export async function getProofSignedUrl(value: string, expiresInSec = 120): Prom
   if (!value) return "";
   if (/^https?:\/\//i.test(value)) return value; // legacy public URL
   if (!isSupabaseConfigured) return "";
-  const { data } = await supabase.storage
-    .from("payment-proofs")
-    .createSignedUrl(value, expiresInSec);
-  return data?.signedUrl ?? "";
+
+  /* ------------------------------------------------------------------
+     SIGNED BY THE SERVER, NOT HERE (SEC-007, phase135).
+
+     This used to call createSignedUrl() directly, which only worked
+     because the bucket was readable by ANY signed-in account — and that
+     is exactly what made every bank slip on Rego downloadable by anyone
+     who registered.
+
+     /api/booking/proof verifies the session, confirms the caller is the
+     customer or provider on a booking that references this file, and
+     only then mints a URL. The bucket itself is now closed to direct
+     reads.
+
+     expiresInSec is no longer honoured — the server sets the lifetime,
+     because a client-chosen expiry is not a limit. The parameter stays
+     so the two existing call sites keep compiling.
+     ------------------------------------------------------------------ */
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) return "";
+
+    const res = await fetch("/api/booking/proof", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ path: value }),
+    });
+    if (!res.ok) return "";
+    const json = (await res.json()) as { ok?: boolean; url?: string };
+    return json?.ok && json.url ? json.url : "";
+  } catch {
+    return "";
+  }
 }
 
 /* ---------------- Mutations ---------------- */
