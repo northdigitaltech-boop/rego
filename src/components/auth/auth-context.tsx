@@ -255,11 +255,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
          so say so rather than calling /token and getting the captcha refusal
          in place of the real reason. */
       throw new Error("We couldn't complete the signup. Please try again.");
-      try {
-        localStorage.removeItem(GUEST_KEY);
-      } catch {
-        /* ignore */
-      }
     },
     []
   );
