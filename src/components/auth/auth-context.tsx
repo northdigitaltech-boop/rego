@@ -222,11 +222,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      // Confirmation disabled → sign in immediately.
-      // Note: the Turnstile token is single-use, so it is NOT reused here. With
-      // "Confirm email" ON (our setup) this line is never reached.
-      const { error: e2 } = await supabase.auth.signInWithPassword({ email: e, password });
-      if (e2) throw new Error(e2.message);
+      /* ------------------------------------------------------------------
+         ALREADY SIGNED IN — DO NOT SIGN IN AGAIN.
+
+         When "Confirm email" is OFF, signUp returns a SESSION as well as a
+         user. The account is created and the browser is authenticated; there
+         is nothing left to do.
+
+         This used to call signInWithPassword() here regardless, on the
+         assumption — written in the comment that was here — that the line was
+         unreachable because confirmation was on. It was reachable, and it
+         failed every time: Supabase enforces captcha on /token as well as
+         /signup, the Turnstile token is single-use and was already spent on
+         the signup, so the follow-up sign-in arrived with no token and came
+         back "400 captcha protection: request disallowed (no captcha_token
+         found)".
+
+         The visible result was the worst kind: the account WAS created, and
+         the person was told the security check failed. Trying again then said
+         "User already registered".
+         ------------------------------------------------------------------ */
+      if (data.session) {
+        try {
+          localStorage.removeItem(GUEST_KEY);
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+
+      /* No user and no session, with no error raised. Nothing to sign in as,
+         so say so rather than calling /token and getting the captcha refusal
+         in place of the real reason. */
+      throw new Error("We couldn't complete the signup. Please try again.");
       try {
         localStorage.removeItem(GUEST_KEY);
       } catch {
