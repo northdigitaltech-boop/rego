@@ -54,13 +54,66 @@
 --     table.
 -- ---------------------------------------------------------------------------
 
+/* ------------------------------------------------------------
+   A cast that cannot throw.
+
+   The first version of this file compared b.id to
+   messages.booking_id directly, because phase6-chat.sql declares
+   booking_id as `uuid references public.bookings(id)`. The live
+   table does not match that declaration — Postgres rejected the
+   policy with:
+
+     42883: operator does not exist: uuid = text
+
+   So one of the two columns is text. Rather than guess which,
+   the block below reads the real types from the catalog and
+   builds the comparison to fit. This helper is what makes the
+   text side safe: a booking_id that is not a valid uuid becomes
+   NULL instead of raising, so one malformed row cannot make
+   every message in the table unreadable.
+   ------------------------------------------------------------ */
+create or replace function public.safe_uuid(p text)
+  returns uuid
+  language plpgsql
+  immutable
+  set search_path = public
+as $$
+begin
+  return p::uuid;
+exception when others then
+  return null;
+end;
+$$;
+
 do $$
-declare pol record;
+declare
+  pol       record;
+  msg_type  text;
+  bk_type   text;
+  join_expr text;
 begin
   if to_regclass('public.messages') is null then
     raise notice 'skipped — public.messages not present';
     return;
   end if;
+
+  select data_type into msg_type from information_schema.columns
+   where table_schema='public' and table_name='messages' and column_name='booking_id';
+  select data_type into bk_type from information_schema.columns
+   where table_schema='public' and table_name='bookings' and column_name='id';
+
+  /* Prefer the form that keeps bookings' primary-key index usable: compare
+     against b.id untouched and cast the other side. */
+  if msg_type = bk_type then
+    join_expr := 'b.id = messages.booking_id';
+  elsif bk_type = 'uuid' then
+    join_expr := 'b.id = public.safe_uuid(messages.booking_id::text)';
+  else
+    join_expr := 'b.id::text = messages.booking_id::text';
+  end if;
+
+  raise notice 'messages.booking_id is %, bookings.id is % -> using: %',
+    msg_type, bk_type, join_expr;
 
   execute 'alter table public.messages enable row level security';
 
@@ -76,20 +129,22 @@ begin
      for anon, and is_admin() is SECURITY DEFINER — the arrangement that turned
      ordinary reads into errors across 48 tables in phase110. Anonymous
      visitors have no auth.email() and no business in a booking thread. */
-  execute $p$
+  execute format($p$
     create policy "m_read" on public.messages for select to authenticated
     using (
       sender_email = auth.email()
       or public.is_admin()
       or exists (
         select 1 from public.bookings b
-         where b.id = messages.booking_id
+         where %s
            and (b.customer_email = auth.email() or b.owner_email = auth.email())
       )
-    )$p$;
+    )$p$, join_expr);
 
   /* Write: as yourself, into a conversation you are part of. */
-  execute $p$
+  /* INSERT sees the new row's columns unqualified, so the same expression
+     needs `messages.` dropped from it. */
+  execute format($p$
     create policy "m_insert" on public.messages for insert to authenticated
     with check (
       sender_email = auth.email()
@@ -97,11 +152,11 @@ begin
         public.is_admin()
         or exists (
           select 1 from public.bookings b
-           where b.id = booking_id
+           where %s
              and (b.customer_email = auth.email() or b.owner_email = auth.email())
         )
       )
-    )$p$;
+    )$p$, replace(join_expr, 'messages.', ''));
 
   /* No update and no delete policy, for anyone. A sent message is a record of
      what was agreed — a provider who could quietly edit "no refunds" into a
