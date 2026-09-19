@@ -220,6 +220,33 @@ export async function getAllProviders(): Promise<TransportProviderRow[]> {
   return (data as TransportProviderRow[]) ?? [];
 }
 
+/* ------------------------------------------------------------------
+   EVERY row, whatever its status — for admin moderation only.
+
+   The getApproved* getters above filter on status AND active, which is
+   right for the public site and wrong for a moderation screen: a listing
+   an admin needs to remove is often one that should not be public. These
+   two return the lot, and the admin Manage Listings screen does the
+   filtering itself.
+   ------------------------------------------------------------------ */
+export async function getAllTransportServices(): Promise<TransportServiceRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from("transport_services")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as TransportServiceRow[]) ?? [];
+}
+
+export async function getAllRentalVehicles(): Promise<RentalVehicleRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from("rental_vehicles")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as RentalVehicleRow[]) ?? [];
+}
+
 export async function getPendingProviders(): Promise<TransportProviderRow[]> {
   if (!isSupabaseConfigured) return [];
   const { data } = await supabase

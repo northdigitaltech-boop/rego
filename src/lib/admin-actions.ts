@@ -6,8 +6,14 @@ import {
   getAllCompanies as getAllTourCompanies,
   getAllPackages,
   getAllGuides,
+  getAllTransports,
 } from "@/lib/tour-companies";
-import { getAllProviders as getAllTransportProviders } from "@/lib/transport";
+import {
+  getAllProviders as getAllTransportProviders,
+  getAllTransportServices,
+  getAllRentalVehicles,
+} from "@/lib/transport";
+import { getAllCompanies as getAllExpeditionCompanies } from "@/lib/expeditions";
 import { getAllMediaProviders } from "@/lib/media";
 import { getAllRestaurants } from "@/lib/restaurants";
 import { getAllActivities } from "@/lib/activities";
@@ -28,6 +34,56 @@ export interface ManagedListing {
   title: string;
   ownerEmail: string;
   status: string; // pending | approved | rejected
+  /** Location and price, when the row carries them — see `detailOf`. */
+  detail: string;
+}
+
+/* ------------------------------------------------------------------
+   A line that tells two same-named listings apart.
+
+   Titles are not unique and often not descriptive: a transport fleet
+   can hold three vehicles all called "Car". Deleting is permanent, so
+   the screen has to show enough to be sure which row is which BEFORE
+   the button is pressed — the location and the price are what the
+   admin recognises from the Listings tab.
+
+   Every listing table names these columns differently, so rather than
+   a map per table this reads whichever of the known aliases is
+   present. A row with none of them gets an empty string and simply
+   shows nothing extra, which is what it did before.
+   ------------------------------------------------------------------ */
+const PLACE_KEYS = ["location", "city", "district", "route", "address", "area"] as const;
+const PRICE_KEYS = [
+  "price",
+  "price_per_day",
+  "price_per_trip",
+  "starting_price",
+  "price_per_night",
+  "daily_rate",
+] as const;
+
+function detailOf(r: Record<string, unknown>): string {
+  const bits: string[] = [];
+
+  for (const k of PLACE_KEYS) {
+    const v = r[k];
+    if (typeof v === "string" && v.trim()) {
+      bits.push(v.trim());
+      break;
+    }
+  }
+
+  for (const k of PRICE_KEYS) {
+    const v = r[k];
+    // 0 is a real price ("free"), so test the type rather than truthiness.
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    if (Number.isFinite(n)) {
+      bits.push(`PKR ${n.toLocaleString("en-PK")}`);
+      break;
+    }
+  }
+
+  return bits.join(" · ");
 }
 
 interface TypeDef {
@@ -44,6 +100,26 @@ const TYPES: TypeDef[] = [
   { label: "Tour Company", table: "tour_companies", getAll: getAllTourCompanies },
   { label: "Tour Package", table: "tour_packages", getAll: getAllPackages },
   { label: "Transport Provider", table: "transport_providers", getAll: getAllTransportProviders },
+  /* ------------------------------------------------------------------
+     The four below were missing, and the gap was not cosmetic.
+
+     `transport_providers` is the COMPANY. The rows a traveller actually
+     books — the individual vehicle, route service or rental — live in
+     `transports`, `transport_services` and `rental_vehicles`, and none
+     of them appeared here. So a vehicle listed on the site could be seen
+     in the admin Listings tab and removed from nowhere: the only screen
+     with hide and delete buttons never loaded its table.
+
+     All four carry the same `status` + `owner_email` columns as the rest
+     and are covered by the phase30b RLS policies (`owner_email =
+     auth.email() or public.is_admin()`), so the generic hide / unhide /
+     delete below work on them unchanged — and the database, not the UI,
+     is what refuses a non-admin.
+     ------------------------------------------------------------------ */
+  { label: "Transport Vehicle", table: "transports", getAll: getAllTransports },
+  { label: "Transport Service", table: "transport_services", getAll: getAllTransportServices },
+  { label: "Rental Vehicle", table: "rental_vehicles", getAll: getAllRentalVehicles },
+  { label: "Expedition Company", table: "expedition_companies", getAll: getAllExpeditionCompanies },
   { label: "Tour Guide", table: "tour_guides", getAll: getAllGuides },
   { label: "Media / Photographer", table: "media_providers", getAll: getAllMediaProviders },
   { label: "Restaurant", table: "restaurants", getAll: getAllRestaurants },
@@ -70,6 +146,7 @@ export async function getAllManagedListings(): Promise<ManagedListing[]> {
             title: String(r.title ?? r.name ?? "Untitled"),
             ownerEmail: String(r.owner_email ?? ""),
             status: String(r.status ?? "pending"),
+            detail: detailOf(r),
           } as ManagedListing;
         });
       } catch {

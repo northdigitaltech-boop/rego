@@ -462,6 +462,16 @@ export async function getTransportById(id: string): Promise<TransportRow | null>
   return data as TransportRow;
 }
 
+/** Every vehicle, whatever its status — admin moderation only. */
+export async function getAllTransports(): Promise<TransportRow[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from("transports")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return (data as TransportRow[]) ?? [];
+}
+
 export async function getPendingTransports(): Promise<TransportRow[]> {
   if (!isSupabaseConfigured) return [];
   const { data } = await supabase

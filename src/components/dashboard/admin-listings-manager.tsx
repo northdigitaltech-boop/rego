@@ -63,7 +63,10 @@ export function AdminListingsManager() {
   const filtered = listings.filter((l) => {
     if (typeFilter !== "all" && l.type !== typeFilter) return false;
     if (statusFilter !== "all" && l.status !== statusFilter) return false;
-    if (q && !`${l.title} ${l.ownerEmail} ${l.type}`.toLowerCase().includes(q)) return false;
+    // `detail` is searchable too, so a location typed from the Listings tab
+    // ("Skardu", say) finds the row even when several share a title.
+    if (q && !`${l.title} ${l.detail} ${l.ownerEmail} ${l.type}`.toLowerCase().includes(q))
+      return false;
     return true;
   });
 
@@ -130,6 +133,7 @@ export function AdminListingsManager() {
                 <p className="truncate font-semibold text-forest">{l.title}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {l.type}
+                  {l.detail ? ` · ${l.detail}` : ""}
                   {l.ownerEmail ? ` · ${l.ownerEmail}` : ""}
                 </p>
               </div>
@@ -156,7 +160,11 @@ export function AdminListingsManager() {
               <button
                 disabled={isBusy}
                 onClick={() => {
-                  if (window.confirm(`Permanently delete "${l.title}"? This cannot be undone.`)) {
+                  /* The title alone is not enough to confirm against — several
+                     listings can share one. Name the location and price too, so
+                     the dialog identifies the exact row being destroyed. */
+                  const what = l.detail ? `"${l.title}" (${l.detail})` : `"${l.title}"`;
+                  if (window.confirm(`Permanently delete ${what}? This cannot be undone.`)) {
                     act(key, () => adminDeleteListing(l.table, l.id));
                   }
                 }}
