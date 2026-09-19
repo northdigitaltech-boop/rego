@@ -54,7 +54,6 @@ export const dynamic = "force-dynamic";
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
 const API_KEY = process.env.CLOUDINARY_API_KEY ?? "";
 const API_SECRET = process.env.CLOUDINARY_API_SECRET ?? "";
-const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -138,9 +137,22 @@ export async function POST(req: Request) {
   /* Cloudinary signs the alphabetically-sorted parameter string. Only the
      parameters included here are covered — anything the browser adds beyond
      them is rejected by Cloudinary as unsigned. */
+  /* ------------------------------------------------------------------
+     THE UPLOAD PRESET IS DELIBERATELY NOT SIGNED OR SENT.
+
+     The preset has its own folder configured — `safarigb`, from the
+     project's former name — and every unsigned upload lands there no
+     matter what the code asks for. Sending the preset alongside an
+     explicit `folder` puts two answers in one request and leaves the
+     destination up to Cloudinary's precedence rules.
+
+     A signed upload does not need a preset at all: the preset exists to
+     let UNSIGNED uploads through. Dropping it means the folder this
+     route chooses is the only folder in the request, so a photo goes
+     where the module says and nowhere else.
+     ------------------------------------------------------------------ */
   const timestamp = Math.floor(Date.now() / 1000);
   const params: Record<string, string> = { folder, timestamp: String(timestamp) };
-  if (PRESET) params.upload_preset = PRESET;
 
   const toSign = Object.keys(params)
     .sort()
@@ -158,6 +170,5 @@ export async function POST(req: Request) {
     folder,
     apiKey: API_KEY,
     cloudName: CLOUD_NAME,
-    uploadPreset: PRESET || undefined,
   });
 }

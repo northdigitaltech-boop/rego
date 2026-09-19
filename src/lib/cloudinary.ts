@@ -43,7 +43,6 @@ interface SignedUpload {
   folder: string;
   apiKey: string;
   cloudName: string;
-  uploadPreset?: string;
 }
 
 /** null when signing is not configured — the caller then uses the old path. */
@@ -97,13 +96,14 @@ async function upload(file: File, resource: "image" | "auto", kind: string): Pro
 
   const signed = await getSignature(kind);
   if (signed) {
-    /* Order does not matter to Cloudinary, but the SET of parameters does:
-       it re-signs exactly what the server signed, so nothing extra may be
-       added here. */
+    /* Exactly the parameters the server signed, and no others. Cloudinary
+       re-signs what it receives, so one extra field — `upload_preset`, say —
+       makes the signature invalid. The preset is deliberately absent: it
+       carries its own folder (`safarigb`), which would compete with the
+       module folder this upload is meant to land in. */
     form.append("api_key", signed.apiKey);
     form.append("timestamp", String(signed.timestamp));
     form.append("folder", signed.folder);
-    if (signed.uploadPreset) form.append("upload_preset", signed.uploadPreset);
     form.append("signature", signed.signature);
     return post(
       `https://api.cloudinary.com/v1_1/${signed.cloudName}/${resource}/upload`,
