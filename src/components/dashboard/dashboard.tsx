@@ -766,7 +766,7 @@ function Profile() {
       </h2>
 
       <div className="mt-5 flex items-center gap-4">
-        <AvatarUpload
+        <AvatarUpload folder="avatars"
           value={user.avatar ?? ""}
           onChange={(url) => updateProfile({ avatar: url })}
         />

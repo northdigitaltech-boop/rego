@@ -115,9 +115,9 @@ async function upload(file: File, resource: "image" | "auto", kind: string): Pro
   return post(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resource}/upload`, form);
 }
 
-/** Upload an image and return its secure URL. */
-export async function uploadToCloudinary(file: File): Promise<string> {
-  return upload(file, "image", "listing");
+/** Upload an image. `folder` is a module key from UPLOAD_FOLDERS. */
+export async function uploadToCloudinary(file: File, folder = "misc"): Promise<string> {
+  return upload(file, "image", folder);
 }
 
 /**
@@ -125,6 +125,6 @@ export async function uploadToCloudinary(file: File): Promise<string> {
  * secure URL. Uses Cloudinary's `auto` resource type so the same preset works
  * for documents as well as images.
  */
-export async function uploadFileToCloudinary(file: File): Promise<string> {
-  return upload(file, "auto", "document");
+export async function uploadFileToCloudinary(file: File, folder = "documents"): Promise<string> {
+  return upload(file, "auto", folder);
 }

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { clientIp } from "@/lib/rate-limit";
 import { limitAndLogShared } from "@/lib/rate-limit-guard";
+import { folderFor } from "@/lib/upload-folders";
 
 /* ============================================================
  * Signs one Cloudinary upload, for one signed-in person.
@@ -58,13 +59,9 @@ const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
-/** Uploads a person may ask for. The browser picks a name, never a path. */
-const FOLDERS: Record<string, string> = {
-  listing: "rego/listings",
-  avatar: "rego/avatars",
-  document: "rego/documents",
-  story: "rego/stories",
-};
+/* The folder map lives in src/lib/upload-folders.ts and is shared with the
+   client, which sends a MODULE KEY. The path is resolved here — a browser
+   that could name its own folder could write anywhere in the account. */
 
 function sameOrigin(req: Request): boolean {
   const host = req.headers.get("host");
@@ -135,8 +132,8 @@ export async function POST(req: Request) {
     body = {};
   }
 
-  const kind = typeof body.kind === "string" ? body.kind : "listing";
-  const folder = FOLDERS[kind] ?? FOLDERS.listing;
+  const kind = typeof body.kind === "string" ? body.kind : "";
+  const folder = folderFor(kind);
 
   /* Cloudinary signs the alphabetically-sorted parameter string. Only the
      parameters included here are covered — anything the browser adds beyond

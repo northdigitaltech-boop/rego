@@ -580,7 +580,7 @@ function ProviderForm({
         </Field>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Profile image / logo</span>
-          <ImageUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+          <ImageUpload folder="transport" value={f.logo} onChange={(url) => set({ logo: url })} />
         </div>
       </FormSection>
 
@@ -617,7 +617,7 @@ function ProviderForm({
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-          <ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
+          <ImageUpload folder="transport" value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
         </div>
       </FormSection>
 
@@ -641,15 +641,15 @@ function ProviderForm({
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-forest">License / permit</span>
-            <ImageUpload value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
+            <ImageUpload folder="transport" value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
           </div>
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-forest">Owner ID photo</span>
-            <ImageUpload value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
+            <ImageUpload folder="transport" value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
           </div>
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-forest">Registration proof</span>
-            <ImageUpload value={f.ownership_doc} onChange={(url) => set({ ownership_doc: url })} />
+            <ImageUpload folder="transport" value={f.ownership_doc} onChange={(url) => set({ ownership_doc: url })} />
           </div>
         </div>
       </FormSection>
@@ -851,7 +851,7 @@ function ServiceForm({
         <Field label="Route / service area"><input value={f.route} onChange={(e) => set({ route: e.target.value })} className="auth-input" placeholder="Skardu – Khaplu" /></Field>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-          <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
+          <ImageUpload folder="transport" value={f.image} onChange={(url) => set({ image: url })} />
         </div>
       </FormSection>
 
@@ -921,7 +921,7 @@ function ServiceForm({
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Service images</span>
-          <MultiImageUpload value={f.images} onChange={(urls) => set({ images: urls })} />
+          <MultiImageUpload folder="transport" value={f.images} onChange={(urls) => set({ images: urls })} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
@@ -1149,11 +1149,11 @@ function RentalForm({
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
+        <ImageUpload folder="transport" value={f.image} onChange={(url) => set({ image: url })} />
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Vehicle images</span>
-        <MultiImageUpload value={f.images} onChange={(urls) => set({ images: urls })} />
+        <MultiImageUpload folder="transport" value={f.images} onChange={(urls) => set({ images: urls })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Damage policy"><textarea rows={3} value={f.damage_policy} onChange={(e) => set({ damage_policy: e.target.value })} className="auth-input resize-none" /></Field>

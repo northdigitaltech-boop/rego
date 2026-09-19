@@ -10,9 +10,12 @@ import { cn } from "@/lib/utils";
 export function AvatarUpload({
   value,
   onChange,
+  folder = "avatars",
 }: {
   value: string;
   onChange: (url: string) => void;
+  /** Module key from UPLOAD_FOLDERS — decides where this lands in Cloudinary. */
+  folder?: string;
 }) {
   const [uploading, setUploading] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -21,7 +24,7 @@ export function AvatarUpload({
     if (!file) return;
     setUploading(true);
     try {
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, folder);
       onChange(url);
     } catch {
       /* ignore */
@@ -67,11 +70,14 @@ export function MultiImageUpload({
   onChange,
   min = GALLERY_MIN,
   max = GALLERY_MAX,
+  folder = "misc",
 }: {
   value: string[];
   onChange: (urls: string[]) => void;
   min?: number;
   max?: number;
+  /** Module key from UPLOAD_FOLDERS. */
+  folder?: string;
 }) {
   const [uploading, setUploading] = React.useState(false);
   const [note, setNote] = React.useState("");
@@ -103,7 +109,7 @@ export function MultiImageUpload({
     const urls: string[] = [];
     for (const f of toUpload) {
       try {
-        urls.push(await uploadToCloudinary(f));
+        urls.push(await uploadToCloudinary(f, folder));
       } catch {
         /* ignore a single bad file — keep the rest */
       }
@@ -201,9 +207,12 @@ export function MultiImageUpload({
 export function ImageUpload({
   value,
   onChange,
+  folder = "misc",
 }: {
   value: string;
   onChange: (url: string) => void;
+  /** Module key from UPLOAD_FOLDERS. */
+  folder?: string;
 }) {
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -214,7 +223,7 @@ export function ImageUpload({
     setError("");
     setUploading(true);
     try {
-      const url = await uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file, folder);
       onChange(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed");

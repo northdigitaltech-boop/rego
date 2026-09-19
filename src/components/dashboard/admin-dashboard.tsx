@@ -2419,7 +2419,7 @@ export function DestinationsAdmin({
         </div>
 
         <AdminAddField label="Cover image">
-          <ImageUpload value={image} onChange={setImage} />
+          <ImageUpload folder="site" value={image} onChange={setImage} />
           <input
             value={image}
             onChange={(e) => setImage(e.target.value)}

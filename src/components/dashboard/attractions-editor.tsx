@@ -242,7 +242,7 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
                 <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
                   Photo (optional — uses the destination cover when empty)
                 </span>
-                <ImageUpload value={a.image} onChange={(url) => patch(i, "image", url)} />
+                <ImageUpload folder="attractions" value={a.image} onChange={(url) => patch(i, "image", url)} />
               </div>
             </div>
           ))}

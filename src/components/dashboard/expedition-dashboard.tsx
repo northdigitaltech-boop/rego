@@ -282,8 +282,8 @@ function CompanyForm({ company, peaks, routes, onSaved }: { company: ExpeditionC
       <div className="grid gap-5 lg:grid-cols-2">
         <Card title="Company basics">
           <div className="flex gap-4">
-            <div><span className="mb-1 block text-xs font-semibold text-forest">Logo</span><AvatarUpload value={c.logo ?? ""} onChange={(u) => set({ logo: u })} /></div>
-            <div className="flex-1"><span className="mb-1 block text-xs font-semibold text-forest">Cover image</span><ImageUpload value={c.cover_image ?? ""} onChange={(u) => set({ cover_image: u })} /></div>
+            <div><span className="mb-1 block text-xs font-semibold text-forest">Logo</span><AvatarUpload folder="expeditions" value={c.logo ?? ""} onChange={(u) => set({ logo: u })} /></div>
+            <div className="flex-1"><span className="mb-1 block text-xs font-semibold text-forest">Cover image</span><ImageUpload folder="expeditions" value={c.cover_image ?? ""} onChange={(u) => set({ cover_image: u })} /></div>
           </div>
           <Field label="Company name" value={c.name} onChange={(v) => set({ name: v })} />
           <Area label="Description" value={c.description ?? ""} onChange={(v) => set({ description: v })} />
@@ -319,7 +319,7 @@ function CompanyForm({ company, peaks, routes, onSaved }: { company: ExpeditionC
       </div>
       <Card title="Safety & gallery">
         <Area label="Safety policy" value={c.safety_policy ?? ""} onChange={(v) => set({ safety_policy: v })} />
-        <div><span className="mb-1 block text-xs font-semibold text-forest">Gallery</span><MultiImageUpload value={c.gallery ?? []} onChange={(v) => set({ gallery: v })} /></div>
+        <div><span className="mb-1 block text-xs font-semibold text-forest">Gallery</span><MultiImageUpload folder="expeditions" value={c.gallery ?? []} onChange={(v) => set({ gallery: v })} /></div>
       </Card>
       <SaveBar status={status} onSave={save} />
     </div>
@@ -355,8 +355,8 @@ function ProForm({ pro, roles, peaks, routes, onSaved }: { pro: ExpeditionProRow
       <div className="grid gap-5 lg:grid-cols-2">
         <Card title="Your profile">
           <div className="flex gap-4">
-            <div><span className="mb-1 block text-xs font-semibold text-forest">Photo</span><AvatarUpload value={p.photo ?? ""} onChange={(u) => set({ photo: u })} /></div>
-            <div className="flex-1"><span className="mb-1 block text-xs font-semibold text-forest">Cover image</span><ImageUpload value={p.cover_image ?? ""} onChange={(u) => set({ cover_image: u })} /></div>
+            <div><span className="mb-1 block text-xs font-semibold text-forest">Photo</span><AvatarUpload folder="expeditions" value={p.photo ?? ""} onChange={(u) => set({ photo: u })} /></div>
+            <div className="flex-1"><span className="mb-1 block text-xs font-semibold text-forest">Cover image</span><ImageUpload folder="expeditions" value={p.cover_image ?? ""} onChange={(u) => set({ cover_image: u })} /></div>
           </div>
           <Field label="Full name" value={p.full_name} onChange={(v) => set({ full_name: v })} />
           <label className="block">
@@ -401,7 +401,7 @@ function ProForm({ pro, roles, peaks, routes, onSaved }: { pro: ExpeditionProRow
         <Card title="Available routes"><MultiCheck label="Trekking routes" options={routes.map((r) => r.name)} value={p.available_routes ?? []} onChange={(v) => set({ available_routes: v })} /></Card>
       </div>
       <Card title="Portfolio gallery">
-        <MultiImageUpload value={p.gallery ?? []} onChange={(v) => set({ gallery: v })} />
+        <MultiImageUpload folder="expeditions" value={p.gallery ?? []} onChange={(v) => set({ gallery: v })} />
       </Card>
       <SaveBar status={status} onSave={save} />
     </div>
@@ -468,7 +468,7 @@ function TeamManager({ companyId, roles }: { companyId: string; roles: Expeditio
           </div>
           <div>
             <span className="mb-1 block text-xs font-semibold text-forest">Photo</span>
-            <AvatarUpload value={editing.photo ?? ""} onChange={(url) => setEditing({ ...editing, photo: url })} />
+            <AvatarUpload folder="expeditions" value={editing.photo ?? ""} onChange={(url) => setEditing({ ...editing, photo: url })} />
           </div>
           <Area label="Short bio" value={editing.bio ?? ""} onChange={(v) => setEditing({ ...editing, bio: v })} />
           <div className="flex justify-end gap-2">
@@ -607,11 +607,11 @@ function PackagesManager({ company, peaks, routes }: { company: ExpeditionCompan
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <span className="mb-1 block text-xs font-semibold text-forest">Cover image</span>
-              <ImageUpload value={editing.image ?? ""} onChange={(url) => setEditing({ ...editing, image: url })} />
+              <ImageUpload folder="expeditions" value={editing.image ?? ""} onChange={(url) => setEditing({ ...editing, image: url })} />
             </div>
             <div>
               <span className="mb-1 block text-xs font-semibold text-forest">Gallery</span>
-              <MultiImageUpload value={editing.gallery ?? []} onChange={(urls) => setEditing({ ...editing, gallery: urls })} />
+              <MultiImageUpload folder="expeditions" value={editing.gallery ?? []} onChange={(urls) => setEditing({ ...editing, gallery: urls })} />
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm font-medium text-forest">

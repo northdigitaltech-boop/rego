@@ -266,7 +266,7 @@ function PinsTab({ places, onChange }: { places: MapPlaceRow[]; onChange: () => 
           )}
           <L label="Source"><input className="auth-input" value={f.source} onChange={(e) => set("source", e.target.value)} /></L>
           <L label="Description" full><textarea rows={2} className="auth-input resize-none" value={f.description} onChange={(e) => set("description", e.target.value)} /></L>
-          <L label="Photo" full><ImageUpload value={photo} onChange={setPhoto} /></L>
+          <L label="Photo" full><ImageUpload folder="map" value={photo} onChange={setPhoto} /></L>
         </div>
 
         {/* Link with existing service */}

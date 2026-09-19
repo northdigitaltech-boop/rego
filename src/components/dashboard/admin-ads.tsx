@@ -129,7 +129,7 @@ export function AdminAds() {
             <span className="mb-1 block text-xs font-semibold text-muted-foreground">
               Slide image * — wide landscape works best (about 1400×500)
             </span>
-            <ImageUpload value={f.image} onChange={(url) => set("image", url)} />
+            <ImageUpload folder="ads" value={f.image} onChange={(url) => set("image", url)} />
           </div>
 
           <L label="Small line above the title">

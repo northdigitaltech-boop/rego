@@ -109,7 +109,7 @@ export function RegoMapReport() {
       <Field label="Description"><textarea rows={2} className="auth-input resize-none" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the road situation…" /></Field>
       <div>
         <span className="mb-1 block text-xs font-semibold text-forest">Photo (optional)</span>
-        <ImageUpload value={photo} onChange={setPhoto} />
+        <ImageUpload folder="map" value={photo} onChange={setPhoto} />
       </div>
       {error && <p className="text-xs font-medium text-red-600">{error}</p>}
       <button type="submit" disabled={busy || !user} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-forest px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">

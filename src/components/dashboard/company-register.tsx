@@ -202,7 +202,7 @@ export function CompanyRegisterWizard({
             className="mt-3"
           />
           <L label="Company logo">
-            <ImageUpload value={logo} onChange={setLogo} />
+            <ImageUpload folder="tour-companies" value={logo} onChange={setLogo} />
           </L>
         </>
       ),
@@ -232,7 +232,7 @@ export function CompanyRegisterWizard({
             <PlaceInput value={destination} onChange={setDestination} placeholder="e.g. Hunza" />
           </L>
           <L label="A photo from this trip">
-            <ImageUpload value={image} onChange={setImage} />
+            <ImageUpload folder="tour-companies" value={image} onChange={setImage} />
           </L>
         </>
       ),

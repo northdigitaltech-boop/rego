@@ -311,12 +311,12 @@ export function useVerificationStep(opts?: {
 
         {show.idPhoto && (
           <VLabel label="Photo of your ID">
-            <ImageUpload value={v.idPhoto} onChange={(u) => set({ idPhoto: u })} />
+            <ImageUpload folder="misc" value={v.idPhoto} onChange={(u) => set({ idPhoto: u })} />
           </VLabel>
         )}
         {show.licencePhoto && (
           <VLabel label="Licence, permit or certificate">
-            <ImageUpload
+            <ImageUpload folder="misc"
               value={v.licencePhoto}
               onChange={(u) => set({ licencePhoto: u })}
             />
@@ -324,7 +324,7 @@ export function useVerificationStep(opts?: {
         )}
         {show.registrationProof && (
           <VLabel label="Business registration proof">
-            <ImageUpload
+            <ImageUpload folder="misc"
               value={v.registrationProof}
               onChange={(u) => set({ registrationProof: u })}
             />

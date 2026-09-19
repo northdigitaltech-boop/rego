@@ -158,7 +158,7 @@ export function MediaRegisterWizard({
             <input value={languages} onChange={(e) => setLanguages(e.target.value)} className="auth-input" placeholder="English, Urdu, Balti" />
           </L>
           <L label="Your photo or logo">
-            <ImageUpload value={logo} onChange={setLogo} />
+            <ImageUpload folder="media" value={logo} onChange={setLogo} />
           </L>
         </>
       ),

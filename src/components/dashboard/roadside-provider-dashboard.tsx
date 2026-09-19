@@ -481,11 +481,11 @@ function ProfileForm({
       <div className="flex flex-wrap items-center gap-6">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Logo / profile image</span>
-          <AvatarUpload value={profileImage} onChange={setProfileImage} />
+          <AvatarUpload folder="roadside" value={profileImage} onChange={setProfileImage} />
         </div>
         <div className="flex-1 min-w-[220px]">
           <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-          <ImageUpload value={coverImage} onChange={setCoverImage} />
+          <ImageUpload folder="roadside" value={coverImage} onChange={setCoverImage} />
         </div>
       </div>
 
@@ -581,7 +581,7 @@ function ProfileForm({
       {/* Gallery */}
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span>
-        <MultiImageUpload value={gallery} onChange={setGallery} />
+        <MultiImageUpload folder="roadside" value={gallery} onChange={setGallery} />
       </div>
 
       {/* Verification doc (optional, private) */}
@@ -589,7 +589,7 @@ function ProfileForm({
         <span className="mb-1.5 block text-sm font-semibold text-forest">
           Verification document (optional, private)
         </span>
-        <ImageUpload value={verificationDoc} onChange={setVerificationDoc} />
+        <ImageUpload folder="roadside" value={verificationDoc} onChange={setVerificationDoc} />
         <p className="mt-1 text-xs text-muted-foreground">
           Shared only with admins for verification — never shown to customers.
         </p>

@@ -217,7 +217,7 @@ export function RoadsideRequestModal({
 
             <div>
               <span className="mb-1.5 block text-sm font-semibold text-forest">Photo (optional)</span>
-              <ImageUpload value={image} onChange={setImage} />
+              <ImageUpload folder="roadside" value={image} onChange={setImage} />
             </div>
 
             <div>

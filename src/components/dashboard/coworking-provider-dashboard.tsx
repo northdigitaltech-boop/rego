@@ -353,11 +353,11 @@ function ProfileForm({
       <div className="flex flex-wrap items-center gap-6">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Logo</span>
-          <AvatarUpload value={logo} onChange={setLogo} />
+          <AvatarUpload folder="coworking" value={logo} onChange={setLogo} />
         </div>
         <div className="flex-1 min-w-[220px]">
           <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-          <ImageUpload value={cover} onChange={setCover} />
+          <ImageUpload folder="coworking" value={cover} onChange={setCover} />
         </div>
       </div>
 
@@ -410,7 +410,7 @@ function ProfileForm({
 
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span>
-        <MultiImageUpload value={gallery} onChange={setGallery} />
+        <MultiImageUpload folder="coworking" value={gallery} onChange={setGallery} />
       </div>
 
       {error && <p className="text-sm font-medium text-red-600">{error}</p>}

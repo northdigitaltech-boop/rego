@@ -437,7 +437,7 @@ export function AdminBlog() {
 
             {/* ---- Image ---- */}
             <Field label="Featured image">
-              <ImageUpload
+              <ImageUpload folder="blog"
                 value={draft.featured_image_url}
                 onChange={(url) => set("featured_image_url", url)}
               />
@@ -537,7 +537,7 @@ export function AdminBlog() {
                   />
                 </Field>
                 <Field label="Open Graph image" hint="Falls back to the featured image.">
-                  <ImageUpload
+                  <ImageUpload folder="blog"
                     value={draft.og_image_url}
                     onChange={(url) => set("og_image_url", url)}
                   />

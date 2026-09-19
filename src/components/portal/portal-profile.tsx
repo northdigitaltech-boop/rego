@@ -150,7 +150,7 @@ export function PortalProfile({ profile }: { profile: StaffProfile }) {
 
       <Card title="Your picture">
         <div className="max-w-xs">
-          <ImageUpload value={avatar} onChange={onAvatar} />
+          <ImageUpload folder="staff" value={avatar} onChange={onAvatar} />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Saved as soon as it uploads. This is the same picture your Rego

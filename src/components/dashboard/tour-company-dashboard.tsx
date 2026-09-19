@@ -621,16 +621,16 @@ function CompanyForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Company logo</span>
-          <ImageUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+          <ImageUpload folder="tour-companies" value={f.logo} onChange={(url) => set({ logo: url })} />
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-          <ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
+          <ImageUpload folder="tour-companies" value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
         </div>
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span>
-        <MultiImageUpload value={f.gallery} onChange={(urls) => set({ gallery: urls })} />
+        <MultiImageUpload folder="tour-companies" value={f.gallery} onChange={(urls) => set({ gallery: urls })} />
       </div>
 
       <SectionTitle>About &amp; coverage</SectionTitle>
@@ -668,15 +668,15 @@ function CompanyForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Tourism license</span>
-          <ImageUpload value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
+          <ImageUpload folder="tour-companies" value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Owner ID photo</span>
-          <ImageUpload value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
+          <ImageUpload folder="tour-companies" value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Registration proof</span>
-          <ImageUpload value={f.ownership_doc} onChange={(url) => set({ ownership_doc: url })} />
+          <ImageUpload folder="tour-companies" value={f.ownership_doc} onChange={(url) => set({ ownership_doc: url })} />
         </div>
       </div>
 
@@ -892,11 +892,11 @@ function PackageForm({
       <Field label="Available dates (comma separated)"><input value={f.available_dates} onChange={(e) => set({ available_dates: e.target.value })} className="auth-input" placeholder="2026-07-01, 2026-08-15" /></Field>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
+        <ImageUpload folder="tour-companies" value={f.image} onChange={(url) => set({ image: url })} />
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Package images</span>
-        <MultiImageUpload value={f.images} onChange={(urls) => set({ images: urls })} />
+        <MultiImageUpload folder="tour-companies" value={f.images} onChange={(urls) => set({ images: urls })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Cancellation policy"><textarea rows={2} value={f.cancellation_policy} onChange={(e) => set({ cancellation_policy: e.target.value })} className="auth-input resize-none" /></Field>
@@ -1088,11 +1088,11 @@ function TransportForm({
       <Field label="Available areas (comma separated)"><input value={f.areas} onChange={(e) => set({ areas: e.target.value })} className="auth-input" placeholder="Skardu, Hunza, Deosai" /></Field>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
+        <ImageUpload folder="tour-companies" value={f.image} onChange={(url) => set({ image: url })} />
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Vehicle images</span>
-        <MultiImageUpload value={f.images} onChange={(urls) => set({ images: urls })} />
+        <MultiImageUpload folder="tour-companies" value={f.images} onChange={(urls) => set({ images: urls })} />
       </div>
       <SaveButtons saving={saving} editing={editing} onCancel={onCancel} />
     </form>
@@ -1224,7 +1224,7 @@ function GuideForm({
       <FormHeader title={editing ? "Edit guide" : "Add tour guide"} onCancel={onCancel} />
       {error && <ErrorBox>{error}</ErrorBox>}
       <div className="flex items-center gap-4">
-        <AvatarUpload value={f.image} onChange={(url) => set({ image: url })} />
+        <AvatarUpload folder="tour-companies" value={f.image} onChange={(url) => set({ image: url })} />
         <div className="flex-1">
           <Field label="Guide name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field>
         </div>

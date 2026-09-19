@@ -318,7 +318,7 @@ function EventFormModal({
           <div className="flex flex-wrap items-start gap-6">
             <div>
               <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-              <ImageUpload value={image} onChange={setImage} />
+              <ImageUpload folder="events" value={image} onChange={setImage} />
             </div>
           </div>
 
@@ -374,7 +374,7 @@ function EventFormModal({
 
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span>
-            <MultiImageUpload value={gallery} onChange={setGallery} />
+            <MultiImageUpload folder="events" value={gallery} onChange={setGallery} />
           </div>
 
           <div className="flex flex-wrap items-center gap-6">

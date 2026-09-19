@@ -135,7 +135,7 @@ export function AdminAbout() {
         <Card title="Founder Profile Card">
           <div>
             <span className="mb-1 block text-xs font-semibold text-forest">Founder photo</span>
-            <AvatarUpload value={content.founder.photo} onChange={(url) => patch((d) => { d.founder.photo = url; })} />
+            <AvatarUpload folder="site" value={content.founder.photo} onChange={(url) => patch((d) => { d.founder.photo = url; })} />
           </div>
           <Field label="Name" value={content.founder.name} onChange={(v) => patch((d) => { d.founder.name = v; })} />
           <Field label="Position" value={content.founder.position} onChange={(v) => patch((d) => { d.founder.position = v; })} />

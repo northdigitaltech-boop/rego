@@ -214,11 +214,11 @@ function ProfileForm({ user, restaurant, propertyType, propertyId, propertyName,
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{error}</div>}
       {saved && <div className="flex items-center gap-2 rounded-lg border border-forest-200 bg-forest-50 px-4 py-2.5 text-sm font-medium text-forest-600"><CheckCircle2 className="h-4 w-4" /> Saved</div>}
       <div className="flex items-center gap-4">
-        <AvatarUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+        <AvatarUpload folder="restaurants" value={f.logo} onChange={(url) => set({ logo: url })} />
         <div className="flex-1"><Field label="Restaurant name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field></div>
       </div>
-      <div><span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span><ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} /></div>
-      <div><span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span><MultiImageUpload value={f.gallery} onChange={(urls) => set({ gallery: urls })} /></div>
+      <div><span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span><ImageUpload folder="restaurants" value={f.cover_image} onChange={(url) => set({ cover_image: url })} /></div>
+      <div><span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span><MultiImageUpload folder="restaurants" value={f.gallery} onChange={(urls) => set({ gallery: urls })} /></div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Phone"><input value={f.phone} onChange={(e) => set({ phone: e.target.value })} className="auth-input" /></Field>
         <Field label="WhatsApp"><input value={f.whatsapp} onChange={(e) => set({ whatsapp: e.target.value })} className="auth-input" /></Field>
@@ -344,7 +344,7 @@ function MenuForm({ restaurant, user, item, onDone, onCancel }: { restaurant: Re
         <Field label="Item name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field>
         <Field label="Category"><select value={f.category} onChange={(e) => set({ category: e.target.value })} className="auth-input">{MENU_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></Field>
       </div>
-      <div><span className="mb-1.5 block text-sm font-semibold text-forest">Item image</span><ImageUpload value={f.image} onChange={(url) => set({ image: url })} /></div>
+      <div><span className="mb-1.5 block text-sm font-semibold text-forest">Item image</span><ImageUpload folder="restaurants" value={f.image} onChange={(url) => set({ image: url })} /></div>
       <Field label="Short description"><textarea rows={2} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Price (PKR)" required><input type="number" value={f.price} onChange={(e) => set({ price: e.target.value })} className="auth-input" /></Field>

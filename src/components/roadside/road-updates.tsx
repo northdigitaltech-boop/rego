@@ -424,7 +424,7 @@ function ReportModal({ onClose }: { onClose: () => void }) {
             <textarea rows={3} className="auth-input resize-none" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's happening on the road?" />
           </Field>
           <Field label="Photo / video">
-            <MultiImageUpload value={media} onChange={setMedia} />
+            <MultiImageUpload folder="roadside" value={media} onChange={setMedia} />
           </Field>
           <Field label="Your phone (optional)">
             <input className="auth-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+92 3xx xxxxxxx" />

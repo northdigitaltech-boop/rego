@@ -130,7 +130,7 @@ export function CoworkingRegisterWizard({
             <input value={address} onChange={(e) => setAddress(e.target.value)} className="auth-input" placeholder="Street, landmark, floor" />
           </L>
           <L label="Photo of the space">
-            <ImageUpload value={logo} onChange={setLogo} />
+            <ImageUpload folder="coworking" value={logo} onChange={setLogo} />
           </L>
         </>
       ),

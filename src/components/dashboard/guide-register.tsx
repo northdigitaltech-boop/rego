@@ -157,7 +157,7 @@ export function GuideRegisterWizard({
             />
           </L>
           <L label="Your photo">
-            <ImageUpload value={image} onChange={setImage} />
+            <ImageUpload folder="guides" value={image} onChange={setImage} />
           </L>
         </>
       ),

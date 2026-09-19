@@ -1080,7 +1080,7 @@ function HomestayForm({
         <span className="mb-1.5 block text-sm font-semibold text-forest">
           Cover image
         </span>
-        <ImageUpload
+        <ImageUpload folder="homestays"
           value={form.image}
           onChange={(url) => setForm({ ...form, image: url })}
         />
@@ -1096,7 +1096,7 @@ function HomestayForm({
         <span className="mb-1.5 block text-sm font-semibold text-forest">
           Gallery images
         </span>
-        <MultiImageUpload
+        <MultiImageUpload folder="homestays"
           value={form.gallery}
           onChange={(urls) => setForm({ ...form, gallery: urls })}
         />
@@ -1306,7 +1306,7 @@ function HomestayForm({
                 <span className="mb-1.5 block text-sm font-semibold text-forest">
                   Room images
                 </span>
-                <MultiImageUpload
+                <MultiImageUpload folder="homestays"
                   value={r.images}
                   onChange={(urls) => updateRoom(i, { images: urls })}
                 />
@@ -1397,7 +1397,7 @@ function HomestayForm({
           <span className="mb-1.5 block text-sm font-semibold text-forest">
             Certificate / license
           </span>
-          <ImageUpload
+          <ImageUpload folder="homestays"
             value={form.license_doc}
             onChange={(url) => setForm({ ...form, license_doc: url })}
           />
@@ -1406,7 +1406,7 @@ function HomestayForm({
           <span className="mb-1.5 block text-sm font-semibold text-forest">
             Owner ID photo
           </span>
-          <ImageUpload
+          <ImageUpload folder="homestays"
             value={form.owner_cnic_doc}
             onChange={(url) => setForm({ ...form, owner_cnic_doc: url })}
           />
@@ -1415,7 +1415,7 @@ function HomestayForm({
           <span className="mb-1.5 block text-sm font-semibold text-forest">
             Ownership / lease proof
           </span>
-          <ImageUpload
+          <ImageUpload folder="homestays"
             value={form.ownership_doc}
             onChange={(url) => setForm({ ...form, ownership_doc: url })}
           />
@@ -1712,7 +1712,7 @@ function Profile({ user }: { user: User }) {
     >
       <h2 className="font-display text-xl font-bold text-forest">Host profile</h2>
       <div className="flex items-center gap-4">
-        <AvatarUpload value={user.avatar ?? ""} onChange={(url) => updateProfile({ avatar: url })} />
+        <AvatarUpload folder="homestays" value={user.avatar ?? ""} onChange={(url) => updateProfile({ avatar: url })} />
         <div>
           <p className="font-semibold text-forest">{user.name}</p>
           <p className="text-sm text-muted-foreground">{user.email}</p>

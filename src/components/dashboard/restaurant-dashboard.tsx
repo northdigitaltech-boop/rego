@@ -389,18 +389,18 @@ function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant:
 
       <SectionTitle>Basics</SectionTitle>
       <div className="flex items-center gap-4">
-        <AvatarUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+        <AvatarUpload folder="restaurants" value={f.logo} onChange={(url) => set({ logo: url })} />
         <div className="flex-1">
           <Field label="Restaurant name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field>
         </div>
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
+        <ImageUpload folder="restaurants" value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span>
-        <MultiImageUpload value={f.gallery} onChange={(urls) => set({ gallery: urls })} />
+        <MultiImageUpload folder="restaurants" value={f.gallery} onChange={(urls) => set({ gallery: urls })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Owner / manager name"><input value={f.owner_name} onChange={(e) => set({ owner_name: e.target.value })} className="auth-input" /></Field>
@@ -443,11 +443,11 @@ function RestaurantForm({ user, restaurant, onSaved }: { user: User; restaurant:
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Food safety / license</span>
-          <ImageUpload value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
+          <ImageUpload folder="restaurants" value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Owner ID photo</span>
-          <ImageUpload value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
+          <ImageUpload folder="restaurants" value={f.owner_cnic_doc} onChange={(url) => set({ owner_cnic_doc: url })} />
         </div>
       </div>
 
@@ -574,7 +574,7 @@ function MenuForm({ restaurant, user, item, onDone, onCancel }: { restaurant: Re
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Item image</span>
-        <ImageUpload value={f.image} onChange={(url) => set({ image: url })} />
+        <ImageUpload folder="restaurants" value={f.image} onChange={(url) => set({ image: url })} />
       </div>
       <Field label="Short description"><textarea rows={2} value={f.description} onChange={(e) => set({ description: e.target.value })} className="auth-input resize-none" /></Field>
       <div className="grid gap-4 sm:grid-cols-4">

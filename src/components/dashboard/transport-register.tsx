@@ -212,7 +212,7 @@ export function TransportRegisterWizard({
           </L>
           {area.picker}
           <L label="Logo or photo of your business">
-            <ImageUpload value={logo} onChange={setLogo} />
+            <ImageUpload folder="transport" value={logo} onChange={setLogo} />
           </L>
         </>
       ),
@@ -278,7 +278,7 @@ export function TransportRegisterWizard({
             />
           </L>
           <L label="Photo of the vehicle">
-            <ImageUpload value={image} onChange={setImage} />
+            <ImageUpload folder="transport" value={image} onChange={setImage} />
           </L>
         </>
       ),
@@ -321,13 +321,13 @@ export function TransportRegisterWizard({
           </div>
 
           <L label="Photo of owner ID">
-            <ImageUpload value={ownerCnicDoc} onChange={setOwnerCnicDoc} />
+            <ImageUpload folder="transport" value={ownerCnicDoc} onChange={setOwnerCnicDoc} />
           </L>
           <L label="Licence or permit">
-            <ImageUpload value={licenseDoc} onChange={setLicenseDoc} />
+            <ImageUpload folder="transport" value={licenseDoc} onChange={setLicenseDoc} />
           </L>
           <L label="Business registration proof">
-            <ImageUpload value={ownershipDoc} onChange={setOwnershipDoc} />
+            <ImageUpload folder="transport" value={ownershipDoc} onChange={setOwnershipDoc} />
           </L>
         </>
       ),

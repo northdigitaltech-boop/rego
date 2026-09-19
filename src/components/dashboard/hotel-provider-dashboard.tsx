@@ -651,7 +651,7 @@ export function HotelProviderDashboard({
                 <span className="mb-1.5 block text-sm font-semibold text-forest">
                   Hotel photo
                 </span>
-                <ImageUpload
+                <ImageUpload folder="hotels"
                   value={form.image}
                   onChange={(url) => setForm({ ...form, image: url })}
                 />
@@ -667,7 +667,7 @@ export function HotelProviderDashboard({
                 <span className="mb-1.5 block text-sm font-semibold text-forest">
                   More photos (gallery)
                 </span>
-                <MultiImageUpload
+                <MultiImageUpload folder="hotels"
                   value={form.gallery}
                   onChange={(urls) => setForm({ ...form, gallery: urls })}
                 />
@@ -744,7 +744,7 @@ export function HotelProviderDashboard({
                     <span className="mb-1.5 block text-sm font-semibold text-forest">
                       Certificate / license
                     </span>
-                    <ImageUpload
+                    <ImageUpload folder="hotels"
                       value={form.license_doc}
                       onChange={(url) => setForm({ ...form, license_doc: url })}
                     />
@@ -753,7 +753,7 @@ export function HotelProviderDashboard({
                     <span className="mb-1.5 block text-sm font-semibold text-forest">
                       Owner ID photo
                     </span>
-                    <ImageUpload
+                    <ImageUpload folder="hotels"
                       value={form.owner_cnic_doc}
                       onChange={(url) =>
                         setForm({ ...form, owner_cnic_doc: url })
@@ -764,7 +764,7 @@ export function HotelProviderDashboard({
                     <span className="mb-1.5 block text-sm font-semibold text-forest">
                       Ownership / lease proof
                     </span>
-                    <ImageUpload
+                    <ImageUpload folder="hotels"
                       value={form.ownership_doc}
                       onChange={(url) =>
                         setForm({ ...form, ownership_doc: url })
@@ -1091,7 +1091,7 @@ function Profile({ user }: { user: User }) {
       </h2>
 
       <div className="flex items-center gap-4">
-        <AvatarUpload
+        <AvatarUpload folder="hotels"
           value={user.avatar ?? ""}
           onChange={(url) => updateProfile({ avatar: url })}
         />
@@ -1359,7 +1359,7 @@ function RoomsManager({
           <span className="mb-1.5 block text-sm font-semibold text-forest">
             Room photos
           </span>
-          <MultiImageUpload value={images} onChange={setImages} />
+          <MultiImageUpload folder="hotels" value={images} onChange={setImages} />
         </div>
         <Button
           type="submit"

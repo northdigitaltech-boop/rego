@@ -165,7 +165,7 @@ export function ActivityRegisterWizard({
             />
           </L>
           <L label="A photo of it">
-            <ImageUpload value={image} onChange={setImage} />
+            <ImageUpload folder="activities" value={image} onChange={setImage} />
           </L>
         </>
       ),

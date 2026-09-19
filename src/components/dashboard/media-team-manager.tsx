@@ -309,14 +309,14 @@ function ProviderForm({
       </div>
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{error}</div>}
       <div className="flex items-center gap-4">
-        <AvatarUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+        <AvatarUpload folder="media" value={f.logo} onChange={(url) => set({ logo: url })} />
         <div className="flex-1">
           <Field label="Full name / business name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field>
         </div>
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
+        <ImageUpload folder="media" value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Service type">

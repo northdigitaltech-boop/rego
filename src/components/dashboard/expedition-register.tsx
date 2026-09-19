@@ -214,7 +214,7 @@ export function ExpeditionRegisterWizard({
           )}
 
           <L label={isCompany ? "Company logo" : "Your photo"}>
-            <ImageUpload value={photo} onChange={setPhoto} />
+            <ImageUpload folder="expeditions" value={photo} onChange={setPhoto} />
           </L>
           <L label={isCompany ? "About the company" : "A short introduction"}>
             <textarea

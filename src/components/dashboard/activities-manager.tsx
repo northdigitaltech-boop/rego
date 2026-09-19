@@ -318,7 +318,7 @@ function ActivityForm({
         <div className="mt-4 space-y-4">
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-            <ImageUpload value={image} onChange={setImage} />
+            <ImageUpload folder="activities" value={image} onChange={setImage} />
           </div>
           {/* Outdoor vs Indoor */}
           <div>
@@ -378,7 +378,7 @@ function ActivityForm({
           </div>
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-forest">Gallery images</span>
-            <MultiImageUpload value={gallery} onChange={setGallery} />
+            <MultiImageUpload folder="activities" value={gallery} onChange={setGallery} />
           </div>
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}
           <div className="flex justify-end gap-2 border-t border-border pt-4">

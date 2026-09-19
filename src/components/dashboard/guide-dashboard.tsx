@@ -568,7 +568,7 @@ function GuideForm({
 
       <SectionTitle>About you</SectionTitle>
       <div className="flex items-center gap-4">
-        <AvatarUpload value={f.image} onChange={(url) => set({ image: url })} />
+        <AvatarUpload folder="guides" value={f.image} onChange={(url) => set({ image: url })} />
         <div className="flex-1">
           <Field label="Full name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field>
         </div>
@@ -627,7 +627,7 @@ function GuideForm({
       </div>
 
       <SectionTitle>Gallery</SectionTitle>
-      <MultiImageUpload value={f.gallery} onChange={(urls) => set({ gallery: urls })} />
+      <MultiImageUpload folder="guides" value={f.gallery} onChange={(urls) => set({ gallery: urls })} />
 
       <SectionTitle>Verification documents</SectionTitle>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -636,11 +636,11 @@ function GuideForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">CNIC / Passport photo</span>
-          <ImageUpload value={f.cnic_doc} onChange={(url) => set({ cnic_doc: url })} />
+          <ImageUpload folder="guides" value={f.cnic_doc} onChange={(url) => set({ cnic_doc: url })} />
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Guide license / certificate</span>
-          <ImageUpload value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
+          <ImageUpload folder="guides" value={f.license_doc} onChange={(url) => set({ license_doc: url })} />
         </div>
       </div>
 

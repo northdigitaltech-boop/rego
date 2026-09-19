@@ -159,7 +159,7 @@ export function RestaurantRegisterWizard({
             </L>
           </div>
           <L label="Photo of your restaurant">
-            <ImageUpload value={logo} onChange={setLogo} />
+            <ImageUpload folder="restaurants" value={logo} onChange={setLogo} />
           </L>
         </>
       ),

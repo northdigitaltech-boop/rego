@@ -565,14 +565,14 @@ function ProviderForm({
 
       <SectionTitle>About</SectionTitle>
       <div className="flex items-center gap-4">
-        <AvatarUpload value={f.logo} onChange={(url) => set({ logo: url })} />
+        <AvatarUpload folder="media" value={f.logo} onChange={(url) => set({ logo: url })} />
         <div className="flex-1">
           <Field label="Full name / business name" required><input value={f.name} onChange={(e) => set({ name: e.target.value })} className="auth-input" /></Field>
         </div>
       </div>
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-forest">Cover image</span>
-        <ImageUpload value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
+        <ImageUpload folder="media" value={f.cover_image} onChange={(url) => set({ cover_image: url })} />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Service type">
@@ -626,11 +626,11 @@ function ProviderForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">CNIC / Passport photo</span>
-          <ImageUpload value={f.cnic_doc} onChange={(url) => set({ cnic_doc: url })} />
+          <ImageUpload folder="media" value={f.cnic_doc} onChange={(url) => set({ cnic_doc: url })} />
         </div>
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-forest">Drone license / permit {f.drone_available ? "" : "(if applicable)"}</span>
-          <ImageUpload value={f.drone_license} onChange={(url) => set({ drone_license: url })} />
+          <ImageUpload folder="media" value={f.drone_license} onChange={(url) => set({ drone_license: url })} />
         </div>
       </div>
 
@@ -881,7 +881,7 @@ function PortfolioManager({
           <div className="space-y-3">
             <div>
               <span className="mb-1.5 block text-sm font-semibold text-forest">Thumbnail image</span>
-              <ImageUpload value={f.url} onChange={(url) => set({ url })} />
+              <ImageUpload folder="media" value={f.url} onChange={(url) => set({ url })} />
             </div>
             {(type === "video" || type === "reel") && (
               <Field label="Video link (YouTube / Vimeo / MP4)"><input value={f.video_url} onChange={(e) => set({ video_url: e.target.value })} className="auth-input" placeholder="https://youtube.com/watch?v=…" /></Field>

@@ -264,7 +264,7 @@ export function StayRegisterWizard({
             />
           </L>
           <L label="Main photo">
-            <ImageUpload value={image} onChange={setImage} />
+            <ImageUpload folder="hotels" value={image} onChange={setImage} />
           </L>
           <L label="A line or two about the place">
             <textarea
