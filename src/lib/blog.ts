@@ -164,12 +164,34 @@ export async function getPublishedPosts(q: PostQuery = {}): Promise<PostPage> {
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   if (!isSupabaseConfigured || !slug) return null;
   try {
+    /* ----------------------------------------------------------------
+       WHY NOT .maybeSingle()
+
+       maybeSingle() asks PostgREST for at most one row and returns an
+       ERROR — not a row — when the filter matches two. This page reads
+       that as "no such post" and renders a 404, so a single duplicated
+       slug takes BOTH articles offline while they carry on appearing,
+       and linking, from the index. Un-openable, with nothing on the
+       page to say why.
+
+       phase85 declares `slug text not null unique`, but inside
+       `create table if not exists` — so on a database where blog_posts
+       already existed, that constraint was never applied and duplicates
+       are possible. The query at the bottom of this file finds them.
+
+       Ordering and taking the first row is the honest behaviour: the
+       newest post wins the URL, and the other stays reachable once the
+       slug is corrected. A reader gets an article either way.
+       ---------------------------------------------------------------- */
     const { data } = await supabase
       .from("blog_posts")
       .select(PUBLIC_COLUMNS)
       .eq("slug", slug)
-      .maybeSingle();
-    return (data as unknown as BlogPost) ?? null;
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(1);
+
+    const rows = (data as unknown as BlogPost[]) ?? [];
+    return rows[0] ?? null;
   } catch {
     return null;
   }

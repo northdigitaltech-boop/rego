@@ -356,12 +356,28 @@ export function AdminBlog() {
               label="Slug"
               hint="Part of the public URL. Changing it after publishing breaks existing links — add a redirect if you must."
             >
+              {/* Typed slugs went in raw, so a capital letter, a space or an
+                  apostrophe produced a value the database CHECK rejects —
+                  and the save failed with nothing on screen explaining why.
+                  Normalising here means what is typed is what gets stored.
+                  The trailing hyphen is kept WHILE typing (stripping it makes
+                  "two-part" impossible to type) and trimmed on blur. */}
               <input
                 value={draft.slug}
                 onChange={(e) => {
                   setSlugTouched(true);
-                  set("slug", e.target.value);
+                  set(
+                    "slug",
+                    e.target.value
+                      .toLowerCase()
+                      .replace(/['’]/g, "")
+                      .replace(/[^a-z0-9-]+/g, "-")
+                      .replace(/-{2,}/g, "-")
+                      .replace(/^-+/, "")
+                      .slice(0, 90)
+                  );
                 }}
+                onBlur={() => set("slug", slugifyTitle(draft.slug))}
                 className="w-full rounded-lg border border-border bg-card px-3 py-2 font-mono text-xs"
               />
             </Field>
