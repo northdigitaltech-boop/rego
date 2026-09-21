@@ -255,11 +255,46 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
       );
     };
     loadIds();
-    // Re-poll so brand-new bookings reach the owner's alert list quickly.
-    const t = setInterval(() => { if (document.visibilityState === "visible") loadIds(); }, 60000);
+    /* ------------------------------------------------------------------
+       WHY FIVE MINUTES AND NOT ONE.
+
+       This is the most expensive thing the navbar does: SEVEN parallel
+       Supabase queries, plus an eighth for an admin, and it runs on
+       EVERY page for every signed-in person. At 60s that was roughly
+       seven queries a minute each, forever, most of them returning the
+       identical list of ids they returned a minute earlier.
+
+       What it collects is the set of bookings whose message threads to
+       watch. That set only changes when a booking is created — rare —
+       whereas the messages inside those threads change often, and they
+       are polled separately below at 30s, which is untouched.
+
+       So the cost of this interval is narrow and worth naming: a
+       brand-new booking's thread joins the alert list up to five
+       minutes later than it used to. The booking itself still confirms
+       immediately, its emails still send immediately, and it is already
+       visible in the dashboard — this is only the navbar's watch list
+       catching up.
+
+       Pausing while the tab is hidden was already here and is the other
+       half of keeping this cheap.
+       ------------------------------------------------------------------ */
+    const t = setInterval(() => { if (document.visibilityState === "visible") loadIds(); }, 300000);
+
+    /* Catch up the moment the tab comes back, which is what makes the
+       five-minute interval acceptable: somebody who books, switches away
+       and returns sees their thread immediately rather than waiting out
+       the rest of the window. Costs one refresh per return to the tab,
+       against the 4 it saves every five minutes. */
+    const onVisible = () => {
+      if (document.visibilityState === "visible") loadIds();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       active = false;
       clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [user]);
   const { unread } = useUnread(bookingIds, user?.email ?? "");
