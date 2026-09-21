@@ -156,13 +156,32 @@ function JourneyCard({ listing: l, index, hidePrice }: { listing: Listing; index
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-gold px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-forest-900 shadow-gold-glow">
           <Route className="h-3 w-3" /> {l.categoryLabel}
         </span>
+        {/* ------------------------------------------------------------
+            This block is anchored to the BOTTOM of a fixed-height card,
+            so anything it cannot fit grows upwards — out of the card,
+            over the category badge and off the image.
+
+            An unclamped title is all it takes: one provider pasted a
+            whole itinerary into the title field and it rendered as
+            twenty lines across the artwork. Clamping is the fix, but
+            the badge is deliberately a sibling of the clamped text
+            rather than inside it, or a long title would clip the
+            verified mark away with the overflow.
+            ------------------------------------------------------------ */}
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
           <div className="min-w-0">
-            <h3 className="font-display text-lg font-semibold leading-snug text-white">
-              {l.title} <VerifiedBadge className="h-4 w-4" />
+            <h3 className="flex items-start gap-1 font-display text-lg font-semibold leading-snug text-white">
+              <span className="line-clamp-2">{l.title}</span>
+              <VerifiedBadge className="mt-0.5 h-4 w-4" />
             </h3>
-            <p className="mt-0.5 flex items-center gap-2 text-xs text-white/85">
-              <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-gold" /> {l.location}</span>
+            {/* Wraps rather than squeezing the rating out of view when the
+                place name is long — "SWAT VALLEY — KALAM & MALAM JABBA"
+                is one line on a laptop and two on a phone. */}
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-white/85">
+              <span className="flex min-w-0 items-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0 text-gold" />
+                <span className="truncate">{l.location}</span>
+              </span>
               <Rating rating={l.rating} reviews={l.reviews} light />
             </p>
           </div>
@@ -191,12 +210,17 @@ function FoodCard({ listing: l, index, hidePrice }: { listing: Listing; index: n
             <UtensilsCrossed className="h-3 w-3 text-gold-700" /> {formatPrice(l.price)}/{l.unit}
           </span>
         )}
+        {/* Same bottom-anchored overlay, same clamp — see JourneyCard above. */}
         <div className="absolute inset-x-0 bottom-0 p-4">
-          <h3 className="font-display text-base font-semibold leading-snug text-white">
-            {l.title} <VerifiedBadge className="h-4 w-4" />
+          <h3 className="flex items-start gap-1 font-display text-base font-semibold leading-snug text-white">
+            <span className="line-clamp-2">{l.title}</span>
+            <VerifiedBadge className="mt-0.5 h-4 w-4" />
           </h3>
-          <p className="mt-0.5 flex items-center gap-2 text-xs text-white/85">
-            <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-gold" /> {l.location}</span>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-white/85">
+            <span className="flex min-w-0 items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0 text-gold" />
+              <span className="truncate">{l.location}</span>
+            </span>
             <Rating rating={l.rating} reviews={l.reviews} light />
           </p>
         </div>

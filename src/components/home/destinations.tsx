@@ -51,7 +51,11 @@ export function Destinations() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-forest-900/90 via-forest-900/25 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-4">
-              <h3 className="font-display text-lg font-bold text-white">
+              {/* Same bottom-anchored overlay as the service cards: without a
+                  clamp a long name grows upward out of the tile. Destination
+                  names are admin-entered and short today, so this is a guard
+                  rather than a fix for something visibly broken. */}
+              <h3 className="line-clamp-2 font-display text-lg font-bold text-white">
               {d.name}
               </h3>
               <p className="mt-0.5 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
