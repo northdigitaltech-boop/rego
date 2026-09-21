@@ -26,6 +26,7 @@ export function Destinations() {
             Popular Destinations
           </h2>
           <Link
+            prefetch={false}
             href="/destinations"
             className="group inline-flex items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -38,6 +39,7 @@ export function Destinations() {
           {destinations.slice(0, 4).map((d, i) => (
             <Reveal key={d.slug} index={i}>
               <Link
+              prefetch={false}
               href={`/destinations/${d.slug}`}
               className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-1 group relative block h-44 overflow-hidden rounded-3xl shadow-premium ring-1 ring-black/5 transition-shadow hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2 sm:h-48"
               >

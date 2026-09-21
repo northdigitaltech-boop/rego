@@ -31,6 +31,7 @@ export function EventsGrid({ items }: { items: EventRow[] }) {
             </p>
           </div>
           <Link
+            prefetch={false}
             href="/events"
             className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -42,6 +43,7 @@ export function EventsGrid({ items }: { items: EventRow[] }) {
         <div className={`grid grid-cols-2 gap-3 sm:gap-5 ${cols}`}>
           {shown.map((e) => (
             <Link
+              prefetch={false}
               key={e.id}
               href={`/events/${e.id}`}
               className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"

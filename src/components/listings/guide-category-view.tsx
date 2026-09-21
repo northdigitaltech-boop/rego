@@ -253,7 +253,7 @@ function StaffGuideCard({ staff }: { staff: CompanyStaffGuide }) {
   const href = `/expeditions/staff/${staff.id}`;
   return (
     <article className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg">
-      <Link href={href} className="absolute inset-0 z-10" aria-label={staff.name} />
+      <Link prefetch={false} href={href} className="absolute inset-0 z-10" aria-label={staff.name} />
       <div className="relative h-48 overflow-hidden bg-muted">
         {staff.photo ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -315,12 +315,14 @@ function StaffGuideCard({ staff }: { staff: CompanyStaffGuide }) {
 
         <div className="relative z-20 mt-auto flex gap-2 pt-3">
           <Link
+            prefetch={false}
             href={href}
             className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted"
           >
             View Profile
           </Link>
           <Link
+            prefetch={false}
             href={`${href}#book`}
             className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5"
           >
@@ -354,7 +356,7 @@ function GuideCard({ guide, typeLabel }: { guide: TourGuideRow; typeLabel: strin
     <article
       className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
-      <Link href={`/listings/${guide.id}`} className="absolute inset-0 z-10" aria-label={guide.name} />
+      <Link prefetch={false} href={`/listings/${guide.id}`} className="absolute inset-0 z-10" aria-label={guide.name} />
       <div className="relative h-48 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(guide.image || "")} alt={guide.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -424,10 +426,10 @@ function GuideCard({ guide, typeLabel }: { guide: TourGuideRow; typeLabel: strin
         </div>
 
         <div className="relative z-20 mt-3 flex gap-2">
-          <Link href={`/listings/${guide.id}`} className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted">
+          <Link prefetch={false} href={`/listings/${guide.id}`} className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted">
             View Profile
           </Link>
-          <Link href={`/listings/${guide.id}#book`} className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5">
+          <Link prefetch={false} href={`/listings/${guide.id}#book`} className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5">
             Book Now
           </Link>
         </div>

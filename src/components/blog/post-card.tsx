@@ -38,7 +38,7 @@ export function PostCard({
         className
       )}
     >
-      <Link href={`/blog-news/${post.slug}`} className="block overflow-hidden">
+      <Link prefetch={false} href={`/blog-news/${post.slug}`} className="block overflow-hidden">
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
           {post.featured_image_url ? (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -61,7 +61,7 @@ export function PostCard({
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <h3 className="font-display text-lg font-bold leading-snug text-forest">
-          <Link href={`/blog-news/${post.slug}`} className="hover:text-gold">
+          <Link prefetch={false} href={`/blog-news/${post.slug}`} className="hover:text-gold">
             {post.title}
           </Link>
         </h3>
@@ -92,6 +92,7 @@ export function PostCard({
         </div>
 
         <Link
+          prefetch={false}
           href={`/blog-news/${post.slug}`}
           className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-forest-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-forest-700"
         >
@@ -111,6 +112,7 @@ export function FeaturedPostCard({ post }: { post: BlogPost }) {
   return (
     <article className="group grid overflow-hidden rounded-2xl border border-border bg-card shadow-premium lg:grid-cols-2">
       <Link
+        prefetch={false}
         href={`/blog-news/${post.slug}`}
         className="relative block aspect-[16/10] overflow-hidden bg-muted lg:aspect-auto lg:h-full"
       >
@@ -141,7 +143,7 @@ export function FeaturedPostCard({ post }: { post: BlogPost }) {
         </div>
 
         <h2 className="mt-3 font-display text-2xl font-extrabold leading-tight text-forest sm:text-3xl">
-          <Link href={`/blog-news/${post.slug}`} className="hover:text-gold">
+          <Link prefetch={false} href={`/blog-news/${post.slug}`} className="hover:text-gold">
             {post.title}
           </Link>
         </h2>
@@ -169,6 +171,7 @@ export function FeaturedPostCard({ post }: { post: BlogPost }) {
         </div>
 
         <Link
+          prefetch={false}
           href={`/blog-news/${post.slug}`}
           className="mt-5 inline-flex w-fit items-center gap-1.5 rounded-lg bg-forest-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest-700"
         >

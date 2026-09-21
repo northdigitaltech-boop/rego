@@ -40,6 +40,7 @@ export function Categories() {
             <p className="mt-1 text-sm text-muted-foreground">Everything you need for a trip to Gilgit-Baltistan.</p>
           </div>
           <Link
+            prefetch={false}
             href="/listings"
             className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -57,6 +58,7 @@ export function Categories() {
                  doing here. */
               <Reveal key={cat.name} index={i}>
               <Link
+                prefetch={false}
                 href={cat.href}
                 className="group flex h-full flex-col items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-2 py-5 text-center shadow-premium transition-[colors,box-shadow,border-color,transform] duration-200 hover:border-gold/60 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2 motion-safe:hover:-translate-y-1"
               >

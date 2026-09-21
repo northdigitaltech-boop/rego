@@ -21,7 +21,7 @@ export function ActivitiesGrid({ items }: { items: ActivityRow[] }) {
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">Treks, safaris, boating and more across Gilgit-Baltistan.</p>
           </div>
-          <Link href="/activities" className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600">
+          <Link prefetch={false} href="/activities" className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600">
             View All Activities
             <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
@@ -29,6 +29,7 @@ export function ActivitiesGrid({ items }: { items: ActivityRow[] }) {
         <div className={`grid grid-cols-2 gap-3 sm:gap-5 ${cols}`}>
           {shown.map((a) => (
             <Link
+              prefetch={false}
               key={a.id}
               href={`/activities/${a.id}`}
               className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"

@@ -53,6 +53,7 @@ function CuratedRow({
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           <Link
+            prefetch={false}
             href={viewAllHref}
             className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -65,6 +66,7 @@ function CuratedRow({
             const Icon = it.icon;
             return (
               <Link
+                prefetch={false}
                 key={it.title}
                 href={it.href}
                 className="group flex flex-col rounded-3xl border border-border/70 bg-card p-5 shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"

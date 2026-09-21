@@ -36,6 +36,7 @@ export function RoadsideProviderGrid({ items }: { items: RoadsideCard[] }) {
             </p>
           </div>
           <Link
+            prefetch={false}
             href="/roadside"
             className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -51,6 +52,7 @@ export function RoadsideProviderGrid({ items }: { items: RoadsideCard[] }) {
               className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
               >
               <Link
+              prefetch={false}
               href={`/roadside/provider/${p.id}`}
               className="absolute inset-0 z-10 rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"
               aria-label={p.name}

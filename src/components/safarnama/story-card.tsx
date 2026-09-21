@@ -30,7 +30,7 @@ export function StoryCard({ story: s }: { story: StoryRow }) {
     /* Lift on hover for pointers; a subtle press-in on tap for touch, where
        there is no hover state to give feedback. */
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-200 ease-out hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-premium-lg active:scale-[0.99] active:shadow-premium motion-reduce:transform-none">
-      <Link href={`/safarnama/${s.id}`} className="relative block h-44 overflow-hidden">
+      <Link prefetch={false} href={`/safarnama/${s.id}`} className="relative block h-44 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(cover, 500)} alt={s.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
         <div className="absolute inset-0 bg-gradient-to-t from-forest-900/50 to-transparent" />
@@ -57,7 +57,7 @@ export function StoryCard({ story: s }: { story: StoryRow }) {
           </span>
         </div>
 
-        <Link href={`/safarnama/${s.id}`} className="mt-2">
+        <Link prefetch={false} href={`/safarnama/${s.id}`} className="mt-2">
           <h3 className="line-clamp-2 font-display text-base font-bold leading-snug text-forest group-hover:text-forest-600">
             {s.title}
           </h3>
@@ -102,7 +102,7 @@ export function StoryCard({ story: s }: { story: StoryRow }) {
         {/* Footer actions */}
         <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3">
           <StoryActions storyId={s.id} title={s.title} initialLikes={s.likes} compact />
-          <Link href={`/safarnama/${s.id}`} className="text-sm font-semibold text-forest-600 group-hover:text-gold">
+          <Link prefetch={false} href={`/safarnama/${s.id}`} className="text-sm font-semibold text-forest-600 group-hover:text-gold">
             Read Story →
           </Link>
         </div>

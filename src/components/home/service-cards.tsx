@@ -69,7 +69,7 @@ function Rating({ rating, reviews, light = false }: { rating: number; reviews?: 
 function PersonCard({ listing: l, index }: { listing: Listing; index: number }) {
   return (
     <Wrap index={index} className="flex flex-col items-center rounded-3xl border border-border/70 bg-card p-5 text-center shadow-premium transition-shadow hover:shadow-premium-lg">
-      <Link href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
+      <Link prefetch={false} href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
       <span className="grid h-24 w-24 place-items-center overflow-hidden rounded-full ring-4 ring-gold/30">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(l.image, 300)} alt={l.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -91,7 +91,7 @@ function PersonCard({ listing: l, index }: { listing: Listing; index: number }) 
 function BrandCard({ listing: l, index }: { listing: Listing; index: number }) {
   return (
     <Wrap index={index} className="flex flex-col items-center rounded-3xl border border-border/70 bg-card p-5 text-center shadow-premium transition-shadow hover:shadow-premium-lg">
-      <Link href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
+      <Link prefetch={false} href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
       <span className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-border bg-white p-1.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(l.image, 300)} alt={l.title} loading="lazy" decoding="async" className="h-full w-full rounded-xl object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -111,7 +111,7 @@ function BrandCard({ listing: l, index }: { listing: Listing; index: number }) {
 function SpecCard({ listing: l, index, hidePrice }: { listing: Listing; index: number; hidePrice?: boolean }) {
   return (
     <Wrap index={index} className="flex items-stretch gap-4 rounded-3xl border border-border/70 bg-card p-3 shadow-premium transition-shadow hover:shadow-premium-lg sm:gap-5 sm:p-4">
-      <Link href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
+      <Link prefetch={false} href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
       {/* Image is a flexible share of the card (never a fixed width), so the
           text column always has room and can't spill outside the card. */}
       <span className="h-32 w-[38%] max-w-[224px] shrink-0 overflow-hidden rounded-2xl sm:h-40">
@@ -148,7 +148,7 @@ function SpecCard({ listing: l, index, hidePrice }: { listing: Listing; index: n
 function JourneyCard({ listing: l, index, hidePrice }: { listing: Listing; index: number; hidePrice?: boolean }) {
   return (
     <Wrap index={index} className="overflow-hidden rounded-3xl shadow-premium transition-shadow hover:shadow-premium-lg">
-      <Link href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
+      <Link prefetch={false} href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
       <div className="relative h-56 sm:h-64">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(l.image, 800)} alt={l.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -200,7 +200,7 @@ function JourneyCard({ listing: l, index, hidePrice }: { listing: Listing; index
 function FoodCard({ listing: l, index, hidePrice }: { listing: Listing; index: number; hidePrice?: boolean }) {
   return (
     <Wrap index={index} className="overflow-hidden rounded-3xl shadow-premium transition-shadow hover:shadow-premium-lg">
-      <Link href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
+      <Link prefetch={false} href={`/listings/${l.id}`} className="absolute inset-0 z-10" aria-label={l.title} />
       <div className="relative h-52 sm:h-60">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(l.image, 500)} alt={l.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />

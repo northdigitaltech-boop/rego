@@ -220,7 +220,7 @@ function TransportCard({ item }: { item: TransportCardItem; }) {
     <article
       className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
-      <Link href={`/listings/${item.id}`} className="absolute inset-0 z-10" aria-label={item.title} />
+      <Link prefetch={false} href={`/listings/${item.id}`} className="absolute inset-0 z-10" aria-label={item.title} />
       <div className="relative h-44 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -308,12 +308,14 @@ function TransportCard({ item }: { item: TransportCardItem; }) {
 
         <div className="relative z-20 mt-3 flex gap-2">
           <Link
+            prefetch={false}
             href={`/listings/${item.id}`}
             className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted"
           >
             View Details
           </Link>
           <Link
+            prefetch={false}
             href={`/listings/${item.id}#book`}
             className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5"
           >

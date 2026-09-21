@@ -65,6 +65,7 @@ export function RoadsideProviderList({
           other roadside services.
         </p>
         <Link
+          prefetch={false}
           href="/roadside"
           className="mt-4 inline-block rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-forest hover:bg-muted"
         >
@@ -94,6 +95,7 @@ export function RoadsideProviderList({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <Link
+                    prefetch={false}
                     href={`/roadside/provider/${p.id}`}
                     className="truncate font-display font-bold text-forest hover:text-gold"
                   >
@@ -165,6 +167,7 @@ export function RoadsideProviderList({
                 <LifeBuoy className="h-4 w-4" /> Request Help
               </button>
               <Link
+                prefetch={false}
                 href={`/roadside/provider/${p.id}`}
                 className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-forest hover:bg-muted"
               >

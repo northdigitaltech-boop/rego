@@ -23,6 +23,7 @@ export function SoloConnectSection({ items }: { items: SoloTravelerRow[] }) {
             </p>
           </div>
           <Link
+            prefetch={false}
             href="/connect"
             className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -46,6 +47,7 @@ export function SoloConnectSection({ items }: { items: SoloTravelerRow[] }) {
               </p>
             </div>
             <Link
+              prefetch={false}
               href="/connect/setup"
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-forest px-5 py-3 text-sm font-semibold text-white shadow-soft transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"
             >

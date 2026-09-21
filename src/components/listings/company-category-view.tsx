@@ -65,6 +65,7 @@ export function CompanyCategoryView({
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {sorted.map((c) => (
           <Link
+            prefetch={false}
             key={c.id}
             href={`/listings/${c.id}`}
             className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"

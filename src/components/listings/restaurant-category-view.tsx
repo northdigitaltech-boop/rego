@@ -184,7 +184,7 @@ function RestaurantCard({ r }: { r: RestaurantRow; }) {
     <article
       className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-2 group relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-shadow hover:shadow-premium-lg"
     >
-      <Link href={`/listings/${r.id}`} className="absolute inset-0 z-10" aria-label={r.name} />
+      <Link prefetch={false} href={`/listings/${r.id}`} className="absolute inset-0 z-10" aria-label={r.name} />
       <div className="relative h-44 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photo(cover)} alt={r.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -216,8 +216,8 @@ function RestaurantCard({ r }: { r: RestaurantRow; }) {
         )}
 
         <div className="relative z-20 mt-3 flex gap-2">
-          <Link href={`/listings/${r.id}`} className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted">View Menu</Link>
-          <Link href={`/listings/${r.id}#book`} className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5">Book Table</Link>
+          <Link prefetch={false} href={`/listings/${r.id}`} className="flex-1 rounded-xl border border-border px-3 py-2 text-center text-xs font-semibold text-forest transition-colors hover:bg-muted">View Menu</Link>
+          <Link prefetch={false} href={`/listings/${r.id}#book`} className="flex-1 rounded-xl bg-gradient-forest px-3 py-2 text-center text-xs font-semibold text-white shadow-soft transition-transform hover:-translate-y-0.5">Book Table</Link>
         </div>
       </div>
     </article>

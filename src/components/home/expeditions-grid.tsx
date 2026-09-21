@@ -36,6 +36,7 @@ export function ExpeditionsGrid({ items }: { items: ExpeditionCard[] }) {
             </p>
           </div>
           <Link
+            prefetch={false}
             href="/expeditions"
             className="group inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-sm font-semibold text-forest-600 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
           >
@@ -47,6 +48,7 @@ export function ExpeditionsGrid({ items }: { items: ExpeditionCard[] }) {
         <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {shown.map((e) => (
             <Link
+              prefetch={false}
               key={`${e.kind}:${e.id}`}
               href={e.href}
               className="group flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium transition-all duration-300 hover:-translate-y-1.5 hover:shadow-premium-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2"
