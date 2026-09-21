@@ -8,7 +8,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ListingsBrowser } from "@/components/listings/listings-browser";
 import { getDestinationBySlug } from "@/lib/destinations";
-import { feedAllListings } from "@/lib/home-feed";
+import { cachedAllListings } from "@/lib/home-feed-cached";
 import { getCategory } from "@/lib/data";
 import {
   contentLength,
@@ -130,7 +130,7 @@ export default async function LocationServicePage({
   const { location, svc, destination, seo } = d;
   const place = destination?.name ?? location.name;
   const heroImage = seo?.hero_image || destination?.image;
-  const allListings = await feedAllListings();
+  const allListings = await cachedAllListings();
   const category = getCategory(service);
 
   return (

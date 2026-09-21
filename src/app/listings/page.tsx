@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ListingsBrowser } from "@/components/listings/listings-browser";
-import { feedAllListings } from "@/lib/home-feed";
+import { cachedAllListings } from "@/lib/home-feed-cached";
 import { buildMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -44,7 +44,7 @@ export async function generateMetadata({
 }
 
 export default async function ListingsPage() {
-  const items = await feedAllListings();
+  const items = await cachedAllListings();
 
   return (
     <>

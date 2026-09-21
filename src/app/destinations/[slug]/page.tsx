@@ -28,7 +28,7 @@ import { DirectAnswer, TravelFAQ } from "@/components/aeo/answer-blocks";
 /* Answer content is rolled out one destination at a time. With the flag off
    this page behaves exactly as it did before Phase 2. */
 const AEO_ENABLED = process.env.NEXT_PUBLIC_AEO_ENABLED === "1";
-import { feedAllListings } from "@/lib/home-feed";
+import { cachedAllListings } from "@/lib/home-feed-cached";
 import { photo, cn } from "@/lib/utils";
 import { destinationDescription, destinationTitle, tidyName } from "@/lib/seo-copy";
 
@@ -144,7 +144,7 @@ export default async function DestinationPage({
     QUICK_FILTERS.find((f) => f.slug === activeCat)?.label ?? "";
   const destination = await getDestinationBySlug(slug);
   if (!destination) notFound();
-  const allListings = await feedAllListings();
+  const allListings = await cachedAllListings();
 
   /* Market data is optional. Every one of these returns empty rather than
      throwing when the tables do not exist, so this page renders exactly as
