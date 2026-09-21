@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Reveal } from "@/components/ui/reveal";
 import { getPlatformStats } from "@/lib/platform-stats";
+import { getRentalCounts, rentalTypeSlug, type RentalType } from "@/lib/rentals";
 import {
   ChevronRight,
+  Building2,
   Mountain,
   Tent,
   Car,
@@ -98,20 +100,55 @@ export function ActivitiesSection() {
   );
 }
 
-export function RentalsSection() {
+/* ------------------------------------------------------------------
+   Homepage Rentals row.
+
+   Every tile used to point at a category page that was only roughly
+   related — Camera Rental went to the photographers list, Camping Kit
+   went to Transport — because there was nowhere better to send them.
+   They now go to the matching /rentals filter.
+
+   The four shown are the four with the most listings, so the row
+   follows what providers have actually listed instead of a fixed
+   guess. Counts are real or absent: a tile with nothing behind it
+   says what it is and nothing more, rather than "0 listings" or an
+   invented number.
+   ------------------------------------------------------------------ */
+const RENTAL_TILES: { type: RentalType; title: string; desc: string; icon: LucideIcon }[] = [
+  { type: "jeep_4x4", title: "Jeep & 4x4", desc: "High-clearance vehicles for rough roads", icon: Car },
+  { type: "car", title: "Car Rental", desc: "Self-drive and chauffeured cars", icon: Car },
+  { type: "bike", title: "Bike Rental", desc: "Motorbikes for the valleys", icon: Bike },
+  { type: "camera", title: "Camera Rental", desc: "Bodies, lenses and drones", icon: Camera },
+  { type: "camping_equipment", title: "Camping Kit", desc: "Tents, bags and trekking gear", icon: Backpack },
+  { type: "house", title: "House Rental", desc: "Whole homes and holiday lets", icon: Home },
+  { type: "coworking_space", title: "Co-working Space", desc: "Desks, offices and meeting rooms", icon: Building2 },
+];
+
+export async function RentalsSection() {
+  const counts = await getRentalCounts().catch(() => ({} as Record<string, number>));
+
+  const ranked = [...RENTAL_TILES].sort(
+    (a, b) => (counts[b.type] ?? 0) - (counts[a.type] ?? 0)
+  );
+
+  const items: Item[] = ranked.slice(0, 4).map((t) => {
+    const n = counts[t.type] ?? 0;
+    return {
+      title: t.title,
+      desc: n > 0 ? `${n} listing${n === 1 ? "" : "s"} · ${t.desc}` : t.desc,
+      href: `/rentals?type=${rentalTypeSlug(t.type)}`,
+      icon: t.icon,
+    };
+  });
+
   return (
     <CuratedRow
       title="Rentals"
       subtitle="Rent what you need for the trip."
-      viewAllHref="/categories/vehicle-rental"
+      viewAllHref="/rentals"
       viewAllLabel="View All Rentals"
       tinted
-      items={[
-        { title: "House Rental", desc: "Self-catering homes & villas", href: "/categories/homestays", icon: Home },
-        { title: "Jeep Rental", desc: "4x4 vehicles with/without driver", href: "/categories/vehicle-rental", icon: Car },
-        { title: "Camera Rental", desc: "Pro cameras & gear", href: "/categories/photographers", icon: Camera },
-        { title: "Camping Kit", desc: "Tents, sleeping bags & more", href: "/categories/transport", icon: Backpack },
-      ]}
+      items={items}
     />
   );
 }

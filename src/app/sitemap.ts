@@ -19,6 +19,7 @@ import { getApprovedStories } from "@/lib/safarnama";
 import { legalPolicies } from "@/lib/legal";
 import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getExpeditionPros } from "@/lib/expeditions";
 import { categoryHasOwnPage } from "@/lib/category-routing";
+import { RENTAL_TYPE_DEFS } from "@/lib/rentals";
 import { getDestinations } from "@/lib/destinations";
 
 // Re-generate the sitemap at most hourly.
@@ -69,8 +70,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // --- Static, indexable marketing/landing pages ---
   add("/", { changeFrequency: "daily", priority: 1 });
-  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy", "/blog-news"]) {
+  for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/rentals", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy", "/blog-news"]) {
     add(p, { changeFrequency: "weekly", priority: 0.7 });
+  }
+  /* One indexable URL per rental type. These are what "jeep rental skardu"
+     style queries land on, and each is a genuinely different list — unlike
+     the price and rating filters, which are excluded on purpose because
+     they only reorder the same rows. */
+  for (const d of RENTAL_TYPE_DEFS) {
+    if (d.type === "other") continue;
+    add(`/rentals?type=${d.slug}`, { changeFrequency: "daily", priority: 0.7 });
   }
   /* Twenty of the category slugs redirect straight into /roadside,
      /events or /activities. Listing them here asked Google to crawl

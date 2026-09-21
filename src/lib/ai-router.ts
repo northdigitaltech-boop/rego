@@ -514,7 +514,7 @@ const INTENT_HREF: Record<SearchIntent, string> = {
   search_hostels: "/categories/hostels",
   search_tour_packages: "/categories/tours",
   search_transport: "/categories/transport",
-  search_vehicle_rental: "/categories/vehicle-rental",
+  search_vehicle_rental: "/rentals",
   search_guides: "/categories/guides",
   search_photographers: "/categories/photographers",
   search_restaurants: "/categories/restaurants",

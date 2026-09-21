@@ -14,6 +14,7 @@ import {
   getAllRentalVehicles,
 } from "@/lib/transport";
 import { getAllCompanies as getAllExpeditionCompanies } from "@/lib/expeditions";
+import { getAllRentalItems } from "@/lib/rentals";
 import { getAllMediaProviders } from "@/lib/media";
 import { getAllRestaurants } from "@/lib/restaurants";
 import { getAllActivities } from "@/lib/activities";
@@ -119,6 +120,7 @@ const TYPES: TypeDef[] = [
   { label: "Transport Vehicle", table: "transports", getAll: getAllTransports },
   { label: "Transport Service", table: "transport_services", getAll: getAllTransportServices },
   { label: "Rental Vehicle", table: "rental_vehicles", getAll: getAllRentalVehicles },
+  { label: "Rental Item", table: "rental_items", getAll: getAllRentalItems },
   { label: "Expedition Company", table: "expedition_companies", getAll: getAllExpeditionCompanies },
   { label: "Tour Guide", table: "tour_guides", getAll: getAllGuides },
   { label: "Media / Photographer", table: "media_providers", getAll: getAllMediaProviders },

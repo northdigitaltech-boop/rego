@@ -27,6 +27,20 @@ export function categoryRedirect(slug: string): string | null {
   // Activities has a dedicated, provider-driven module.
   if (slug === "activities") return "/activities";
   if (slug === "mountaineering") return "/expeditions";
+  /* ------------------------------------------------------------------
+     /rentals is the canonical home for everything hireable — vehicles
+     alongside cameras, camping kit, houses and workspaces. Listing the
+     same jeeps at /categories/vehicle-rental as well would be two URLs
+     for one set of listings, which is the duplicate-content problem
+     this whole file exists to avoid.
+
+     The slug stays in the category list rather than being deleted, so
+     saved wishlist rows, existing links and the assistant's category
+     mapping still resolve — one redirect away instead of a 404. And
+     because the sitemap skips anything this function answers, it stops
+     being offered to Google automatically.
+     ------------------------------------------------------------------ */
+  if (slug === "vehicle-rental") return "/rentals";
   if (isActivityCategory(slug)) {
     return isIndoorActivity(slug)
       ? `/activities?kind=indoor&category=${slug}`

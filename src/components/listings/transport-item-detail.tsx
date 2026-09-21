@@ -245,7 +245,7 @@ export function TransportItemDetail({ kind, service, rental, provider, related }
             both used to be fine when they shared a category; now it would
             send half of them somewhere they are not listed. */}
         <Link
-          href={isRental ? "/categories/vehicle-rental" : "/categories/transport"}
+          href={isRental ? "/rentals" : "/categories/transport"}
           className="inline-flex items-center gap-1 text-sm font-medium text-forest-600 transition-colors hover:text-gold"
         >
           <ChevronLeft className="h-4 w-4" />{" "}

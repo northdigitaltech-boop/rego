@@ -83,6 +83,10 @@ export const APPROVAL_TABLES: ApprovalTable[] = [
   { table: "transport_providers", kind: "Transport company", titleCol: "name", imageCol: "logo" },
   { table: "transport_services", kind: "Transport service", titleCol: "title", imageCol: "image" },
   { table: "rental_vehicles", kind: "Rental vehicle", titleCol: "title", imageCol: "image" },
+  /* Equipment rentals go through the SAME queue as everything else —
+     phase136 gave rental_items the same status/active pair for exactly
+     this reason. No separate rental approval flow exists, or should. */
+  { table: "rental_items", kind: "Rental item", titleCol: "title", imageCol: "image" },
   { table: "media_providers", kind: "Photographer / media", titleCol: "company_name", imageCol: "logo" },
   { table: "restaurants", kind: "Restaurant", titleCol: "name", imageCol: "image" },
   { table: "activities", kind: "Activity", titleCol: "title", imageCol: "image" },

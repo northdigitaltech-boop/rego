@@ -23,7 +23,7 @@ const TOP8: { name: string; href: string; Icon: LucideIcon }[] = [
     ? [
         {
           name: bySlug["vehicle-rental"].name,
-          href: "/categories/vehicle-rental",
+          href: "/rentals",
           Icon: KeyRound,
         },
       ]

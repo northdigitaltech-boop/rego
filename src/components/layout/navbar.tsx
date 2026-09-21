@@ -72,7 +72,7 @@ const navLinks: NavLink[] = [
       { label: "Travel Companies", href: "/categories/travel-companies" },
       { label: "Tour Packages", href: "/categories/tours" },
       { label: "Transport", href: "/categories/transport" },
-      { label: "Vehicle Rental", href: "/categories/vehicle-rental" },
+      { label: "Rentals", href: "/rentals" },
       { label: "Tour Guides", href: "/categories/guides" },
       { label: "Photographers & Videographers", href: "/categories/photographers" },
       { label: "Drone Camera Pilot", href: "/categories/drone-pilots" },
