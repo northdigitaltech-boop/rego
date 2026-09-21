@@ -97,6 +97,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [showPw, setShowPw] = React.useState(false);
   const [error, setError] = React.useState("");
   const [notice, setNotice] = React.useState("");
+  /* ------------------------------------------------------------------
+     "An account already exists" was a dead end.
+
+     It is the most common thing a partner sees, and often on an address
+     they believe is unused — because an earlier attempt DID create the
+     account before failing at the sign-in that followed, so they were
+     told it had not worked. The address is new to them and known to us.
+
+     Red text saying "try signing in instead" left them to find the sign
+     in page themselves and gave no hint that Google would work. This
+     flag turns that message into the two routes back in, with the
+     address they typed carried across. */
+  const [existing, setExisting] = React.useState(false);
   // Live email hygiene feedback while typing (signup only).
   const emailCheck =
     isSignup && email.trim().length > 3 ? checkSignupEmail(email) : { ok: true as const };
@@ -136,6 +149,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const redirectQS = redirectTo
     ? `?redirect=${encodeURIComponent(redirectTo)}`
     : "";
+
+  /* Carried over by the "Sign in instead" link on the signup screen, so the
+     address does not have to be typed a second time. Read the same way as
+     ?redirect= above — from window.location, not useSearchParams, which would
+     opt this route out of static rendering. */
+  React.useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("email");
+    if (p) setEmail(p);
+  }, []);
 
   /* Only changes the wording. It is not a claim that the person IS staff —
      my_staff_profile() decides that after they sign in, and somebody who is
@@ -193,6 +215,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     e.preventDefault();
     setError("");
     setNotice("");
+    setExisting(false);
     if (!humanOk) {
       setError(
         isTurnstileEnabled
@@ -255,6 +278,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
       } else {
         // Translate Supabase's terse wording into something actionable.
         setError(friendlyAuthError(msg).message);
+        if (isSignup && /already registered|already been registered/i.test(msg)) {
+          setExisting(true);
+        }
         reportSecurity("login_failed", {
           email: email.trim().toLowerCase(),
           // The classified reason, never the raw credential or provider text.
@@ -621,6 +647,35 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <div role="alert" className="mt-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               <AlertCircle className="h-5 w-5 shrink-0" />
               {error}
+            </div>
+          )}
+
+          {existing && (
+            <div
+              role="status"
+              className="mt-4 rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 text-sm text-forest-700"
+            >
+              <p className="font-medium">
+                This address already has a Rego account — you may have registered
+                before without realising it worked.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <Link
+                  href={`/signin${
+                    redirectQS
+                      ? `${redirectQS}&email=${encodeURIComponent(email.trim())}`
+                      : `?email=${encodeURIComponent(email.trim())}`
+                  }`}
+                  className="font-semibold text-forest-700 underline underline-offset-2 hover:text-gold"
+                >
+                  Sign in instead
+                </Link>
+              </div>
+              <p className="mt-2 text-xs font-normal text-forest-700/80">
+                Continue with Google works too, on the same address. If the
+                password is the problem, use &ldquo;Forgot password&rdquo; on the
+                sign-in page.
+              </p>
             </div>
           )}
 
