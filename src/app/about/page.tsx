@@ -9,7 +9,9 @@ import { getAboutContent } from "@/lib/about";
 import { buildMetadata } from "@/lib/seo";
 import { legalPolicies } from "@/lib/legal";
 
-export const revalidate = 60;
+/* Edited by hand, a few times a year. A minute-long window bought
+   nothing. */
+export const revalidate = 3600;
 
 export const metadata: Metadata = buildMetadata({
   title: "About Rego — Digitally Connecting Gilgit-Baltistan",

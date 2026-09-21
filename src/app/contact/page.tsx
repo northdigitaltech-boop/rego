@@ -21,7 +21,9 @@ import { ContactForm } from "@/components/contact/contact-form";
 import { getContactContent } from "@/lib/contact-content";
 import { photo } from "@/lib/utils";
 
-export const revalidate = 60;
+/* Edited by hand, a few times a year. A minute-long window bought
+   nothing. */
+export const revalidate = 3600;
 
 /* Canonical added: this page previously inherited the root layout's
    canonical of "/", telling Google it was a duplicate of the homepage. */

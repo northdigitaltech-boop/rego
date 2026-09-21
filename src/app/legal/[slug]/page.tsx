@@ -8,7 +8,9 @@ import { Footer } from "@/components/layout/footer";
 import { buildMetadata } from "@/lib/seo";
 import { getPolicyContent, getLegalPolicies, legalPolicies, LEGAL_EFFECTIVE } from "@/lib/legal";
 
-export const revalidate = 60;
+/* Edited by hand, a few times a year. A minute-long window bought
+   nothing. */
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return legalPolicies.map((p) => ({ slug: p.slug }));

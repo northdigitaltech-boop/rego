@@ -11,7 +11,16 @@ import { formatPrice, photo } from "@/lib/utils";
 import { Rating } from "@/components/ui/rating";
 import { ExpeditionQuoteButton } from "@/components/expeditions/expedition-booking-modal";
 
-export const revalidate = 60;
+/* ISR window. Marketplace content changes when a provider lists or an
+   admin approves — a few times a day, not every minute. At 60s every
+   path regenerated up to 60 times an hour whether anything had changed
+   or not, which was the main driver of Vercel Fluid Active CPU.
+
+   This is ISR, not static: the first request after the window still
+   serves instantly from cache and refreshes behind it, so nobody waits.
+   The visible cost is that a newly approved listing can take this long
+   to appear. */
+export const revalidate = 600;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;

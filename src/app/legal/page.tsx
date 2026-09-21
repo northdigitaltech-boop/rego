@@ -7,7 +7,9 @@ import { Footer } from "@/components/layout/footer";
 import { buildMetadata } from "@/lib/seo";
 import { getLegalPolicies, LEGAL_EFFECTIVE, LEGAL_DISCLAIMER } from "@/lib/legal";
 
-export const revalidate = 60;
+/* Edited by hand, a few times a year. A minute-long window bought
+   nothing. */
+export const revalidate = 3600;
 
 export const metadata: Metadata = buildMetadata({
   title: "Legal & Policies",

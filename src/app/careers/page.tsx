@@ -7,7 +7,9 @@ import { ApplyButton } from "@/components/careers/apply-button";
 import { buildMetadata } from "@/lib/seo";
 import { getJobOpenings, jobsByDepartment } from "@/lib/careers";
 
-export const revalidate = 60;
+/* Edited by hand, a few times a year. A minute-long window bought
+   nothing. */
+export const revalidate = 3600;
 
 export const metadata: Metadata = buildMetadata({
   title: "Careers — Join the Rego Team",
