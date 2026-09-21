@@ -24,6 +24,19 @@ export async function setRankingBadge(table: string, id: string, badge: string) 
 }
 
 /**
+ * Turn the home page featured flag on or off, by table.
+ *
+ * Replaces a chain of per-table setters that had to grow by one every
+ * time a table became featurable — and whose final `else` wrote to
+ * tour_companies for any id it did not recognise, which is the wrong
+ * table rather than no table.
+ */
+export async function setFeaturedFlag(table: string, id: string, featured: boolean) {
+  if (!isSupabaseConfigured) return;
+  return supabase.from(table).update({ featured }).eq("id", id);
+}
+
+/**
  * Where a featured listing sits in its home page row. 1 is first.
  *
  * An empty box clears the position rather than storing 0 — the

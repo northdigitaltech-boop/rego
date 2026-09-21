@@ -82,6 +82,10 @@ export interface TourPackageRow {
   reviews: number;
   status: string;
   active: boolean;
+  /** phase137 — home page featuring. Optional: a database without that
+      migration simply omits both columns. */
+  featured?: boolean;
+  featured_order?: number | null;
   owner_email: string | null;
   created_at: string;
 }
@@ -114,6 +118,10 @@ export interface TransportRow {
   reviews: number;
   status: string;
   active: boolean;
+  /** phase137 — home page featuring. Optional: a database without that
+      migration simply omits both columns. */
+  featured?: boolean;
+  featured_order?: number | null;
   owner_email: string | null;
   created_at: string;
 }
@@ -211,6 +219,8 @@ export function packageToListing(p: TourPackageRow): Listing {
     reviews: p.reviews,
     image: p.image || "https://picsum.photos/seed/tour/900/600",
     provider: p.company_name || undefined,
+    featured: !!p.featured,
+    featuredOrder: p.featured_order ?? null,
     facts: facts.length ? facts : undefined,
   };
 }
@@ -228,6 +238,8 @@ export function transportToListing(t: TransportRow): Listing {
     reviews: t.reviews,
     image: t.image || "https://picsum.photos/seed/transport/900/600",
     provider: t.company_name || undefined,
+    featured: !!t.featured,
+    featuredOrder: t.featured_order ?? null,
   };
 }
 

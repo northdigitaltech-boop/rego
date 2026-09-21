@@ -34,6 +34,44 @@
 -- the migration.
 -- ---------------------------------------------------------------------------
 
+-- ============================================================
+-- 0. TABLES THAT COULD NOT BE FEATURED AT ALL
+--
+-- tour_packages and transports appear on the home page — "Trending
+-- Tour Packages" and the transport row — but neither table ever had a
+-- `featured` column, so there was no way to pick one out. A position
+-- is meaningless without the flag it orders, so the flag comes first.
+--
+-- Additive and default false: every existing package and vehicle keeps
+-- behaving exactly as it does today until an admin ticks one.
+-- ============================================================
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['tour_packages', 'transports'] loop
+    if to_regclass('public.' || t) is null then
+      raise notice 'skip %: table not present', t;
+      continue;
+    end if;
+    if exists (
+      select 1 from information_schema.columns
+       where table_schema = 'public' and table_name = t and column_name = 'featured'
+    ) then
+      continue;
+    end if;
+    execute format(
+      'alter table public.%I add column featured boolean not null default false', t
+    );
+    execute format(
+      'create index if not exists %I on public.%I (featured) where featured',
+      t || '_featured_idx', t
+    );
+    raise notice 'added featured to %', t;
+  end loop;
+end $$;
+
+
 do $$
 declare
   t           text;

@@ -87,17 +87,14 @@ import {
   setHomestayStatus,
   getAllHomestays,
   setHomestayVerified,
-  setHomestayFeatured,
 } from "@/lib/homestays";
 import {
   getPendingHostels,
   setHostelStatus,
   getAllHostels,
   setHostelVerified,
-  setHostelFeatured,
 } from "@/lib/hostels";
-import { setHotelFeatured } from "@/lib/hotels";
-import { setRankingBadge, setFeaturedOrder, RANKING_OPTIONS } from "@/lib/ranking";
+import { setRankingBadge, setFeaturedOrder, setFeaturedFlag, RANKING_OPTIONS } from "@/lib/ranking";
 import { getAdminOverviewStats, type AdminOverviewStats } from "@/lib/platform-stats";
 import { MarketAreas } from "@/components/dashboard/market-areas";
 import { TeamManagement } from "@/components/dashboard/team-management";
@@ -132,16 +129,16 @@ import {
   getAllCompanies,
   getPendingPackages,
   getPendingTransports,
+  getAllPackages,
+  getAllTransports,
   getPendingGuides,
   getAllGuides,
   setCompanyStatus,
   setCompanyVerified,
-  setCompanyFeatured,
   setPackageStatus,
   setTransportStatus,
   setGuideStatus,
   setGuideVerified,
-  setGuideFeatured,
   type TourCompanyRow,
   type TourPackageRow,
   type TransportRow,
@@ -154,7 +151,6 @@ import {
   getPendingRentals,
   setProviderStatus,
   setProviderVerified,
-  setProviderFeatured,
   setServiceStatus,
   setRentalStatus,
   type TransportProviderRow,
@@ -166,7 +162,6 @@ import {
   getAllMediaProviders,
   setMediaProviderStatus,
   setMediaProviderVerified,
-  setMediaProviderFeatured,
   type MediaProviderRow,
 } from "@/lib/media";
 import {
@@ -174,7 +169,6 @@ import {
   getAllRestaurants,
   setRestaurantStatus,
   setRestaurantVerified,
-  setRestaurantFeatured,
   type RestaurantRow,
 } from "@/lib/restaurants";
 import {
@@ -321,6 +315,10 @@ function companyToProp(c: TourCompanyRow): PropertyRow {
     ownership_doc: c.ownership_doc,
   };
 }
+/* These four used to hardcode `featured: false`, so a package, vehicle,
+   transport service or rental could never show as featured in admin even
+   when the column said otherwise. Reading the real value is what lets the
+   Feature button and the Order box work on them. */
 function packageToProp(p: TourPackageRow): PropertyRow {
   return {
     id: p.id,
@@ -335,7 +333,8 @@ function packageToProp(p: TourPackageRow): PropertyRow {
     gallery: p.images,
     owner_email: p.owner_email,
     verified: false,
-    featured: false,
+    featured: !!p.featured,
+    featured_order: p.featured_order ?? null,
     reg_number: null,
     owner_cnic: null,
     address: null,
@@ -358,7 +357,8 @@ function transportToProp(t: TransportRow): PropertyRow {
     gallery: t.images,
     owner_email: t.owner_email,
     verified: false,
-    featured: false,
+    featured: !!t.featured,
+    featured_order: t.featured_order ?? null,
     reg_number: null,
     owner_cnic: null,
     address: null,
@@ -432,7 +432,8 @@ function serviceToProp(s: TransportServiceRow): PropertyRow {
     gallery: s.images,
     owner_email: s.owner_email,
     verified: false,
-    featured: false,
+    featured: !!s.featured,
+    featured_order: s.featured_order ?? null,
     reg_number: null,
     owner_cnic: null,
     address: null,
@@ -455,7 +456,8 @@ function rentalToProp(r: RentalVehicleRow): PropertyRow {
     gallery: r.images,
     owner_email: r.owner_email,
     verified: false,
-    featured: false,
+    featured: !!r.featured,
+    featured_order: r.featured_order ?? null,
     reg_number: null,
     owner_cnic: null,
     address: null,
@@ -624,6 +626,11 @@ export function AdminDashboard() {
   const [pendingTransports, setPendingTransports] = React.useState<TransportRow[]>([]);
   const [pendingGuides, setPendingGuides] = React.useState<TourGuideRow[]>([]);
   const [allGuides, setAllGuides] = React.useState<TourGuideRow[]>([]);
+  /* Packages and vehicles reach the verification screen too, now that they
+     can be featured. They carry no documents, so their cards show the same
+     "Not provided" boxes an independent guide already does. */
+  const [allPackages, setAllPackages] = React.useState<TourPackageRow[]>([]);
+  const [allTransports, setAllTransports] = React.useState<TransportRow[]>([]);
   const [pendingProviders, setPendingProviders] = React.useState<TransportProviderRow[]>([]);
   const [allProviders, setAllProviders] = React.useState<TransportProviderRow[]>([]);
   const [pendingServices, setPendingServices] = React.useState<TransportServiceRow[]>([]);
@@ -664,6 +671,8 @@ export function AdminDashboard() {
     setPendingGuides(await getPendingGuides());
     const aGuides = await getAllGuides();
     setAllGuides(aGuides);
+    setAllPackages(await getAllPackages());
+    setAllTransports(await getAllTransports());
     setPendingProviders(await getPendingProviders());
     const aProviders = await getAllProviders();
     setAllProviders(aProviders);
@@ -723,6 +732,8 @@ export function AdminDashboard() {
     ...tagGroup(allCompanies.map(companyToProp), "tours"),
     ...tagGroup(allProviders.map(providerToProp), "transport"),
     ...tagGroup(allGuides.map(guideToProp), "guides"),
+    ...tagGroup(allPackages.map(packageToProp), "tour-packages"),
+    ...tagGroup(allTransports.map(transportToProp), "transport-vehicles"),
     ...tagGroup(allMedia.map(mediaToProp), "media"),
     ...tagGroup(allRestaurants.map(restaurantToProp), "restaurants"),
   ];
@@ -840,6 +851,8 @@ export function AdminDashboard() {
   const isHostelId = (id: string) => allHostels.some((h) => h.id === id);
   const isProviderId = (id: string) => allProviders.some((p) => p.id === id);
   const isGuideId = (id: string) => allGuides.some((g) => g.id === id);
+  const isPackageId = (id: string) => allPackages.some((p) => p.id === id);
+  const isTransportId = (id: string) => allTransports.some((t) => t.id === id);
   const isMediaId = (id: string) => allMedia.some((m) => m.id === id);
   const isRestaurantId = (id: string) => allRestaurants.some((r) => r.id === id);
   const act = async (id: string, status: "approved" | "rejected") => {
@@ -879,15 +892,13 @@ export function AdminDashboard() {
     else await setCompanyVerified(id, verified);
     await refresh();
   };
+  /* Was a chain of eight per-table setters, which meant a new featurable
+     table needed a ninth — and packages and vehicles fell through to
+     setCompanyFeatured, writing to tour_companies for an id that is not in
+     it. Resolving the table once and updating the column is the same
+     operation for every one of them. */
   const feature = async (id: string, featured: boolean) => {
-    if (isHotelId(id)) await setHotelFeatured(id, featured);
-    else if (isHomestayId(id)) await setHomestayFeatured(id, featured);
-    else if (isHostelId(id)) await setHostelFeatured(id, featured);
-    else if (isProviderId(id)) await setProviderFeatured(id, featured);
-    else if (isGuideId(id)) await setGuideFeatured(id, featured);
-    else if (isMediaId(id)) await setMediaProviderFeatured(id, featured);
-    else if (isRestaurantId(id)) await setRestaurantFeatured(id, featured);
-    else await setCompanyFeatured(id, featured);
+    await setFeaturedFlag(tableForId(id), id, featured);
     await refresh();
   };
   /* One place that answers "which table is this id in?", used by both the
@@ -908,7 +919,11 @@ export function AdminDashboard() {
               ? "media_providers"
               : isRestaurantId(id)
                 ? "restaurants"
-                : "tour_companies";
+                : isPackageId(id)
+                  ? "tour_packages"
+                  : isTransportId(id)
+                    ? "transports"
+                    : "tour_companies";
 
   const setRanking = async (id: string, badge: string) => {
     await setRankingBadge(tableForId(id), id, badge);
