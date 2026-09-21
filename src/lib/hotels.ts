@@ -27,6 +27,7 @@ export function rowToListing(h: HotelRow): Listing {
     reviews: h.reviews,
     image: h.image || "https://loremflickr.com/900/600/hotel,mountain",
     featured: h.featured,
+    featuredOrder: h.featured_order ?? null,
   };
 }
 
@@ -34,7 +35,7 @@ export function rowToListing(h: HotelRow): Listing {
 // the verification documents and owner ID (reg_number, license_doc,
 // owner_cnic, owner_cnic_doc, ownership_doc) so they never reach the browser.
 const PUBLIC_HOTEL_COLUMNS =
-  "id,title,category,category_label,location,price,unit,rating,reviews,image,description,amenities,gallery,featured,status,total_rooms,address,verified,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,title,category,category_label,location,price,unit,rating,reviews,image,description,amenities,gallery,featured,featured_order,status,total_rooms,address,verified,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 /** Fetch APPROVED hotels for the public site. Returns [] if not configured. */
 export async function getHotels(): Promise<Listing[]> {

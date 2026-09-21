@@ -42,13 +42,16 @@ export interface EventRow {
   registration_url: string | null;
   highlights: string[] | null;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string; // published | draft
   created_at: string;
   updated_at: string;
 }
 
 const PUBLIC_COLS =
-  "id,title,category,description,city,venue,address,start_date,end_date,time,image,gallery,organizer,ticket_price,ticket_info,registration_url,highlights,featured,status,created_at,updated_at";
+  "id,title,category,description,city,venue,address,start_date,end_date,time,image,gallery,organizer,ticket_price,ticket_info,registration_url,highlights,featured,featured_order,status,created_at,updated_at";
 
 /* ---------------- Customer reads (published only) ---------------- */
 

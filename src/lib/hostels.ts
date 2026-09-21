@@ -31,6 +31,9 @@ export interface HostelRow {
   max_stay: number | null;
   total_rooms: number;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string; // pending | approved | rejected
   reg_number: string | null;
   license_doc: string | null;
@@ -66,7 +69,7 @@ export interface HostelRoomRow {
 
 // Columns safe for the public/customer side — EXCLUDES verification documents.
 const PUBLIC_HOSTEL_COLUMNS =
-  "id,title,category,category_label,location,address,map_link,price,unit,rating,reviews,image,description,amenities,gallery,checkin_time,checkout_time,house_rules,cancellation_policy,blocked_dates,maintenance_dates,min_stay,max_stay,total_rooms,featured,status,verified,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,title,category,category_label,location,address,map_link,price,unit,rating,reviews,image,description,amenities,gallery,checkin_time,checkout_time,house_rules,cancellation_policy,blocked_dates,maintenance_dates,min_stay,max_stay,total_rooms,featured,featured_order,status,verified,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 /** Map a database hostel row to the shared Listing shape used by the UI. */
 export function hostelToListing(h: HostelRow): Listing {
@@ -82,6 +85,7 @@ export function hostelToListing(h: HostelRow): Listing {
     reviews: h.reviews,
     image: h.image || "https://picsum.photos/seed/hostel/900/600",
     featured: h.featured,
+    featuredOrder: h.featured_order ?? null,
   };
 }
 

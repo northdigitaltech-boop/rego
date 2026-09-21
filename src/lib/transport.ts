@@ -34,6 +34,9 @@ export interface TransportProviderRow {
   status: string;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   owner_email: string | null;
   created_at: string;
 }
@@ -77,6 +80,9 @@ export interface TransportServiceRow {
   status: string;
   active: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   owner_email: string | null;
   created_at: string;
 }
@@ -123,13 +129,16 @@ export interface RentalVehicleRow {
   status: string;
   active: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   owner_email: string | null;
   created_at: string;
 }
 
 /* Public column allowlists — exclude verification docs / owner ID. */
 const PROVIDER_PUBLIC =
-  "id,name,owner_name,phone,whatsapp,business_type,logo,cover_image,address,service_areas,description,opening_hours,emergency_contact,location,rating,reviews,status,verified,featured,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,name,owner_name,phone,whatsapp,business_type,logo,cover_image,address,service_areas,description,opening_hours,emergency_contact,location,rating,reviews,status,verified,featured,featured_order,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 /* ============================================================
  * Listing mappers (for customer cards). listingType tags the
@@ -149,6 +158,9 @@ export function serviceToListing(s: TransportServiceRow): Listing {
     reviews: s.reviews,
     image: s.image || "https://picsum.photos/seed/transport/900/600",
     provider: s.provider_name || undefined,
+    // Carried so a featured transport service can be positioned too.
+    featured: !!s.featured,
+    featuredOrder: s.featured_order ?? null,
   };
 }
 
@@ -167,6 +179,8 @@ export function rentalToListing(r: RentalVehicleRow): Listing {
     reviews: r.reviews,
     image: r.image || "https://picsum.photos/seed/rental/900/600",
     provider: r.provider_name || undefined,
+    featured: !!r.featured,
+    featuredOrder: r.featured_order ?? null,
   };
 }
 

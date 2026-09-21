@@ -35,6 +35,9 @@ export interface HotelRow {
   amenities: string[] | null;
   gallery: string[] | null;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string; // 'pending' | 'approved' | 'rejected'
   total_rooms: number | null;
   address: string | null;

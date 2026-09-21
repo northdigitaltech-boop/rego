@@ -85,6 +85,9 @@ export interface ActivityRow {
   reviews: number;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   ranking_badge: string | null;
   status: string;
   created_at: string;
@@ -107,7 +110,7 @@ export interface ActivityBookingRow extends CancellationFields {
 }
 
 const PUBLIC_COLS =
-  "id,owner_email,owner_type,business_name,title,category,activity_kind,opening_hours,description,location,city,meeting_point,duration,difficulty,group_size_min,group_size_max,price,price_unit,age_limit,season,includes,excludes,languages,highlights,image,gallery,phone,whatsapp,email,map_link,rating,reviews,verified,featured,ranking_badge,status,created_at,updated_at";
+  "id,owner_email,owner_type,business_name,title,category,activity_kind,opening_hours,description,location,city,meeting_point,duration,difficulty,group_size_min,group_size_max,price,price_unit,age_limit,season,includes,excludes,languages,highlights,image,gallery,phone,whatsapp,email,map_link,rating,reviews,verified,featured,featured_order,ranking_badge,status,created_at,updated_at";
 
 /* ---------------- Reads ---------------- */
 

@@ -65,6 +65,9 @@ export interface CoworkingSpaceRow {
   reviews: number;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   ranking_badge: string | null;
   status: string;
   created_at: string;
@@ -89,7 +92,7 @@ export interface CoworkingBookingRow extends CancellationFields {
 }
 
 const PUBLIC_COLS =
-  "id,owner_email,name,owner_name,logo,cover_image,gallery,description,city,location,address,phone,whatsapp,email,amenities,wifi_speed,opening_hours,seating_capacity,hot_desk_price,dedicated_desk_price,private_office_price,meeting_room_price,day_pass_available,monthly_available,map_link,social_links,rating,reviews,verified,featured,ranking_badge,status,created_at,updated_at";
+  "id,owner_email,name,owner_name,logo,cover_image,gallery,description,city,location,address,phone,whatsapp,email,amenities,wifi_speed,opening_hours,seating_capacity,hot_desk_price,dedicated_desk_price,private_office_price,meeting_room_price,day_pass_available,monthly_available,map_link,social_links,rating,reviews,verified,featured,featured_order,ranking_badge,status,created_at,updated_at";
 
 /* ---------------- Spaces ---------------- */
 

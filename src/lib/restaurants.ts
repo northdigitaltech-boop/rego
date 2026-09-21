@@ -36,6 +36,9 @@ export interface RestaurantRow {
   status: string;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   ranking_badge?: string | null;
   menu_views: number;
   owner_email: string | null;
@@ -80,7 +83,7 @@ export const MENU_CATEGORIES = [
 export const SPICY_LEVELS = ["Mild", "Medium", "Spicy"];
 
 const PUBLIC =
-  "id,property_id,property_type,property_name,name,owner_name,logo,cover_image,gallery,phone,whatsapp,email,address,map_link,city,location,opening_hours,closing_hours,cuisine_types,dining_options,price_range,description,facilities,social_links,rating,reviews,status,verified,featured,menu_views,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,property_id,property_type,property_name,name,owner_name,logo,cover_image,gallery,phone,whatsapp,email,address,map_link,city,location,opening_hours,closing_hours,cuisine_types,dining_options,price_range,description,facilities,social_links,rating,reviews,status,verified,featured,featured_order,menu_views,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 export function restaurantToListing(r: RestaurantRow): Listing {
   return {
@@ -96,6 +99,7 @@ export function restaurantToListing(r: RestaurantRow): Listing {
     image: r.cover_image || r.logo || "https://picsum.photos/seed/restaurant/900/600",
     provider: r.property_name || undefined,
     featured: r.featured,
+    featuredOrder: r.featured_order ?? null,
   };
 }
 

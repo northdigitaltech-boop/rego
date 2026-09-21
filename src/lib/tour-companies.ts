@@ -43,6 +43,9 @@ export interface TourCompanyRow {
   status: string;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   owner_email: string | null;
   created_at: string;
 }
@@ -157,11 +160,14 @@ export interface TourGuideRow {
   license_doc?: string | null;
   verified?: boolean;
   featured?: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
 }
 
 /* Public column allowlists — exclude verification docs / owner ID. */
 const COMPANY_PUBLIC =
-  "id,name,owner_name,logo,cover_image,gallery,office_address,service_areas,destinations,description,experience_years,languages,phone,whatsapp,emergency_contact,opening_hours,social_links,website,terms,cancellation_policy,rating,reviews,location,status,verified,featured,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
+  "id,name,owner_name,logo,cover_image,gallery,office_address,service_areas,destinations,description,experience_years,languages,phone,whatsapp,emergency_contact,opening_hours,social_links,website,terms,cancellation_policy,rating,reviews,location,status,verified,featured,featured_order,ranking_badge,owner_email,created_at,accept_pay_at_property,require_advance_payment,advance_payment_percentage,accepted_payment_methods,payment_bank_name,payment_account_title,payment_account_number,payment_iban,payment_jazzcash,payment_easypaisa,payment_instructions";
 
 /* ============================================================
  * Listing mappers (for customer category cards)
@@ -239,6 +245,15 @@ export function guideToListing(g: TourGuideRow): Listing {
     reviews: g.reviews,
     image: g.image || "https://picsum.photos/seed/guide/900/600",
     provider: g.company_name || undefined,
+    /* ----------------------------------------------------------------
+       This converter dropped `featured` entirely, so marking a guide as
+       featured changed nothing on the home page — the Featured Tour
+       Guides row has only ever been sorted by rating. The flag was
+       there, the badge was there, and the sort never saw either.
+       Carrying it is what makes positioning a guide possible at all.
+       ---------------------------------------------------------------- */
+    featured: !!g.featured,
+    featuredOrder: g.featured_order ?? null,
   };
 }
 

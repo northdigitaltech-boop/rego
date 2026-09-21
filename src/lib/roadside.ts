@@ -72,6 +72,9 @@ export interface RoadsideProviderRow {
   total_reviews: number;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   ranking_badge: string | null;
   status: string; // pending | approved | rejected | suspended
   created_at: string;
@@ -129,7 +132,7 @@ export interface RoadsideReviewRow {
 
 // Public column list (excludes verification_doc which is owner/admin only).
 const PROVIDER_PUBLIC =
-  "id,owner_email,business_name,owner_name,phone,whatsapp,email,address,city,service_areas,description,profile_image,cover_image,gallery_images,is_24_7,availability_status,response_time,rating,total_reviews,verified,featured,ranking_badge,status,created_at,updated_at";
+  "id,owner_email,business_name,owner_name,phone,whatsapp,email,address,city,service_areas,description,profile_image,cover_image,gallery_images,is_24_7,availability_status,response_time,rating,total_reviews,verified,featured,featured_order,ranking_badge,status,created_at,updated_at";
 
 /* ============================================================
  * Providers

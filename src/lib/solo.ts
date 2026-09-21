@@ -119,6 +119,9 @@ export interface SoloTravelerRow {
   reviews: number;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -142,7 +145,7 @@ export interface SoloConnectionRow {
 }
 
 const PUBLIC_COLS =
-  "id,owner_email,full_name,age,gender,nationality,current_city,profile_photo,cover_image,solo_badge,travel_score,last_active,intro,why_visiting,travel_experience,languages,occupation,interests,destinations,departure_date,return_date,duration,budget,transportation_type,accommodation_preference,available_seats,looking_for,gender_preference,age_preference,travel_preferences,gallery,videos,drone_shots,previous_trips,id_verified,phone_verified,email_verified,face_verified,emergency_verified,emergency_contact_status,online,phone,whatsapp,email,rating,reviews,verified,featured,status,created_at,updated_at";
+  "id,owner_email,full_name,age,gender,nationality,current_city,profile_photo,cover_image,solo_badge,travel_score,last_active,intro,why_visiting,travel_experience,languages,occupation,interests,destinations,departure_date,return_date,duration,budget,transportation_type,accommodation_preference,available_seats,looking_for,gender_preference,age_preference,travel_preferences,gallery,videos,drone_shots,previous_trips,id_verified,phone_verified,email_verified,face_verified,emergency_verified,emergency_contact_status,online,phone,whatsapp,email,rating,reviews,verified,featured,featured_order,status,created_at,updated_at";
 
 /* ---------------- Profiles ---------------- */
 

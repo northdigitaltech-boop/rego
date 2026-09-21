@@ -54,6 +54,7 @@ function companyToListing(c: TourCompanyRow): Listing {
     reviews: c.reviews,
     image: photo(c.cover_image || c.logo || "https://picsum.photos/seed/company/900/600"),
     featured: c.featured,
+    featuredOrder: c.featured_order ?? null,
   };
 }
 
@@ -70,13 +71,60 @@ function transportProviderToListing(p: TransportProviderRow): Listing {
     reviews: p.reviews,
     image: photo(p.cover_image || p.logo || "https://picsum.photos/seed/transport/900/600"),
     featured: p.featured,
+    featuredOrder: p.featured_order ?? null,
   };
 }
 
+/* ------------------------------------------------------------------
+   The one comparator every home page row uses.
+
+   Order of questions, and why:
+
+     1. Is it featured?        — featured always outranks unfeatured.
+     2. What position was set? — 1 first. An admin who types a number
+                                 is making a decision, and it beats any
+                                 rating.
+     3. Rating.                — the tie-break, and the whole answer for
+                                 a row where nobody has been positioned.
+
+   An unpositioned featured listing sorts AFTER the numbered ones
+   rather than before them. That is what makes this change invisible
+   until someone uses it: with no positions set, step 2 never
+   separates anything and the result is exactly the old rating sort.
+   ------------------------------------------------------------------ */
+/** Accepts a Listing (camelCase) or a raw database row (snake_case). */
+type Featurable = {
+  featured?: boolean | null;
+  featuredOrder?: number | null;
+  featured_order?: number | null;
+};
+
+/**
+ * Featured first, then by position. Returns 0 when neither separates
+ * them, so the caller supplies its own tie-break — rating for most
+ * rows, start date for events.
+ *
+ * Infinity for "no position" is what keeps this invisible until used:
+ * every unpositioned listing compares equal at this step and falls
+ * through to the tie-break, exactly as before.
+ */
+export function byFeaturedPosition(a: Featurable, b: Featurable): number {
+  const byFeatured = Number(!!b.featured) - Number(!!a.featured);
+  if (byFeatured !== 0) return byFeatured;
+
+  const pos = (x: Featurable) => {
+    const v = x.featuredOrder ?? x.featured_order;
+    return typeof v === "number" && v > 0 ? v : Number.POSITIVE_INFINITY;
+  };
+  return pos(a) - pos(b);
+}
+
+export function compareForFeature(a: Listing, b: Listing): number {
+  return byFeaturedPosition(a, b) || b.rating - a.rating;
+}
+
 function topN(items: Listing[], n: number): Listing[] {
-  return [...items]
-    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured) || b.rating - a.rating)
-    .slice(0, n);
+  return [...items].sort(compareForFeature).slice(0, n);
 }
 
 export async function feedHotels(n = 4) {
@@ -106,6 +154,7 @@ export interface RoadsideCard {
   image: string;
   verified: boolean;
   featured: boolean;
+  featuredOrder: number | null;
   is247: boolean;
   responseTime: string | null;
   services: string[];
@@ -126,9 +175,7 @@ export async function feedRoadside(n = 4): Promise<RoadsideCard[]> {
     byProvider.set(s.provider_id, cur);
   }
   return [...providers]
-    .sort(
-      (a, b) => Number(!!b.featured) - Number(!!a.featured) || Number(b.rating) - Number(a.rating)
-    )
+    .sort((a, b) => byFeaturedPosition(a, b) || Number(b.rating) - Number(a.rating))
     .slice(0, n)
     .map((p) => {
       const agg = byProvider.get(p.id);
@@ -141,6 +188,7 @@ export async function feedRoadside(n = 4): Promise<RoadsideCard[]> {
         image: photo(p.cover_image || p.profile_image || "https://picsum.photos/seed/roadside/900/600"),
         verified: p.verified,
         featured: p.featured,
+        featuredOrder: p.featured_order ?? null,
         is247: p.is_24_7,
         responseTime: p.response_time,
         services: agg?.names ?? [],
@@ -155,7 +203,7 @@ export async function feedEvents(n = 4): Promise<EventRow[]> {
   return [...events]
     .sort(
       (a, b) =>
-        Number(!!b.featured) - Number(!!a.featured) ||
+        byFeaturedPosition(a, b) ||
         (a.start_date ?? "9999").localeCompare(b.start_date ?? "9999")
     )
     .slice(0, n);
@@ -164,7 +212,7 @@ export async function feedEvents(n = 4): Promise<EventRow[]> {
 export async function feedActivities(n = 4): Promise<ActivityRow[]> {
   const acts = await getApprovedActivities();
   return [...acts]
-    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured) || Number(b.rating) - Number(a.rating))
+    .sort((a, b) => byFeaturedPosition(a, b) || Number(b.rating) - Number(a.rating))
     .slice(0, n);
 }
 
@@ -196,6 +244,7 @@ export interface ExpeditionCard {
   reviews: number;
   verified: boolean;
   featured: boolean;
+  featuredOrder: number | null;
   startingPrice: number | null;
 }
 
@@ -214,6 +263,7 @@ function expeditionCompanyToCard(c: ExpeditionCompanyRow): ExpeditionCard {
     reviews: Number(c.reviews) || 0,
     verified: !!c.verified,
     featured: !!c.featured,
+    featuredOrder: c.featured_order ?? null,
     startingPrice: c.starting_price,
   };
 }
@@ -232,6 +282,7 @@ function expeditionProToCard(p: ExpeditionProRow): ExpeditionCard {
     reviews: Number(p.reviews) || 0,
     verified: !!p.verified,
     featured: !!p.featured,
+    featuredOrder: p.featured_order ?? null,
     startingPrice: p.daily_rate ?? p.package_rate ?? null,
   };
 }
@@ -248,7 +299,7 @@ export async function feedExpeditions(n = 4): Promise<ExpeditionCard[]> {
   ]
     .sort(
       (a, b) =>
-        Number(b.featured) - Number(a.featured) ||
+        byFeaturedPosition(a, b) ||
         Number(b.verified) - Number(a.verified) ||
         b.rating - a.rating
     )

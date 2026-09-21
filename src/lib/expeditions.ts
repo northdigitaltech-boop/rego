@@ -49,6 +49,9 @@ export interface ExpeditionCompanyRow {
   gallery: string[] | null;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string;
   created_at: string;
   updated_at?: string;
@@ -110,6 +113,9 @@ export interface ExpeditionProRow {
   public_certs: string[] | null;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string;
   rating: number;
   reviews: number;
@@ -124,9 +130,9 @@ export interface ExpeditionRoute { id: string; name: string; region: string | nu
 /* Public column lists — deliberately EXCLUDE private_docs so verification
    documents are never returned to the browser. */
 const COMPANY_PUBLIC =
-  "id,owner_email,name,logo,cover_image,description,year_established,address,city,district,country,phone,whatsapp,email,website,socials,languages,years_experience,expeditions_organized,treks_organized,successful_count,peaks_handled,routes_handled,intl_clients,certifications,licenses,awards,insurance_info,safety_policy,rescue_capability,emergency_support,services,starting_price,currency,rating,reviews,gallery,verified,featured,status,created_at";
+  "id,owner_email,name,logo,cover_image,description,year_established,address,city,district,country,phone,whatsapp,email,website,socials,languages,years_experience,expeditions_organized,treks_organized,successful_count,peaks_handled,routes_handled,intl_clients,certifications,licenses,awards,insurance_info,safety_policy,rescue_capability,emergency_support,services,starting_price,currency,rating,reviews,gallery,verified,featured,featured_order,status,created_at";
 const PRO_PUBLIC =
-  "id,owner_email,full_name,photo,cover_image,title,role,short_bio,bio,age_range,gender,nationality,home_village,city,district,country,phone,whatsapp,email,languages,years_experience,total_expeditions,total_treks,highest_altitude_m,highest_peak,peaks_summited,peaks_worked,routes_completed,successful_expeditions,previous_companies,intl_experience,specializations,skills,availability_status,daily_rate,package_rate,currency,min_days,max_days,negotiable,services_included,services_excluded,carrying_capacity_kg,max_altitude_m,equipment_owned,equipment_required,available_locations,available_peaks,available_routes,custom_quote,gallery,role_fields,public_certs,verified,featured,status,rating,reviews,created_at";
+  "id,owner_email,full_name,photo,cover_image,title,role,short_bio,bio,age_range,gender,nationality,home_village,city,district,country,phone,whatsapp,email,languages,years_experience,total_expeditions,total_treks,highest_altitude_m,highest_peak,peaks_summited,peaks_worked,routes_completed,successful_expeditions,previous_companies,intl_experience,specializations,skills,availability_status,daily_rate,package_rate,currency,min_days,max_days,negotiable,services_included,services_excluded,carrying_capacity_kg,max_altitude_m,equipment_owned,equipment_required,available_locations,available_peaks,available_routes,custom_quote,gallery,role_fields,public_certs,verified,featured,featured_order,status,rating,reviews,created_at";
 
 const norm = (e?: string | null) => (e ?? "").trim().toLowerCase();
 
@@ -146,6 +152,7 @@ export function companyToListing(c: ExpeditionCompanyRow): Listing {
     reviews: c.reviews,
     image: c.logo || c.cover_image || (c.gallery?.[0] ?? null),
     featured: c.featured,
+    featuredOrder: c.featured_order ?? null,
     provider: undefined,
   } as unknown as Listing;
 }
@@ -163,6 +170,7 @@ export function proToListing(p: ExpeditionProRow): Listing {
     reviews: p.reviews,
     image: p.photo || p.cover_image || (p.gallery?.[0] ?? null),
     featured: p.featured,
+    featuredOrder: p.featured_order ?? null,
   } as unknown as Listing;
 }
 

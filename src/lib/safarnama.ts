@@ -82,6 +82,9 @@ export interface StoryRow {
   views: number;
   verified: boolean;
   featured: boolean;
+  /** Home page position within the featured row; null = unpositioned.
+      Optional because a database without phase137 simply omits it. */
+  featured_order?: number | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -99,7 +102,7 @@ export interface StoryCommentRow {
 }
 
 const PUBLIC_COLS =
-  "id,owner_email,author_name,author_avatar,title,cover_image,destination,city,trip_date,duration,travel_type,budget,transportation,hotels,places_visited,restaurants,best_experience,problems_faced,travel_tips,road_condition,food_recommendations,story,preview,gallery,videos,timeline,budget_breakdown,rating,reading_time,likes,comments,views,verified,featured,status,created_at,updated_at";
+  "id,owner_email,author_name,author_avatar,title,cover_image,destination,city,trip_date,duration,travel_type,budget,transportation,hotels,places_visited,restaurants,best_experience,problems_faced,travel_tips,road_condition,food_recommendations,story,preview,gallery,videos,timeline,budget_breakdown,rating,reading_time,likes,comments,views,verified,featured,featured_order,status,created_at,updated_at";
 
 /* ---------------- Helpers ---------------- */
 

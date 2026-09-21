@@ -97,7 +97,7 @@ import {
   setHostelFeatured,
 } from "@/lib/hostels";
 import { setHotelFeatured } from "@/lib/hotels";
-import { setRankingBadge, RANKING_OPTIONS } from "@/lib/ranking";
+import { setRankingBadge, setFeaturedOrder, RANKING_OPTIONS } from "@/lib/ranking";
 import { getAdminOverviewStats, type AdminOverviewStats } from "@/lib/platform-stats";
 import { MarketAreas } from "@/components/dashboard/market-areas";
 import { TeamManagement } from "@/components/dashboard/team-management";
@@ -257,6 +257,8 @@ interface PropertyRow {
   owner_email: string | null;
   verified: boolean;
   featured: boolean;
+  /** Position in the home page featured row. Null = unpositioned. */
+  featured_order?: number | null;
   ranking_badge?: string | null;
   reg_number: string | null;
   owner_cnic: string | null;
@@ -310,6 +312,7 @@ function companyToProp(c: TourCompanyRow): PropertyRow {
     owner_email: c.owner_email,
     verified: c.verified,
     featured: c.featured,
+    featured_order: c.featured_order ?? null,
     reg_number: c.reg_number,
     owner_cnic: c.owner_cnic,
     address: c.office_address,
@@ -380,6 +383,7 @@ function guideToProp(g: TourGuideRow): PropertyRow {
     owner_email: g.owner_email,
     verified: !!g.verified,
     featured: !!g.featured,
+    featured_order: g.featured_order ?? null,
     reg_number: null,
     owner_cnic: g.cnic ?? null,
     address: g.address ?? null,
@@ -405,6 +409,7 @@ function providerToProp(p: TransportProviderRow): PropertyRow {
     owner_email: p.owner_email,
     verified: p.verified,
     featured: p.featured,
+    featured_order: p.featured_order ?? null,
     reg_number: p.reg_number,
     owner_cnic: p.owner_cnic,
     address: p.address,
@@ -475,6 +480,7 @@ function mediaToProp(m: MediaProviderRow): PropertyRow {
     owner_email: m.owner_email,
     verified: !!m.verified,
     featured: !!m.featured,
+    featured_order: m.featured_order ?? null,
     reg_number: null,
     owner_cnic: m.cnic ?? null,
     address: null,
@@ -499,6 +505,7 @@ function restaurantToProp(r: RestaurantRow): PropertyRow {
     owner_email: r.owner_email,
     verified: !!r.verified,
     featured: !!r.featured,
+    featured_order: r.featured_order ?? null,
     reg_number: null,
     owner_cnic: r.owner_cnic ?? null,
     address: r.address ?? null,
@@ -883,8 +890,11 @@ export function AdminDashboard() {
     else await setCompanyFeatured(id, featured);
     await refresh();
   };
-  const setRanking = async (id: string, badge: string) => {
-    const table = isHotelId(id)
+  /* One place that answers "which table is this id in?", used by both the
+     badge dropdown and the position box below. Two copies of this chain
+     would be two chances for them to disagree about, say, a guide. */
+  const tableForId = (id: string) =>
+    isHotelId(id)
       ? "hotels"
       : isHomestayId(id)
         ? "homestays"
@@ -899,7 +909,15 @@ export function AdminDashboard() {
               : isRestaurantId(id)
                 ? "restaurants"
                 : "tour_companies";
-    await setRankingBadge(table, id, badge);
+
+  const setRanking = async (id: string, badge: string) => {
+    await setRankingBadge(tableForId(id), id, badge);
+    await refresh();
+  };
+
+  /** Position within the home page featured row. Null clears it. */
+  const setOrder = async (id: string, order: number | null) => {
+    await setFeaturedOrder(tableForId(id), id, order);
     await refresh();
   };
   const approveEdit = async (table: string, id: string) => {
@@ -1043,6 +1061,7 @@ export function AdminDashboard() {
               onToggle={verify}
               onFeature={feature}
               onRanking={setRanking}
+              onOrder={setOrder}
             />
           )}
           {tab === "roadside" && <AdminRoadside />}
@@ -2059,11 +2078,14 @@ function VerificationAdmin({
   onToggle,
   onFeature,
   onRanking,
+  onOrder,
 }: {
   items: PropertyRow[];
   onToggle: (id: string, verified: boolean) => void;
   onFeature: (id: string, featured: boolean) => void;
   onRanking: (id: string, badge: string) => void;
+  /** Home page position for a featured listing; null clears it. */
+  onOrder: (id: string, order: number | null) => void;
 }) {
   // null = the service card grid; otherwise the group being reviewed.
   const [openGroup, setOpenGroup] = React.useState<string | null>(null);
@@ -2300,6 +2322,42 @@ function VerificationAdmin({
                   </option>
                 ))}
               </select>
+              {/* ----------------------------------------------------------
+                  Position in the home page row. Only shown once a listing
+                  IS featured, because a position on something that does not
+                  appear there would be a setting with no effect and no way
+                  to tell.
+
+                  Committed on blur and on Enter rather than per keystroke:
+                  each save is a database write plus a full refresh, and
+                  typing "12" would fire one for "1" on the way.
+                  ---------------------------------------------------------- */}
+              {h.featured && (
+                <label className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-forest">
+                  <span className="text-xs font-medium text-muted-foreground">Order</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={999}
+                    inputMode="numeric"
+                    defaultValue={h.featured_order ?? ""}
+                    placeholder="—"
+                    aria-label={`Home page position for ${h.title}`}
+                    title="Position in the home page featured row. 1 is first. Leave empty to sort by rating."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    onBlur={(e) => {
+                      const raw = e.target.value.trim();
+                      const next = raw === "" ? null : Number(raw);
+                      // Nothing changed → no write, no refresh.
+                      if ((h.featured_order ?? null) === next) return;
+                      onOrder(h.id, next);
+                    }}
+                    className="w-14 bg-transparent text-center focus:outline-none"
+                  />
+                </label>
+              )}
               <button
                 onClick={() => onFeature(h.id, !h.featured)}
                 className={cn(

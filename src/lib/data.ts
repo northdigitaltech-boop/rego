@@ -331,6 +331,16 @@ export interface Listing {
   image: string;
   provider?: string;
   featured?: boolean;
+  /**
+   * Position within the featured row on the home page — 1 is first.
+   *
+   * `featured` decides whether a listing appears there; this decides
+   * where. Undefined or null means no position was given, and those
+   * sort after every numbered listing but still ahead of anything
+   * unfeatured, so a row with nobody positioned keeps the rating order
+   * it has always had. See supabase/phase137-featured-order.sql.
+   */
+  featuredOrder?: number | null;
   /** Up to 3 comparison details shown under the rating. */
   facts?: ListingFact[];
   /** ISO date the listing was created. Drives the "New" badge; optional
