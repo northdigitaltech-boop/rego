@@ -83,9 +83,28 @@ const MAY_BE_EMPTY = new Set(["visa", "more", "drone-pilots"]);
  */
 export async function categoryIsEmpty(
   slug: string,
-  items: { category?: string | null }[] | null
+  /* ------------------------------------------------------------------
+     A LOADER, NOT A LIST — and the change is not cosmetic.
+
+     This used to take the already-fetched array. Three slugs can ever
+     be empty (MAY_BE_EMPTY), and for the other thirty-eight this
+     function returns false on its first line without looking at the
+     data at all. But the caller had to evaluate the argument first, so
+     `await feedAllListings()` — ELEVEN parallel Supabase queries — ran
+     for every category, and thirty-eight of those runs were discarded
+     unread.
+
+     At build that was 41 prerendered category pages × 11 queries, of
+     which 418 were pure waste. It repeated on every ISR regeneration.
+
+     Taking a function instead means the fetch happens only when the
+     answer depends on it. Callers pass the same expression; it just
+     is not evaluated until needed.
+     ------------------------------------------------------------------ */
+  load: () => Promise<{ category?: string | null }[] | null>
 ): Promise<boolean> {
   if (!MAY_BE_EMPTY.has(slug)) return false;
+  const items = await load();
   if (!items) return false;
   return items.filter((l) => l.category === slug).length === 0;
 }

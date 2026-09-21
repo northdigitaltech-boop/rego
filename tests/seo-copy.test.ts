@@ -131,12 +131,12 @@ describe("category routing", () => {
 
 describe("empty category pages", () => {
   it("hides a catch-all category with nothing in it", async () => {
-    expect(await categoryIsEmpty("visa", [])).toBe(true);
-    expect(await categoryIsEmpty("more", [{ category: "hotels" }])).toBe(true);
+    expect(await categoryIsEmpty("visa", async () => [])).toBe(true);
+    expect(await categoryIsEmpty("more", async () => [{ category: "hotels" }])).toBe(true);
   });
 
   it("shows it again the moment something is listed", async () => {
-    expect(await categoryIsEmpty("visa", [{ category: "visa" }])).toBe(false);
+    expect(await categoryIsEmpty("visa", async () => [{ category: "visa" }])).toBe(false);
   });
 
   /* The important guard: hotels and homestays are fetched by their own
@@ -144,11 +144,40 @@ describe("empty category pages", () => {
      Reading zero there must never hide the page. */
   it("never hides a category served by its own view, even on a zero count", async () => {
     for (const slug of ["hotels", "homestays", "hostels", "tours", "guides", "restaurants"]) {
-      expect(await categoryIsEmpty(slug, []), slug).toBe(false);
+      expect(await categoryIsEmpty(slug, async () => []), slug).toBe(false);
     }
   });
 
   it("stays indexed when the count could not be taken", async () => {
-    expect(await categoryIsEmpty("visa", null)).toBe(false);
+    expect(await categoryIsEmpty("visa", async () => null)).toBe(false);
+  });
+
+  /* The whole point of taking a loader rather than a list. Thirty-eight of
+     the forty-one categories answer without the data, and each avoided call
+     is eleven Supabase queries that used to run at build time and on every
+     regeneration. If this ever regresses, the cost is invisible — nothing
+     breaks, the build just gets slower again. */
+  it("does not fetch the feed for a category that cannot be empty", async () => {
+    let calls = 0;
+    const load = async () => {
+      calls += 1;
+      return [];
+    };
+    await categoryIsEmpty("hotels", load);
+    await categoryIsEmpty("transport", load);
+    await categoryIsEmpty("guides", load);
+    expect(calls).toBe(0);
+  });
+
+  it("does fetch for the three that can be empty", async () => {
+    let calls = 0;
+    const load = async () => {
+      calls += 1;
+      return [];
+    };
+    await categoryIsEmpty("visa", load);
+    await categoryIsEmpty("more", load);
+    await categoryIsEmpty("drone-pilots", load);
+    expect(calls).toBe(3);
   });
 });

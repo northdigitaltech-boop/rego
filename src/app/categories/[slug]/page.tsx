@@ -28,7 +28,11 @@ import { getHotels } from "@/lib/hotels";
 import { getHomestays } from "@/lib/homestays";
 import { getHostels } from "@/lib/hostels";
 import { categoryDescription, categoryTitle } from "@/lib/seo-copy";
-import { categoryIsEmpty, categoryRedirect } from "@/lib/category-routing";
+import {
+  categoryHasOwnPage,
+  categoryIsEmpty,
+  categoryRedirect,
+} from "@/lib/category-routing";
 import { CategoryIntro } from "@/components/categories/category-intro";
 import {
   getApprovedPackages,
@@ -49,8 +53,19 @@ import {
   type CompanyStaffGuide,
 } from "@/lib/expeditions";
 
+/* Twenty of the forty-one category slugs do nothing but redirect into
+   /roadside, /events or /activities. Pre-rendering them spent build CPU
+   producing pages whose entire job is to bounce — the same reasoning
+   that already keeps them out of sitemap.xml, using the same helper so
+   the two cannot disagree.
+
+   dynamicParams stays on by default, so a slug that is not listed here
+   still renders on demand: the redirect keeps working, it just is not
+   built ahead of time. */
 export function generateStaticParams() {
-  return allCategories.map((c) => ({ slug: c.slug }));
+  return allCategories
+    .filter((c) => categoryHasOwnPage(c.slug))
+    .map((c) => ({ slug: c.slug }));
 }
 
 /* ISR window. Marketplace content changes when a provider lists or an
@@ -82,9 +97,8 @@ export async function generateMetadata({
      it comes back on its own as soon as somebody lists in it. Only the
      catch-all categories are ever eligible, and a failed count leaves the
      page indexed. */
-  const empty = await categoryIsEmpty(
-    slug,
-    await cachedAllListings().catch(() => null)
+  const empty = await categoryIsEmpty(slug, () =>
+    cachedAllListings().catch(() => null)
   );
 
   return {
