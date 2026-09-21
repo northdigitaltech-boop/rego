@@ -57,7 +57,7 @@ export function RestaurantDetail({
   const router = useRouter();
   const { user } = useAuth();
   const r = restaurant;
-  const gallery = (r.gallery ?? []).map(photo);
+  const gallery = (r.gallery ?? []).map((u) => photo(u, 800));
   const galleryImages = [r.cover_image, ...(r.gallery ?? []), r.logo].filter(Boolean) as string[];
   const restaurantFeatures: FeatureItem[] = [
     {

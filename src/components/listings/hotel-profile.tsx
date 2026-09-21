@@ -96,7 +96,7 @@ function buildGallery(listing: Listing) {
     `https://loremflickr.com/900/600/mountains,view,window?lock=${n + 62}`,
     `https://loremflickr.com/900/600/restaurant,dining,hotel?lock=${n + 63}`,
     `https://loremflickr.com/900/600/lobby,interior,resort?lock=${n + 64}`,
-  ].map(photo);
+  ].map((u) => photo(u, 800));
 }
 
 function buildRooms(listing: Listing) {

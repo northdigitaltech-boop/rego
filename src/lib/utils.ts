@@ -41,6 +41,24 @@ export function extractListingId(param: string): string {
  * any other host are returned unchanged.
  */
 export function photo(url?: string | null, width = 1080) {
+  /* ------------------------------------------------------------------
+     GUARD AGAINST `array.map(photo)`.
+
+     map() hands its callback three arguments — (value, index, array) —
+     so `gallery.map(photo)` silently becomes photo(url, 0),
+     photo(url, 1), photo(url, 2)… and the second parameter here is the
+     WIDTH. Cloudinary rejects w_0 outright, so the first thumbnail
+     broke, and w_1 through w_3 returned images one to three pixels
+     wide, which stretch across the tile as grey smudges. It looked
+     like missing images; it was the index.
+
+     Seven galleries were written that way. Fixing the call sites is
+     not enough on its own: the next person to write .map(photo) would
+     reintroduce it and see the same unexplainable result. Anything
+     below a plausible thumbnail falls back to the default instead.
+     ------------------------------------------------------------------ */
+  if (!Number.isFinite(width) || width < 64) width = 1080;
+
   if (!url) return `https://picsum.photos/seed/safarigb/${width}/${Math.round(width * 0.66)}`;
   if (url.includes("loremflickr.com")) {
     const m = url.match(

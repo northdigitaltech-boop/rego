@@ -109,7 +109,7 @@ function buildGallery(listing: Listing) {
     `https://loremflickr.com/900/600/gilgit,mountains?lock=${n + 50}`,
     `https://loremflickr.com/900/600/valley,landscape?lock=${n + 70}`,
     `https://loremflickr.com/900/600/lake,nature?lock=${n + 90}`,
-  ].map(photo);
+  ].map((u) => photo(u, 800));
 }
 
 function nightsBetween(a: string, b: string) {

@@ -84,7 +84,7 @@ export function TourItemDetail({
     pkg?.images ??
     transport?.images ??
     (guide?.image ? [guide.image] : [])
-  )?.map(photo) ?? [];
+  )?.map((u) => photo(u, 800)) ?? [];
   const categoryLabel =
     kind === "package"
       ? pkg?.package_type

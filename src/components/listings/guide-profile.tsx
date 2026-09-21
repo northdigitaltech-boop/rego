@@ -78,7 +78,7 @@ export function GuideProfile({
   const { user } = useAuth();
   const isCompanyGuide = !!guide.company_id;
   const typeLabel = guide.guide_type || guide.specialization || "Tour Guide";
-  const gallery = (guide.gallery ?? []).map(photo);
+  const gallery = (guide.gallery ?? []).map((u) => photo(u, 800));
   const image = photo(guide.image || "");
 
   // Booking state

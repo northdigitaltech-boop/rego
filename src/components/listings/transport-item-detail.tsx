@@ -83,7 +83,7 @@ export function TransportItemDetail({ kind, service, rental, provider, related }
   const id = service?.id ?? rental?.id ?? "";
   const title = service?.title ?? rental?.title ?? "";
   const image = photo(service?.image ?? rental?.image ?? "");
-  const gallery = (service?.images ?? rental?.images ?? [])?.map(photo) ?? [];
+  const gallery = (service?.images ?? rental?.images ?? [])?.map((u) => photo(u, 800)) ?? [];
   const vehicleType = service?.vehicle_type ?? rental?.vehicle_type ?? "Vehicle";
   const location =
     service?.location ?? service?.route ?? rental?.location ?? rental?.pickup_location ?? "Gilgit Baltistan";

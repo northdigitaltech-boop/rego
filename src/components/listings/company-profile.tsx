@@ -87,7 +87,7 @@ function buildGallery(listing: Listing) {
     `https://loremflickr.com/600/400/lake,turquoise?lock=${n + 62}`,
     `https://loremflickr.com/600/400/car,road,mountains?lock=${n + 63}`,
     `https://loremflickr.com/600/400/landscape,gilgit?lock=${n + 64}`,
-  ].map(photo);
+  ].map((u) => photo(u, 800));
 }
 
 export function CompanyProfile({ listing }: { listing: Listing }) {
