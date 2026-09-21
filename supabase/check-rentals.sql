@@ -18,22 +18,23 @@
 
 
 -- ------------------------------------------------------------
--- GATE 1 — does the table match the form?
+-- GATE 1 — does the table exist, and is phase67 applied?
 --
--- phase67 added transmission, ac, fuel_type and luggage_capacity.
--- The save form sends all four. If phase67 was never applied to
--- THIS database, every insert fails with "column does not exist"
--- and the provider sees a save that will not save — while the
--- rest of their dashboard works normally.
+-- The save form does NOT send the phase67 columns, so a missing
+-- phase67 will not break saving — but the public card reads
+-- transmission, ac, fuel_type and luggage_capacity, so without
+-- it those badges are simply blank.
 --
--- Expect four rows. Fewer means run phase67-transport-specs.sql.
+-- No rows at all = the table is missing and nothing about
+-- rentals can work. Run phase18-transport.sql.
+-- Four rows = phase67 is applied too.
 -- ------------------------------------------------------------
-select column_name, data_type
-from information_schema.columns
-where table_schema = 'public'
-  and table_name   = 'rental_vehicles'
-  and column_name in ('transmission', 'ac', 'fuel_type', 'luggage_capacity')
-order by column_name;
+select
+  (select count(*) from information_schema.tables
+    where table_schema = 'public' and table_name = 'rental_vehicles') as table_exists,
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'rental_vehicles'
+      and column_name in ('transmission','ac','fuel_type','luggage_capacity')) as phase67_columns;
 
 
 -- ------------------------------------------------------------
@@ -127,9 +128,11 @@ order by listing_type;
 -- ============================================================
 -- WHAT THE ANSWERS MEAN
 --
---   Gate 1 short          → run phase67-transport-specs.sql.
---                           Saving a rental is failing silently.
---   Gate 2 empty          → nothing was ever saved. Gate 1 again.
+--   Gate 1 table_exists 0 → run phase18-transport.sql. Nothing
+--                           about rentals can work without it.
+--   Gate 1 phase67 < 4    → run phase67-transport-specs.sql.
+--                           Cosmetic only: the spec badges are blank.
+--   Gate 2 empty          → nothing was ever saved.
 --   Gate 3 all 'pending'  → approve them in admin → Approvals.
 --   Gate 3 active = false → the provider has them switched off.
 --   Gate 4 zero           → the read policy is hiding them;
