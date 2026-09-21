@@ -162,7 +162,7 @@ export default async function Home() {
         {/* Reliable Transportation Services */}
         <FeaturedGrid
           title="Reliable Transportation Services"
-          subtitle="Jeeps, cars and rentals you can trust."
+          subtitle="Jeeps, cars and drivers you can trust."
           items={transport}
           viewAllHref="/categories/transport"
           viewAllLabel="View All Transport"

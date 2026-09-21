@@ -156,7 +156,9 @@ export function rentalToListing(r: RentalVehicleRow): Listing {
   return {
     id: r.id,
     title: r.title,
-    category: "transport",
+    /* Its own category since the split — a rental is no longer a
+       transport listing that happens to be tagged differently. */
+    category: "vehicle-rental",
     categoryLabel: "Vehicle Rental",
     location: r.location || r.pickup_location || "Gilgit Baltistan",
     price: r.price_per_day,

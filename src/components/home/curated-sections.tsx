@@ -103,12 +103,12 @@ export function RentalsSection() {
     <CuratedRow
       title="Rentals"
       subtitle="Rent what you need for the trip."
-      viewAllHref="/categories/transport"
+      viewAllHref="/categories/vehicle-rental"
       viewAllLabel="View All Rentals"
       tinted
       items={[
         { title: "House Rental", desc: "Self-catering homes & villas", href: "/categories/homestays", icon: Home },
-        { title: "Jeep Rental", desc: "4x4 vehicles with/without driver", href: "/categories/transport", icon: Car },
+        { title: "Jeep Rental", desc: "4x4 vehicles with/without driver", href: "/categories/vehicle-rental", icon: Car },
         { title: "Camera Rental", desc: "Pro cameras & gear", href: "/categories/photographers", icon: Camera },
         { title: "Camping Kit", desc: "Tents, sleeping bags & more", href: "/categories/transport", icon: Backpack },
       ]}

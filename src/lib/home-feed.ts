@@ -273,19 +273,26 @@ export async function feedStories(n = 3): Promise<StoryRow[]> {
     .slice(0, n);
 }
 
+/* Driven-for-you only. Rentals used to be mixed in here, which made the
+   homepage row show vehicles that its own "View All Transport" link then
+   did not list — the two disagreed the moment rentals became their own
+   category. feedRentals() below is where they go instead. */
 export async function feedTransport(n = 5) {
-  const [services, rentals, transports] = await Promise.all([
+  const [services, transports] = await Promise.all([
     getApprovedServices(),
-    getApprovedRentals(),
     getApprovedTransports(),
   ]);
   const priced = [
     ...services.map(serviceToListing),
-    ...rentals.map(rentalToListing),
     ...transports.map(transportToListing),
   ];
   if (priced.length > 0) return topN(priced, n);
   return topN((await getApprovedProviders()).map(transportProviderToListing), n);
+}
+
+/** Self-drive and private hire, for the Vehicle Rental row. */
+export async function feedRentals(n = 5) {
+  return topN((await getApprovedRentals()).map(rentalToListing), n);
 }
 
 /**

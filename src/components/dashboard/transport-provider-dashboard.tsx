@@ -705,7 +705,7 @@ function ServicesManager({
   return (
     <ManagerShell
       title="Manage Transport Services"
-      subtitle="Vehicle-with-driver and route-based services. They appear on the customer Transport & Rental page once approved."
+      subtitle="Vehicle-with-driver and route-based services. They appear on the customer Transport page once approved."
       onAdd={() => setAdding(true)}
       addLabel="Add transport service"
       empty={items.length === 0}
@@ -978,7 +978,7 @@ function RentalsManager({
   return (
     <ManagerShell
       title="Manage Rental Vehicles"
-      subtitle="Self-drive and private rental vehicles. They appear on the customer Transport & Rental page once approved."
+      subtitle="Self-drive and private rental vehicles. They appear on the customer Vehicle Rental page once approved."
       onAdd={() => setAdding(true)}
       addLabel="Add rental vehicle"
       empty={items.length === 0}

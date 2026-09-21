@@ -95,7 +95,10 @@ const CATALOGUE: Candidate[] = [
     suppressed: (c) => c.hasAccommodation === true,
   },
   {
-    intent: "search_transport",
+    /* The title and the query both say rental, so the intent has to as
+       well — otherwise tapping "Find car rentals" explored transport and
+       the chip stayed on offer after it had been used. */
+    intent: "search_vehicle_rental",
     title: "Find car rentals",
     icon: "car",
     action: "marketplace_search",

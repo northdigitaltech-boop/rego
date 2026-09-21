@@ -43,6 +43,9 @@ export type CategorySlug =
   | "mountaineering"
   | "tours"
   | "transport"
+  /* Self-drive and private hire, split out of "transport" — see the
+     categories array below for why they are not the same service. */
+  | "vehicle-rental"
   | "travel-companies"
   | "guides"
   | "photographers"
@@ -89,6 +92,20 @@ export const categories: Category[] = [
   { slug: "mountaineering", name: "Mountaineering & Expeditions", icon: Mountain, tagline: "Expedition companies, guides, porters & crew" },
   { slug: "tours", name: "Tour Packages", icon: Map, tagline: "Curated trips across Gilgit Baltistan" },
   { slug: "transport", name: "Transport", icon: Bus, tagline: "Jeeps, cars and drivers you can trust" },
+  /* ------------------------------------------------------------------
+     Renting a vehicle is a different purchase from hiring one with a
+     driver. The traveller brings a licence instead of a route, cares
+     about transmission, deposit and documents rather than an itinerary,
+     and pays by the day rather than by the trip. Sharing one category
+     meant the two sat behind a tab and were filtered, searched and
+     linked to as the same thing.
+
+     This is a BROWSE category only. The provider side is unchanged —
+     rental vehicles are still added from the transport provider's own
+     dashboard, still belong to a transport_providers row, and there is
+     no separate registration to complete.
+     ------------------------------------------------------------------ */
+  { slug: "vehicle-rental", name: "Vehicle Rental", icon: Car, tagline: "Rent a car, jeep or bike by the hour, day or month" },
   { slug: "travel-companies", name: "Travel Companies", icon: Briefcase, tagline: "Full-service tour operators & DMCs" },
   { slug: "guides", name: "Tour Guides", icon: UserRound, tagline: "Expert local storytellers" },
   { slug: "photographers", name: "Photographers & Videographers", icon: Camera, tagline: "Capture every moment" },
@@ -143,7 +160,7 @@ export const categoryGroups: CategoryGroup[] = [
     label: "Services",
     items: [
       ...categories.filter((c) =>
-        ["hotels", "homestays", "travel-companies", "tours", "transport", "guides", "photographers"].includes(c.slug)
+        ["hotels", "homestays", "travel-companies", "tours", "transport", "vehicle-rental", "guides", "photographers"].includes(c.slug)
       ),
       ...serviceCategories,
     ],

@@ -241,11 +241,15 @@ export function TransportItemDetail({ kind, service, rental, provider, related }
   return (
     <div className="bg-background">
       <div className="container-px pt-6">
+        {/* Back to the page this listing actually came from. One link for
+            both used to be fine when they shared a category; now it would
+            send half of them somewhere they are not listed. */}
         <Link
-          href="/categories/transport"
+          href={isRental ? "/categories/vehicle-rental" : "/categories/transport"}
           className="inline-flex items-center gap-1 text-sm font-medium text-forest-600 transition-colors hover:text-gold"
         >
-          <ChevronLeft className="h-4 w-4" /> Back to Transport &amp; Rental
+          <ChevronLeft className="h-4 w-4" />{" "}
+          {isRental ? "Back to Vehicle Rental" : "Back to Transport"}
         </Link>
       </div>
 

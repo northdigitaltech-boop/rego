@@ -137,7 +137,11 @@ const CATEGORY_KEYWORDS: { category: CategorySlug; label: string; words: string[
   { category: "hotels", label: "hotels & resorts", words: ["hotel", "resort", "stay", "accommodation", "room", "lodge", "where to stay"] },
   { category: "homestays", label: "homestays", words: ["homestay", "home stay", "guest house", "guesthouse", "host family", "local stay"] },
   { category: "tours", label: "tour packages", words: ["tour", "package", "itinerary", "sightseeing", "trip plan", "guided tour"] },
-  { category: "transport", label: "transport & rentals", words: ["transport", "rental", "rent", "jeep", "prado", "car", "4x4", "vehicle", "land cruiser", "bike", "driver", "pickup"] },
+  /* Rental words route to the rental category; the ambiguous ones stay with
+     transport. Same split, and same reasoning, as INTENT_KEYWORDS in
+     ai-router.ts — someone who says "rent" means to drive it themselves. */
+  { category: "transport", label: "transport", words: ["transport", "jeep", "prado", "4x4", "land cruiser", "driver", "pickup"] },
+  { category: "vehicle-rental", label: "vehicle rentals", words: ["rental", "rent", "car", "vehicle", "bike", "self drive"] },
   { category: "guides", label: "tour guides", words: ["guide", "local guide", "tour guide", "escort"] },
   { category: "photographers", label: "photographers", words: ["photographer", "photo", "drone", "videographer", "shoot", "photography"] },
   { category: "restaurants", label: "restaurants", words: ["restaurant", "food", "eat", "cuisine", "dining", "cafe", "where to eat"] },

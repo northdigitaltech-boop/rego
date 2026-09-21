@@ -9,11 +9,25 @@ import { Reveal } from "@/components/ui/reveal";
 const bySlug = Object.fromEntries(categories.map((c) => [c.slug, c]));
 
 const TOP8: { name: string; href: string; Icon: LucideIcon }[] = [
+  /* "Rentals" used to be a hand-written eighth tile pointing at the
+     transport page, because there was nowhere else for it to go. It has
+     its own category now, so it comes from the same list as the rest —
+     one less place for the label and the destination to disagree. The
+     key icon is kept: it reads as "rent" better than a car does next to
+     Transport's bus. */
   ...["hotels", "homestays", "tours", "transport", "travel-companies", "guides", "restaurants"]
     .map((s) => bySlug[s])
     .filter(Boolean)
     .map((c) => ({ name: c.name, href: `/categories/${c.slug}`, Icon: c.icon as LucideIcon })),
-  { name: "Rentals", href: "/categories/transport", Icon: KeyRound },
+  ...(bySlug["vehicle-rental"]
+    ? [
+        {
+          name: bySlug["vehicle-rental"].name,
+          href: "/categories/vehicle-rental",
+          Icon: KeyRound,
+        },
+      ]
+    : []),
 ];
 
 export function Categories() {

@@ -211,7 +211,8 @@ function FoodCard({ listing: l, index, hidePrice }: { listing: Listing; index: n
 export function variantForCategory(category: Listing["category"]): ServiceCardVariant {
   if (category === "guides") return "person";
   if (category === "travel-companies") return "brand";
-  if (category === "transport") return "spec";
+  // A rental is still a vehicle — same spec card, different category.
+  if (category === "transport" || category === "vehicle-rental") return "spec";
   if (category === "tours") return "journey";
   if (category === "restaurants") return "food";
   return "default";

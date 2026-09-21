@@ -162,14 +162,27 @@ export default async function CategoryPage({
     if (c.length > 0) dbCompanies = c;
   }
 
-  // Transport & Rental aggregates dedicated providers + tour-company vehicles.
+  /* ------------------------------------------------------------------
+     Transport and Vehicle Rental are two categories over one card view.
+
+     Transport is somebody driving you: route services from dedicated
+     providers, plus the vehicles a tour company runs. Vehicle Rental is
+     the traveller driving themselves. They share TransportCardItem and
+     the same grid because a vehicle card is a vehicle card — but they
+     no longer share a page, a URL or a filter.
+
+     `rentalsOnly` is the only difference between the two branches, so
+     the two lists cannot drift apart as either side changes.
+     ------------------------------------------------------------------ */
   let dbTransport: TransportCardItem[] | null = null;
-  if (category.slug === "transport") {
+  if (category.slug === "transport" || category.slug === "vehicle-rental") {
+    const rentalsOnly = category.slug === "vehicle-rental";
+
     const [services, rentals, tourVehicles, providers, companies] =
       await Promise.all([
-        getApprovedServices(),
+        rentalsOnly ? Promise.resolve([]) : getApprovedServices(),
         getApprovedRentals(),
-        getApprovedTransports(),
+        rentalsOnly ? Promise.resolve([]) : getApprovedTransports(),
         getApprovedProviders(),
         getApprovedCompanies(),
       ]);
@@ -219,7 +232,8 @@ export default async function CategoryPage({
         luggage: t.luggage_capacity,
         driverIncluded: t.driver_included,
       })),
-      ...rentals.map((r) => ({
+      // Transport is driven-for-you, so rentals belong only to the other page.
+      ...(rentalsOnly ? rentals : []).map((r) => ({
         id: r.id,
         title: r.title,
         listingType: "rental" as const,

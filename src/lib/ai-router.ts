@@ -35,6 +35,7 @@ export type SearchIntent =
   | "search_hostels"
   | "search_tour_packages"
   | "search_transport"
+  | "search_vehicle_rental"
   | "search_guides"
   | "search_photographers"
   | "search_restaurants";
@@ -80,12 +81,29 @@ const INTENT_KEYWORDS: Record<SearchIntent, string[]> = {
     "tour package", "tour packages", "packages", "package", "guided tour",
     "sightseeing", "tour", "tours", "trip package", "deal", "deals", "ٹور",
   ],
+  /* ------------------------------------------------------------------
+     Transport and rental split by how SPECIFIC the phrase is, because
+     the matcher takes the LONGEST matching keyword. "jeep" on its own
+     could mean either, so it stays here and answers with drivers;
+     "rent a jeep" is longer and unambiguous, so it wins for rentals.
+
+     Ambiguous words are deliberately left on this side. Someone asking
+     to get somewhere is better served by a driver than by a form asking
+     for their licence.
+     ------------------------------------------------------------------ */
   search_transport: [
-    "car rent", "rent a car", "rental car", "rent car", "car chahiye", "jeep", "jeeps",
-    "prado", "land cruiser", "bike", "transport", "transportation", "vehicle", "vehicles",
-    "4x4", "gari", "gaari", "گاڑی", "جیپ", "car for rent", "cars for rent",
-    "rental", "rentals", "driver", "drivers", "taxi", "cab", "pick and drop",
+    "jeep", "jeeps", "prado", "land cruiser", "bike",
+    "transport", "transportation", "vehicle", "vehicles",
+    "4x4", "gari", "gaari", "گاڑی", "جیپ",
+    "driver", "drivers", "taxi", "cab", "pick and drop",
     "pickup", "how to get to", "how to reach", "travel to", "getting around",
+  ],
+  search_vehicle_rental: [
+    "rent a car", "rent car", "car rent", "rental car", "car for rent",
+    "cars for rent", "rent a jeep", "jeep rent", "jeep for rent",
+    "rent a bike", "bike rent", "bike rental", "car rental", "vehicle rental",
+    "self drive", "self-drive", "rent a vehicle", "car chahiye",
+    "rental", "rentals", "کرایہ", "گاڑی کرایہ",
   ],
   search_guides: [
     "tour guide", "local guide", "guide", "guides", "guiding", "trek guide",
@@ -468,10 +486,11 @@ const FETCHERS: Record<SearchIntent, () => Promise<Listing[]>> = {
   search_homestays: () => getHomestays(),
   search_hostels: () => getHostels(),
   search_tour_packages: async () => (await getApprovedPackages()).map(packageToListing),
-  search_transport: async () => {
-    const [rentals, services] = await Promise.all([getApprovedRentals(), getApprovedServices()]);
-    return [...rentals.map(rentalToListing), ...services.map(serviceToListing)];
-  },
+  /* Results match where "view all" sends them. Returning rentals here
+     while linking to the transport page would show vehicles that the
+     linked page does not list. */
+  search_transport: async () => (await getApprovedServices()).map(serviceToListing),
+  search_vehicle_rental: async () => (await getApprovedRentals()).map(rentalToListing),
   search_guides: async () => (await getApprovedGuides()).map(guideToListing),
   search_photographers: async () => (await getApprovedMediaProviders()).map(providerToListing),
   search_restaurants: async () => (await getApprovedRestaurants()).map(restaurantToListing),
@@ -482,7 +501,8 @@ const INTENT_LABEL: Record<SearchIntent, string> = {
   search_homestays: "homestays & guest houses",
   search_hostels: "hostels",
   search_tour_packages: "tour packages",
-  search_transport: "transport & rentals",
+  search_transport: "transport",
+  search_vehicle_rental: "vehicle rentals",
   search_guides: "tour guides",
   search_photographers: "photographers",
   search_restaurants: "restaurants",
@@ -494,6 +514,7 @@ const INTENT_HREF: Record<SearchIntent, string> = {
   search_hostels: "/categories/hostels",
   search_tour_packages: "/categories/tours",
   search_transport: "/categories/transport",
+  search_vehicle_rental: "/categories/vehicle-rental",
   search_guides: "/categories/guides",
   search_photographers: "/categories/photographers",
   search_restaurants: "/categories/restaurants",

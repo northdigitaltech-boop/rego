@@ -38,6 +38,11 @@ const QUICK_FILTERS = [
   { slug: "homestays", label: "Homestays" },
   { slug: "tours", label: "Tours" },
   { slug: "transport", label: "Transport" },
+  /* Added with the rental split. Without it, rentals would still be in the
+     feed for this destination and reachable from no filter on it — the
+     Transport chip stopped matching them the moment they got their own
+     category. */
+  { slug: "vehicle-rental", label: "Vehicle Rental" },
   { slug: "guides", label: "Guides" },
   { slug: "restaurants", label: "Restaurants" },
 ];

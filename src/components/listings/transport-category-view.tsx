@@ -112,6 +112,13 @@ export function TransportCategoryView({
     { id: "rental", label: "Vehicle Rental", count: rentalCount },
   ];
 
+  /* Since rentals moved to their own category, each page carries one kind
+     and the tab row is three buttons that all show the same grid — two of
+     them reading "0". Show it only when there is genuinely something to
+     switch between, which also tidies the Transport page on a day when
+     nothing but services is listed. */
+  const showTabs = serviceCount > 0 && rentalCount > 0;
+
   return (
     <div className="bg-background">
       <div className="border-b border-border bg-forest-50/50">
@@ -138,7 +145,7 @@ export function TransportCategoryView({
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className={cn("mt-4 flex-wrap gap-2", showTabs ? "flex" : "hidden")}>
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -193,7 +200,11 @@ function TransportCard({ item }: { item: TransportCardItem; }) {
   const wishItem: Listing = {
     id: item.id,
     title: item.title,
-    category: "transport",
+    /* The saved wishlist item has to carry the category the listing really
+       belongs to — it is what the wishlist page filters and links by, so a
+       rental filed under transport would come back pointing at a page it
+       is not on. */
+    category: isRental ? "vehicle-rental" : "transport",
     categoryLabel: isRental ? "Vehicle Rental" : "Transport Service",
     location: item.location,
     price: item.price,
