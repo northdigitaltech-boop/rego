@@ -1,4 +1,8 @@
-"use client";
+/* Server component. Nothing here needs the browser — no state, no
+   effects, no handlers. Reveal carries its own "use client" for the
+   scroll fade, which a server parent may render. Marking this file
+   client shipped its markup to the browser to be hydrated for nothing.
+   See service-cards.tsx for the same reasoning at greater scale. */
 
 import Link from "next/link";
 import {

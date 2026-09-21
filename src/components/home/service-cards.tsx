@@ -1,4 +1,21 @@
-"use client";
+/* ------------------------------------------------------------------
+   NOT a client component, and that is the point.
+
+   This file had "use client" at the top, so all five card variants —
+   PersonCard, BrandCard, SpecCard, JourneyCard, FoodCard — were
+   shipped to the browser and hydrated. The homepage renders 59 cards.
+   None of this file needs the client: no state, no effects, no event
+   handlers, nothing touching window or localStorage. It is markup.
+
+   The two client pieces it renders stay client and are unaffected:
+   Reveal (its scroll fade) and ListingCard (the wishlist heart) carry
+   their own "use client". A server component rendering a client child
+   is fine — only the reverse is not.
+
+   Anything that genuinely needs interactivity belongs in its own small
+   client component, the way ListingCard already does, rather than
+   pulling the whole card system across the boundary with it.
+   ------------------------------------------------------------------ */
 
 import Link from "next/link";
 import { Star, MapPin, Users2, CarFront, UtensilsCrossed, Route } from "lucide-react";
