@@ -19,26 +19,25 @@ import { useAuth } from "@/components/auth/auth-context";
 import { BrandLogo } from "@/components/layout/logo";
 import { RecommendationsBell } from "@/components/layout/recommendations-bell";
 import { MobileBottomNavigation } from "@/components/layout/mobile-bottom-nav";
-import { BookingStatusModal } from "@/components/booking/booking-status-modal";
+import dynamic from "next/dynamic";
+/* Rendered only behind `statusOpen`, i.e. after a click — so it has no
+   business being in the first-paint bundle. ssr:false because it is a modal:
+   there is nothing for the server to render until someone opens it. */
+const BookingStatusModal = dynamic(
+  () => import("@/components/booking/booking-status-modal").then((m) => m.BookingStatusModal),
+  { ssr: false }
+);
 import { useStaffProfile } from "@/lib/staff-portal";
-import { getBookingIdsForUser } from "@/lib/bookings";
-import { getHomestayBookingIdsForUser } from "@/lib/homestay-bookings";
-import { getTourBookingIdsForUser } from "@/lib/tour-bookings";
-import { getTransportBookingIdsForUser } from "@/lib/transport-bookings";
-import { getGuideBookingIdsForUser } from "@/lib/guide-bookings";
-import { getMediaBookingIdsForUser } from "@/lib/media-bookings";
-import { getRestaurantBookingIdsForUser } from "@/lib/restaurant-bookings";
-import { adminThreadId, getAdminThreads } from "@/lib/messages";
-import { getMessagesForBookings, type MsgMeta } from "@/lib/messages";
-import { getNotifications, markRead, type NotificationRow } from "@/lib/notifications";
+/* Types only — erased at compile time, so they cost nothing in the bundle.
+   The FUNCTIONS they describe are loaded lazily; see lib/navbar-alerts.ts. */
+import type { NotificationRow } from "@/lib/notifications";
+import type { NavNotif } from "@/lib/navbar-alerts";
 import { useUnread } from "@/lib/use-unread";
 import { useWishlist } from "@/lib/wishlist";
 import { cn } from "@/lib/utils";
 /* siteConfig and contactLinks were imported here but only ever mentioned in
    a comment below — dead since the helpline moved to its own hook. */
 import { HelplineLink } from "@/components/layout/helpline-link";
-
-type NavNotif = { id: string; who: string; text: string; time: string };
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -221,32 +220,12 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
     }
     let active = true;
     const loadIds = async () => {
-      const [hotelIds, homestayIds, tourIds, transportIds, guideIds, mediaIds, restaurantIds] =
-        await Promise.all([
-          getBookingIdsForUser(user.email),
-          getHomestayBookingIdsForUser(user.email),
-          getTourBookingIdsForUser(user.email),
-          getTransportBookingIdsForUser(user.email),
-          getGuideBookingIdsForUser(user.email),
-          getMediaBookingIdsForUser(user.email),
-          getRestaurantBookingIdsForUser(user.email),
-        ]);
-      // Admins watch every admin↔owner thread; everyone else watches their own.
-      const adminIds =
-        user.role === "admin"
-          ? (await getAdminThreads()).map((t) => t.threadId)
-          : [adminThreadId(user.email)];
+      /* Lazy on purpose. Seven booking libraries plus messages live behind
+         this import; a signed-out visitor never reaches this line, so they
+         never download them. See lib/navbar-alerts.ts. */
+      const { fetchWatchedBookingIds } = await import("@/lib/navbar-alerts");
+      const next = await fetchWatchedBookingIds(user.email, user.role === "admin");
       if (!active) return;
-      const next = [
-        ...hotelIds,
-        ...homestayIds,
-        ...tourIds,
-        ...transportIds,
-        ...guideIds,
-        ...mediaIds,
-        ...restaurantIds,
-        ...adminIds,
-      ];
       // Only update when the set actually changes (avoids needless re-renders).
       setBookingIds((prev) =>
         prev.length === next.length && prev.every((id, i) => id === next[i])
@@ -313,24 +292,8 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
     }
     let active = true;
     const load = async () => {
-      const meta = await getMessagesForBookings(idsKey.split(","));
-      const byBooking = new Map<string, MsgMeta>();
-      for (const m of meta) {
-        if (m.sender_email === user.email) continue; // only others' messages
-        const cur = byBooking.get(m.booking_id);
-        if (!cur || new Date(m.created_at) > new Date(cur.created_at)) {
-          byBooking.set(m.booking_id, m);
-        }
-      }
-      const list = [...byBooking.values()]
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .slice(0, 8)
-        .map((m) => ({
-          id: m.booking_id,
-          who: m.sender_name ?? m.sender_email,
-          text: m.text ?? "",
-          time: m.created_at,
-        }));
+      const { fetchLatestMessages } = await import("@/lib/navbar-alerts");
+      const list = await fetchLatestMessages(idsKey.split(","), user.email);
       if (active) setNotifs(list);
     };
     load();
@@ -351,7 +314,8 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
     }
     let active = true;
     const load = async () => {
-      const list = await getNotifications(user.email, 15);
+      const { fetchNotifications } = await import("@/lib/navbar-alerts");
+      const list = await fetchNotifications(user.email);
       if (active) setSysNotifs(list);
     };
     load();
@@ -364,10 +328,18 @@ export function Navbar({ fluid = true }: { fluid?: boolean }) {
   const sysUnread = sysNotifs.filter((n) => !n.is_read).length;
   const totalUnread = unread.size + sysUnread;
 
-  const openSysNotif = async (n: NotificationRow) => {
+  const openSysNotif = (n: NotificationRow) => {
     if (!n.is_read) {
+      // Optimistic locally; the write is fire-and-forget, as it already was.
       setSysNotifs((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
-      markRead(n.id).catch(() => {});
+      /* Loaded here rather than at the top of the file so notifications.ts
+         stays out of the first-paint bundle. Deliberately NOT awaited before
+         the navigation below — making someone wait on a chunk fetch to open
+         their own notification would trade a page-weight win for a worse
+         click. */
+      void import("@/lib/notifications")
+        .then(({ markRead }) => markRead(n.id))
+        .catch(() => {});
     }
     setNotifOpen(false);
     if (n.action_url) router.push(n.action_url);
