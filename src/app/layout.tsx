@@ -12,6 +12,7 @@ import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReferralCapture } from "@/components/referral-capture";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { VercelAnalytics } from "@/components/analytics/vercel-analytics";
 import { CookieBanner } from "@/components/consent/cookie-banner";
 import { IosSplash } from "@/components/pwa/ios-splash";
 
@@ -189,6 +190,11 @@ export default function RootLayout({
             unset. Also runs Rego's own once-a-day visit counter, which is
             gated on the same answer. */}
         <GoogleAnalytics />
+
+        {/* Vercel Web Analytics — page views and referrers, cookieless.
+            Behind the same consent answer as Google's; see the component
+            for why something that sets no cookies is still gated. */}
+        <VercelAnalytics />
 
         {/* Real-user Core Web Vitals, reported to Vercel.
             Vercel's dashboard had Speed Insights switched on and no script to

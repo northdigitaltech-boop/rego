@@ -339,7 +339,11 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
               Own a hotel, jeep, guesthouse or tour company?
             </span>
             <Link
-              href="/partner"
+              /* Straight into partner signup, not the /partner brochure.
+                 Someone who clicks this has already decided; ?role=partner
+                 opens the form on the category picker rather than the
+                 traveller fields. */
+              href="/signup?role=partner"
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition-colors hover:border-white hover:bg-white hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
             >
               List your business

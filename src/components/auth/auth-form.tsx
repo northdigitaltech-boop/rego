@@ -159,6 +159,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (p) setEmail(p);
   }, []);
 
+  /* ------------------------------------------------------------------
+     ?role=partner — arriving already knowing what you came to do.
+
+     The hero's "List your business" button and the footer's partner link
+     both point at people who are here to list, not to book. Landing them
+     on the traveller form and expecting them to notice a toggle loses
+     the ones who assume they are in the wrong place.
+
+     Only "partner" is honoured. Anything else falls through to the
+     traveller default, so a mistyped or hostile value cannot put someone
+     in a flow they did not choose — and the role that actually matters
+     is set server-side from this value at signup, not trusted from the
+     URL on its own. */
+  React.useEffect(() => {
+    if (!isSignup) return;
+    const r = new URLSearchParams(window.location.search).get("role");
+    if (r === "partner") setRole("partner");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* Only changes the wording. It is not a claim that the person IS staff —
      my_staff_profile() decides that after they sign in, and somebody who is
      not on the team goes to their own dashboard rather than being told at
