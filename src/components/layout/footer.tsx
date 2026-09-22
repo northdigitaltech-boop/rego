@@ -16,7 +16,7 @@ import { BrandLogo } from "@/components/layout/logo";
 import { HelplineLink } from "@/components/layout/helpline-link";
 import { legalPolicies } from "@/lib/legal";
 import { CookieSettingsLink } from "@/components/consent/cookie-settings-link";
-import { siteConfig, contactLinks, companyRegistration } from "@/lib/site";
+import { siteConfig, contactLinks, companyRegistration, builtBy } from "@/lib/site";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 const quickLinks = [
@@ -257,9 +257,25 @@ export function Footer() {
           </ul>
         </div>
 
-        {/* /50 failed the 4.5:1 contrast requirement — /75 passes comfortably. */}
+        {/* /50 failed the 4.5:1 contrast requirement — /75 passes comfortably.
+            The build credit sits on its own line below the copyright rather
+            than beside it: on a narrow phone a single line wraps mid-sentence
+            and reads as one run-on claim about who owns Rego. Two lines keep
+            the ownership and the authorship separate, which is what they
+            are. */}
         <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/75">
-          © {new Date().getFullYear()} Rego. All rights reserved.
+          <p>© {new Date().getFullYear()} Rego. All rights reserved.</p>
+          <p className="mt-1.5 text-white/60">
+            Powered by{" "}
+            <a
+              href={builtBy.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-white/80 underline decoration-gold/50 underline-offset-2 transition-colors hover:text-gold"
+            >
+              {builtBy.name}
+            </a>
+          </p>
         </div>
       </div>
     </footer>

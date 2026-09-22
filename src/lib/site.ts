@@ -69,6 +69,25 @@ export const companyRegistration = {
 } as const;
 
 /**
+ * Who built and maintains the site, for the footer credit.
+ *
+ * Beside companyRegistration rather than typed into the footer, because it is
+ * the same kind of fact — a named third party with a real URL — and the next
+ * place that needs it (an invoice, a JSON-LD `Organization`, a colophon)
+ * should read it from here instead of copying the spelling and hoping.
+ *
+ * The link is `rel="noopener"` at the point of use. It is not `nofollow`:
+ * this is a genuine, disclosed relationship rather than a paid placement, so
+ * passing link equity is the honest signal. Should the arrangement ever
+ * become paid, `nofollow sponsored` is what Google asks for and this comment
+ * is the reminder.
+ */
+export const builtBy = {
+  name: "North Digital Tech",
+  url: "https://www.northdigitaltech.com/",
+} as const;
+
+/**
  * Where contact-form messages are actually delivered.
  *
  * Deliberately separate from `contactEmail`. If the public address is a
