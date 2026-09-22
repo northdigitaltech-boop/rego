@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLogShared } from "@/lib/rate-limit-guard";
 
 import { buildVoucherPdf, type VoucherData } from "@/lib/voucher-pdf";
 
@@ -32,6 +34,17 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const CONFIRMED = new Set(["accepted", "confirmed", "completed"]);
 
 export async function GET(req: Request) {
+  /* 5 per IP per 15 minutes. Each call builds a PDF server-side, so this
+     is a CPU cost as much as a data one. */
+  const ip = clientIp(req);
+  const limited = await limitAndLogShared(req, `booking-voucher:${ip}`, 5, 15 * 60_000, {
+    endpoint: "/api/booking/voucher",
+    category: "booking",
+  });
+  if (!limited.ok) {
+    return json({ error: "Too many requests. Please wait a few minutes." }, 429);
+  }
+
   if (!SUPABASE_URL || !SERVICE_KEY) {
     return json({ error: "Not configured." }, 500);
   }

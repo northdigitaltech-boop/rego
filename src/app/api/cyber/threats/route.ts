@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { guardCyber } from "@/lib/cyber-guard";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLogShared } from "@/lib/rate-limit-guard";
 import {
   detect,
   ruleCatalogue,
@@ -22,6 +24,32 @@ export const dynamic = "force-dynamic";
 const MAX_EVENTS = 5000;
 
 export async function GET(req: Request) {
+  /* ------------------------------------------------------------------
+     60 per IP per 15 minutes, NOT the 5 used on booking and admin
+     routes.
+
+     This is a console an analyst works in: opening the security
+     overview, switching a filter, clicking into an incident and back
+     are each a request, and a handful of those in a minute is normal
+     use, not abuse. A limit of 5 would lock the operator out of the
+     tool they are using to respond to an incident — the worst possible
+     moment to be rate limited by your own software.
+
+     60 still bounds a stolen admin token to something a human could
+     plausibly do, which is what the limiter is for.
+     ------------------------------------------------------------------ */
+  const ip = clientIp(req);
+  const limited = await limitAndLogShared(req, `cyber-threats:${ip}`, 60, 15 * 60_000, {
+    endpoint: "/api/cyber/threats",
+    category: "admin",
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many requests." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
+    );
+  }
+
   const guard = await guardCyber(req);
   if (!guard.ok) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });

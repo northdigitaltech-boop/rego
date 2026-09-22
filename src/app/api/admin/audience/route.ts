@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLogShared } from "@/lib/rate-limit-guard";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /* ============================================================
@@ -18,6 +20,17 @@ function adminClient(): SupabaseClient {
 }
 
 export async function GET(req: Request) {
+  /* 5 per IP per 15 minutes. This returns a list of contactable users —
+     exactly the thing worth scraping if an admin token ever leaks. */
+  const ip = clientIp(req);
+  const limited = await limitAndLogShared(req, `admin-audience:${ip}`, 5, 15 * 60_000, {
+    endpoint: "/api/admin/audience",
+    category: "admin",
+  });
+  if (!limited.ok) {
+    return NextResponse.json({ ok: false, error: "Too many requests." }, { status: 429 });
+  }
+
   if (!SUPABASE_URL || !SERVICE_KEY) {
     return NextResponse.json({ ok: false, error: "Not configured." }, { status: 500 });
   }

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { clientIp } from "@/lib/rate-limit";
+import { limitAndLogShared } from "@/lib/rate-limit-guard";
 
 import { isSmtpConfigured } from "@/lib/mailer";
 
@@ -18,6 +20,17 @@ import { isSmtpConfigured } from "@/lib/mailer";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  /* 5 per IP per 15 minutes. Secret-gated already; the limiter turns a
+     stolen CRON_SECRET from unlimited probing into five tries. */
+  const ip = clientIp(req);
+  const limited = await limitAndLogShared(req, `email-diag:${ip}`, 5, 15 * 60_000, {
+    endpoint: "/api/email/diag",
+    category: "api",
+  });
+  if (!limited.ok) {
+    return NextResponse.json({ ok: false, error: "Too many requests." }, { status: 429 });
+  }
+
   const key = new URL(req.url).searchParams.get("key");
   if (!process.env.CRON_SECRET || key !== process.env.CRON_SECRET) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
