@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Search,
   MapPin,
@@ -10,7 +11,7 @@ import {
   CheckCircle2,
   MoreHorizontal,
   RotateCcw,
-  PlaneTakeoff, Star } from "lucide-react";
+  PlaneTakeoff, Star, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SiteSearch } from "@/components/ui/site-search";
@@ -314,6 +315,36 @@ export function Hero({ image }: { image?: HeroImage } = {}) {
                 {badge}
               </span>
             ))}
+          </div>
+
+          {/* ----------------------------------------------------------------
+              The supply-side way in.
+
+              Until now the only route for a provider was a "Become a Partner"
+              link in the FOOTER — so a hotel owner in Skardu who heard about
+              Rego landed here with no visible way to join.
+
+              Deliberately quiet, and deliberately not gold. Gold is the
+              Search button below, and this hero has one job: get a traveller
+              into that box. Two gold buttons compete, and travellers
+              outnumber providers by orders of magnitude — so this reads as
+              an aside to the few people it is for, not a second headline.
+
+              The question above it is what makes it work. "List your
+              business" alone is a phrase a traveller skims past; naming the
+              actual businesses is what makes a jeep owner stop.
+              ---------------------------------------------------------------- */}
+          <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-sm text-white/75">
+              Own a hotel, jeep, guesthouse or tour company?
+            </span>
+            <Link
+              href="/partner"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition-colors hover:border-white hover:bg-white hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            >
+              List your business
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
           {/* Live weather for key GB destinations */}
