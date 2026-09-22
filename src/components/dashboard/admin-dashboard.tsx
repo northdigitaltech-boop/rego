@@ -190,6 +190,7 @@ import { type BookingRow } from "@/lib/bookings";
 import {
   getDestinationRows,
   createDestination,
+  updateDestination,
   deleteDestination,
   slugify,
   type DestinationRow,
@@ -2456,6 +2457,9 @@ export function DestinationsAdmin({
   const [image, setImage] = React.useState("");
   const [error, setError] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+  /* Which card is open for editing — one at a time, so two half-finished
+     edits cannot both be on screen. */
+  const [editing, setEditing] = React.useState<string | null>(null);
 
   const slug = slugify(name);
 
@@ -2658,6 +2662,19 @@ export function DestinationsAdmin({
                     </Link>
                   </div>
                   <button
+                    onClick={() => setEditing(editing === d.id ? null : d.id)}
+                    aria-label={`Edit ${d.name}`}
+                    title="Edit this destination"
+                    className={cn(
+                      "grid h-9 w-9 shrink-0 place-items-center rounded-lg",
+                      editing === d.id
+                        ? "bg-forest-600 text-white"
+                        : "text-forest hover:bg-muted"
+                    )}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => handleDelete(d.id, d.name)}
                     aria-label={`Delete ${d.name}`}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-red-600 hover:bg-red-50"
@@ -2665,6 +2682,17 @@ export function DestinationsAdmin({
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+
+                {editing === d.id && (
+                  <DestinationEdit
+                    row={d}
+                    onDone={() => {
+                      setEditing(null);
+                      onChange();
+                    }}
+                    onCancel={() => setEditing(null)}
+                  />
+                )}
 
                 {/* Tourist spots shown on this destination's page */}
                 <AttractionsEditor row={d} />
@@ -2674,6 +2702,130 @@ export function DestinationsAdmin({
         )}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   Edit one destination in place.
+
+   updateDestination() has been in lib/destinations.ts all along with
+   nothing calling it — the list offered delete and nothing else, so a
+   typo in a name or a wrong cover image meant deleting the row and
+   adding it again, which changes the id and breaks any link to it.
+
+   The SLUG is deliberately not editable here. It is the public URL
+   (/destinations/skardu), it is what the sitemap and every existing
+   link point at, and quietly changing it would 404 them all. Renaming
+   the display name is safe and is what an admin actually wants;
+   changing the URL is a redirect decision, not a text edit.
+   ------------------------------------------------------------------ */
+function DestinationEdit({
+  row,
+  onDone,
+  onCancel,
+}: {
+  row: DestinationRow;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = React.useState(row.name);
+  const [location, setLocation] = React.useState(row.location);
+  const [stays, setStays] = React.useState(row.stays ?? "");
+  const [tagline, setTagline] = React.useState(row.tagline ?? "");
+  const [image, setImage] = React.useState(row.image ?? "");
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!name.trim() || !location.trim()) {
+      setError("Name and location are both required.");
+      return;
+    }
+    setSaving(true);
+    const { error: dbError } = await updateDestination(row.id, {
+      name: name.trim(),
+      location: location.trim(),
+      stays: stays.trim() || null,
+      tagline: tagline.trim() || null,
+      image: image.trim() || row.image,
+    });
+    setSaving(false);
+    if (dbError) {
+      setError(dbError.message);
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <form onSubmit={save} className="border-t border-border bg-muted/30 p-3 space-y-2">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-[11px] font-semibold text-muted-foreground">Name</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-0.5 w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            Location (for filtering)
+          </span>
+          <input
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="mt-0.5 w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-semibold text-muted-foreground">Stays label</span>
+          <input
+            value={stays}
+            onChange={(e) => setStays(e.target.value)}
+            placeholder="e.g. 40+ Stays"
+            className="mt-0.5 w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-semibold text-muted-foreground">Tagline</span>
+          <input
+            value={tagline}
+            onChange={(e) => setTagline(e.target.value)}
+            placeholder="e.g. Alpine lakes and meadows"
+            className="mt-0.5 w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-sm"
+          />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="text-[11px] font-semibold text-muted-foreground">Cover image</span>
+        <ImageUpload value={image} onChange={setImage} folder="destinations" />
+      </label>
+
+      {/* The URL is shown, not edited — see the note above the component. */}
+      <p className="text-[11px] text-muted-foreground">
+        URL stays <code className="font-mono">/destinations/{row.slug}</code> — renaming
+        does not move the page, so existing links keep working.
+      </p>
+
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={saving}>
+          {saving ? "Saving…" : "Save changes"}
+        </Button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 

@@ -13,6 +13,7 @@ import {
 } from "@/lib/attractions";
 import { updateDestinationAttractions, type DestinationRow } from "@/lib/destinations";
 import { syncAttractions } from "@/lib/markets";
+import { loadPlaceTree, spotsForDestination, type PlaceNode } from "@/lib/place-tree";
 import { cn } from "@/lib/utils";
 
 const BLANK: Attraction = { name: "", type: "", blurb: "", image: "" };
@@ -30,6 +31,45 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
     () => suggestedFor(row.slug, row.name),
     [row.slug, row.name]
   );
+
+  /* ------------------------------------------------------------------
+     Spots an admin has already curated in Area Management.
+
+     Everything in this editor used to be typed by hand, so the same
+     lake could be saved as "Shangrila Lake" here and exist as
+     "Shangri-La Lake" in the location tree, with nothing connecting
+     them. Picking from the tree means the name on the destination page
+     is the name the rest of the system already knows.
+
+     Falls back to an empty list on any failure — the text fields below
+     still work, exactly as they do today. A picker that cannot load
+     must not take the form down with it. */
+  const [spots, setSpots] = React.useState<PlaceNode[]>([]);
+  React.useEffect(() => {
+    let alive = true;
+    loadPlaceTree()
+      .then((tree) => {
+        if (alive) setSpots(spotsForDestination(tree, row.name));
+      })
+      .catch(() => {
+        if (alive) setSpots([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [row.name]);
+
+  /* Already added, so the picker can grey them out rather than let an
+     admin add the same lake twice and wonder why it appears twice. */
+  const taken = React.useMemo(
+    () => new Set(items.map((a) => a.name.trim().toLowerCase())),
+    [items]
+  );
+
+  const addSpot = (spot: PlaceNode) => {
+    if (taken.has(spot.name.trim().toLowerCase())) return;
+    setItems((p) => [...p, { ...BLANK, name: spot.name, type: spot.location_type }]);
+  };
 
   const patch = (i: number, k: keyof Attraction, v: string) =>
     setItems((p) => p.map((a, j) => (j === i ? { ...a, [k]: v } : a)));
@@ -152,6 +192,42 @@ export function AttractionsEditor({ row }: { row: DestinationRow }) {
             >
               {note.text}
             </p>
+          )}
+
+          {spots.length > 0 && (
+            <div className="space-y-1.5 rounded-xl border border-forest-200 bg-forest-50/50 p-2.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-forest-700">
+                From Area Management
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {spots.map((sp) => {
+                  const already = taken.has(sp.name.trim().toLowerCase());
+                  return (
+                    <button
+                      key={sp.id}
+                      type="button"
+                      disabled={already}
+                      onClick={() => addSpot(sp)}
+                      title={already ? "Already in this list" : `Add ${sp.name}`}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+                        already
+                          ? "cursor-not-allowed border border-border bg-muted text-muted-foreground"
+                          : "border border-forest-200 bg-card text-forest hover:bg-forest-600 hover:text-white"
+                      )}
+                    >
+                      {already ? "✓ " : "+ "}
+                      {sp.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                These are real locations from Area Management, so the name
+                matches what providers and the map already use. Adding one
+                fills in the name — write the description yourself.
+              </p>
+            </div>
           )}
 
           {presets.length > 0 && (

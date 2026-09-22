@@ -205,6 +205,43 @@ export function findByName(options: PlaceNode[], name: string | null): PlaceNode
   return options.find((o) => o.name.trim().toLowerCase() === q) ?? null;
 }
 
+/** The two location types that describe a place a traveller goes to see. */
+const SPOT_TYPES = new Set(["attraction", "landmark"]);
+
+/**
+ * Tourist spots for one destination, from Area Management.
+ *
+ * The attractions editor used to be a free-text box with a list of
+ * hard-coded suggestions. Everything it produced was typed by hand, so
+ * "Shangrila Lake", "Shangri-La Lake" and "shangrila lake" could all
+ * end up published as different spots — and none of them matched the
+ * locations an admin had already curated in Area Management.
+ *
+ * This is the other direction from markets.syncAttractions(), which
+ * copies a destination's attractions INTO the tree. Both now exist, so
+ * whichever side an admin works on, the other can be filled from it.
+ *
+ * `destinationName` is matched against the tree by name, because that
+ * is the only link a destinations row has to a location — it carries a
+ * slug and a display name, not a location_id. When no such place is in
+ * the tree, every spot is returned rather than none: an admin whose
+ * destination has not been added to Area Management yet should still
+ * get a list to pick from, not an empty box with no explanation.
+ */
+export function spotsForDestination(
+  tree: PlaceNode[],
+  destinationName: string | null
+): PlaceNode[] {
+  const spots = tree.filter((n) => SPOT_TYPES.has(n.location_type));
+  const here = findByName(tree, destinationName);
+  if (!here) return byName(spots);
+
+  const inside = spots.filter((n) => isDescendantOf(tree, n.id, here.id));
+  /* A destination with nothing beneath it yet falls back to the whole
+     list for the same reason as above — an empty picker looks broken. */
+  return byName(inside.length > 0 ? inside : spots);
+}
+
 function byName(nodes: PlaceNode[]): PlaceNode[] {
   return [...nodes].sort((a, b) => a.name.localeCompare(b.name));
 }
