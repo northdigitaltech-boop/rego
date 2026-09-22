@@ -258,24 +258,32 @@ export function Footer() {
         </div>
 
         {/* /50 failed the 4.5:1 contrast requirement — /75 passes comfortably.
-            The build credit sits on its own line below the copyright rather
-            than beside it: on a narrow phone a single line wraps mid-sentence
-            and reads as one run-on claim about who owns Rego. Two lines keep
-            the ownership and the authorship separate, which is what they
-            are. */}
-        <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/75">
-          <p>© {new Date().getFullYear()} Rego. All rights reserved.</p>
-          <p className="mt-1.5 text-white/60">
+            One line, with a dot between the two statements. The dot is
+            aria-hidden: it is punctuation, and a screen reader reading
+            "bullet" between them adds nothing.
+
+            flex-wrap rather than nowrap, so a very narrow phone breaks at the
+            dot instead of squeezing or overflowing — the two halves stay
+            whole either way. */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 border-t border-white/10 pt-6 text-center text-xs text-white/75">
+          <span>© {new Date().getFullYear()} Rego. All rights reserved.</span>
+          <span aria-hidden="true" className="text-white/30">
+            ·
+          </span>
+          <span>
             Powered by{" "}
+            {/* sky-300 on forest-800 measures 7.1:1 — clears AA (4.5:1) and
+                AAA (7:1) for body text. A darker blue would look more
+                "brand blue" and fail on this background. */}
             <a
               href={builtBy.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-white/80 underline decoration-gold/50 underline-offset-2 transition-colors hover:text-gold"
+              className="font-semibold text-sky-300 underline decoration-sky-300/40 underline-offset-2 transition-colors hover:text-sky-200 hover:decoration-sky-200"
             >
               {builtBy.name}
             </a>
-          </p>
+          </span>
         </div>
       </div>
     </footer>
