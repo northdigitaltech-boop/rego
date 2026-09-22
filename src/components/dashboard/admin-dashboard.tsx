@@ -961,8 +961,7 @@ export function AdminDashboard() {
         </h1>
       </div>
       <p className="mt-1 text-muted-foreground">
-        Platform overview, listings, approvals and users.{" "}
-        <span className="text-xs italic">(Demo view)</span>
+        Platform overview, listings, approvals and users.
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>
