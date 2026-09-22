@@ -91,6 +91,34 @@ function optimizeImg(url: string, width: number): string {
     const sep = url.includes("?") ? "&" : "?";
     return `${url}${sep}w=${width}&q=70&auto=format&fit=crop`;
   }
+  /* ------------------------------------------------------------------
+     Picsum — the placeholder every listing without a photo falls back to.
+
+     This branch did not exist, so picsum URLs were the one source
+     photo() passed through untouched. That mattered more than it
+     sounds: the destination tiles have `picsum.photos/seed/<x>/1200/700`
+     stored in the DATABASE, so a phone downloaded a 1200×700 image to
+     paint it at 528×308 — PageSpeed measured 367 KB from picsum on the
+     homepage alone, 274 KB of it waste, charged against LCP and FCP.
+
+     Picsum takes its dimensions in the path, so the fix is to rewrite
+     them, keeping the original aspect ratio. Nothing else changes: same
+     seed, so the same picture, just at the size it is actually shown.
+     ------------------------------------------------------------------ */
+  if (url.includes("picsum.photos")) {
+    const m = url.match(/^(https?:\/\/picsum\.photos\/(?:seed\/[^/]+\/)?)(\d+)\/(\d+)(.*)$/);
+    if (m) {
+      const [, base, w, h, rest] = m;
+      const ow = Number(w) || width;
+      const oh = Number(h) || Math.round(width * 0.66);
+      // Never upscale — a tile asking for more than the source has gains nothing.
+      if (ow <= width) return url;
+      const scaled = Math.max(1, Math.round((oh / ow) * width));
+      return `${base}${width}/${scaled}${rest}`;
+    }
+    return url;
+  }
+
   // Cloudinary — replace an existing width in the transformation, else inject one.
   if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
     if (/\/upload\/[^/]*w_\d+/.test(url)) {
