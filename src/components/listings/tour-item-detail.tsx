@@ -31,6 +31,7 @@ import {
   tourBookingRef,
   hasAcceptedTourBooking,
 } from "@/lib/tour-bookings";
+import { ProfileGallery } from "@/components/listings/profile-gallery";
 import { ReviewsSection } from "@/components/listings/reviews-section";
 import { sendBookingNotification } from "@/lib/messages";
 import {
@@ -79,12 +80,6 @@ export function TourItemDetail({
   const id =
     pkg?.id ?? transport?.id ?? guide?.id ?? "";
   const title = pkg?.title ?? transport?.name ?? guide?.name ?? "";
-  const image = photo(pkg?.image ?? transport?.image ?? guide?.image ?? "");
-  const gallery = (
-    pkg?.images ??
-    transport?.images ??
-    (guide?.image ? [guide.image] : [])
-  )?.map((u) => photo(u, 800)) ?? [];
   const categoryLabel =
     kind === "package"
       ? pkg?.package_type
@@ -230,7 +225,12 @@ export function TourItemDetail({
     submit: () => void handleBook(),
   });
 
-  const allImages = [image, ...gallery].filter(Boolean);
+  /* Raw, unsized urls — ProfileGallery applies photo() itself. */
+  const rawImages = [
+    pkg?.image ?? transport?.image ?? guide?.image ?? "",
+    ...(pkg?.images ?? transport?.images ?? (guide?.image ? [guide.image] : [])),
+  ].filter(Boolean) as string[];
+
 
   return (
     <div className="bg-background">
@@ -243,20 +243,24 @@ export function TourItemDetail({
         </Link>
       </div>
 
-      {/* Gallery */}
+      {/* ----------------------------------------------------------------
+          Gallery — the same component hotels, homestays, hostels,
+          restaurants and expeditions already use.
+
+          The hand-rolled grid this replaces had two faults. Its
+          thumbnails were a fixed h-40 inside rows sized by the tall main
+          image, so the rows were taller than the tiles and left the gaps
+          you could see between them. And the images were plain <img>
+          tags — nothing opened, so a traveller could never look at a
+          vehicle properly.
+
+          ProfileGallery fixes both by being the one that was already
+          right: a fixed-height grid with no gaps, and a full-screen
+          lightbox with next/previous and a "view all" overlay. Passing
+          RAW urls, because it calls photo() itself.
+          ---------------------------------------------------------------- */}
       <div className="container-px mt-4">
-        <div className="grid gap-2 overflow-hidden rounded-3xl sm:grid-cols-4 sm:grid-rows-2">
-          <div className="relative h-64 sm:col-span-2 sm:row-span-2 sm:h-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={allImages[0] ?? image} alt={title} className="h-full w-full object-cover" />
-          </div>
-          {allImages.slice(1, 5).map((src, i) => (
-            <div key={i} className="relative hidden h-40 sm:block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="h-full w-full object-cover" />
-            </div>
-          ))}
-        </div>
+        <ProfileGallery images={rawImages} title={title} />
       </div>
 
       {/* Title */}
