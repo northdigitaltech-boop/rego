@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 
 import { useConsent } from "@/lib/consent";
 import { IS_INDEXABLE } from "@/lib/site";
@@ -42,8 +43,51 @@ import { IS_INDEXABLE } from "@/lib/site";
 const ADSENSE_CLIENT =
   process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-3629088780949329";
 
+/* ---------------------------------------------------------------------------
+ * ROUTES THE SCRIPT NEVER LOADS ON
+ *
+ * Auto Ads places ads on any page carrying the script, and these are the
+ * pages where that is a problem rather than a trade-off:
+ *
+ *   /admin, /portal, /cyber   Internal tools. Staff sitting on these all day
+ *     with ads on the page is the textbook way to accumulate accidental
+ *     clicks on your own ads, which Google treats as invalid traffic and
+ *     suspends accounts over. Same reasoning as the localhost guard above.
+ *
+ *   /dashboard                A signed-in traveller's own bookings and
+ *     messages. Advertising against someone's private records is not what
+ *     "ads on the site" is normally taken to mean.
+ *
+ *   /signin, /signup, /reset-password
+ *     Near-empty pages behind or beside authentication. AdSense policy
+ *     specifically discourages ads on screens without publisher content, and
+ *     these are the pages most likely to be flagged during review.
+ *
+ * Everything public — home, listings, categories, destinations, rentals,
+ * blog, jobs, the booking widgets on listing pages — still carries ads, as
+ * chosen. Remove an entry here to let ads onto that section.
+ * ------------------------------------------------------------------------- */
+const NO_ADS = [
+  "/admin",
+  "/portal",
+  "/cyber",
+  "/dashboard",
+  "/signin",
+  "/signup",
+  "/reset-password",
+];
+
 export function AdSense() {
+  const pathname = usePathname();
   const consent = useConsent();
+
+  /* Prefix match with a boundary check, so /dashboard and /dashboard/bookings
+     are both excluded while a future public route merely starting with the
+     same letters is not. */
+  const blocked = NO_ADS.some(
+    (p) => pathname === p || pathname?.startsWith(`${p}/`)
+  );
+  if (blocked) return null;
 
   /* Not rendered, so no script, so no advertising cookie and no
      impression. Same shape as GoogleAnalytics: useConsent() subscribes
