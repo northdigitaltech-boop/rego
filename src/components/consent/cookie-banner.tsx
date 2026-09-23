@@ -68,10 +68,14 @@ export function CookieBanner() {
           <Cookie className="h-5 w-5" />
         </span>
 
+        {/* This wording changed when AdSense was added, and it had to.
+            It previously said "nothing shared or sold", which stopped being
+            true the moment an ad network was in the page. A yes collected
+            under the old sentence would not have been a yes to this. */}
         <p className="flex-1 text-sm text-muted-foreground">
-          We&rsquo;d like to count visits so we know which parts of Rego are useful. It&rsquo;s a
-          random number stored on your device &mdash; no name, no email, nothing shared or sold.
-          Rego works exactly the same if you say no.{" "}
+          We&rsquo;d like to count visits so we know which parts of Rego are useful, and to
+          show ads from Google, which set their own cookies. We never send your name or
+          email. Rego works the same if you say no &mdash; you just won&rsquo;t see ads.{" "}
           <Link href="/legal/cookies" className="font-semibold text-forest underline">
             Cookie policy
           </Link>

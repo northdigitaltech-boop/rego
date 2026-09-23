@@ -13,6 +13,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReferralCapture } from "@/components/referral-capture";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { VercelAnalytics } from "@/components/analytics/vercel-analytics";
+import { AdSense } from "@/components/analytics/adsense";
 import { CookieBanner } from "@/components/consent/cookie-banner";
 import { IosSplash } from "@/components/pwa/ios-splash";
 
@@ -195,6 +196,12 @@ export default function RootLayout({
             Behind the same consent answer as Google's; see the component
             for why something that sets no cookies is still gated. */}
         <VercelAnalytics />
+
+        {/* Google AdSense. Behind the same consent answer, and additionally
+            restricted to the production domain — loading it on localhost or a
+            preview URL books impressions against the account and is what
+            Google suspends publishers for. */}
+        <AdSense />
 
         {/* Real-user Core Web Vitals, reported to Vercel.
             Vercel's dashboard had Speed Insights switched on and no script to
