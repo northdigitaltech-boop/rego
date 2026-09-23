@@ -22,6 +22,19 @@ export interface LegalPolicy {
   summary: string;
   intro: string[];
   sections: LegalSection[];
+  /**
+   * Set only on a policy whose text has changed since LEGAL_EFFECTIVE.
+   *
+   * The pack shares one effective date across every policy, which was right
+   * when they were all published together. Revising that shared constant to
+   * date a change in one policy would restate all the others as revised on a
+   * day nobody touched them — the opposite of what an effective date is for.
+   *
+   * So the shared date stays as the date the pack took effect, and a policy
+   * that has since been amended carries its own revision date beside it. The
+   * Cookie Policy's own section 9 promises exactly this.
+   */
+  revised?: string;
 }
 
 export const LEGAL_EFFECTIVE = "13 July 2026";
@@ -872,6 +885,10 @@ export const legalPolicies: LegalPolicy[] = [
     slug: "cookies",
     title: "Cookie Policy",
     summary: "How Rego uses cookies, local storage and similar technologies.",
+    /* Section 5 was rewritten when Google AdSense went live: it previously
+       described advertising cookies as something Rego might use, and now
+       names the provider and what it receives. */
+    revised: "23 September 2026",
     intro: [
       "This Cookie Policy explains how Rego uses cookies, pixels, local storage, software development kits and similar technologies on the Platform.",
     ],
@@ -907,8 +924,11 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: "5. Advertising and social-media cookies",
         body: [
-          "If used, these measure campaigns, limit repeated advertisements, support audience selection and enable social-media features.",
-          "They may allow third parties to recognize a browser or device across services. Rego should activate them only after the consent required by applicable law.",
+          "Rego displays advertising supplied by Google AdSense. When advertising is allowed, Google places its own cookies and similar identifiers in the browser, receives the address of the page being viewed together with technical information such as device type, browser and approximate location derived from IP address, and uses that information to select, measure and limit repetition of the advertisements shown.",
+          "These identifiers may allow Google and its advertising partners to recognize a browser or device across other websites that carry the same advertising. Rego does not send a name, email address, account identifier or booking details to any advertising provider.",
+          "Advertising is not loaded until advertising cookies are accepted through the Rego cookie banner. Declining, or later withdrawing consent through Cookie settings, prevents the advertising code from loading at all rather than loading it and suppressing the result.",
+          "How Google uses information from sites that run its advertising is described at policies.google.com/technologies/ads, and the personalization of Google advertising can be controlled independently of Rego at myadcenter.google.com.",
+          "Rego does not currently use social-media advertising or tracking pixels. If that changes, this section will be updated before such technologies are activated.",
         ],
       },
       {

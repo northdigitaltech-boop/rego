@@ -62,6 +62,10 @@ export default async function LegalPolicyPage({
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Effective date: {LEGAL_EFFECTIVE}
+                {/* Shown only on a policy amended since the pack took effect,
+                    so a reader can tell at a glance whether what they agreed
+                    to earlier is still what this page says. */}
+                {policy.revised ? ` · Last revised: ${policy.revised}` : ""}
               </p>
             </header>
 
