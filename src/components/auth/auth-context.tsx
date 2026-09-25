@@ -304,29 +304,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Finish setting up an account that arrived via Google. Writes to auth
-   * metadata (so `roleChosen` becomes true) and to the profiles row that the
-   * signup trigger created with the default 'customer' role.
+   * Finish setting up an account that arrived via Google.
+   *
+   * ---------------------------------------------------------------------------
+   * WHY THIS GOES THROUGH A SERVER ROUTE
+   *
+   * This used to write profiles.role straight from the browser. Since
+   * phase130 that update is rejected — guard_profile_role_change() refuses
+   * any role change by a non-admin, which is exactly what stops a signup
+   * payload from minting an administrator.
+   *
+   * The rejection was thrown away: the update's error was never read, while
+   * the auth.updateUser() beside it succeeded. So roleChosen flipped to true,
+   * RoleSetupGate stopped asking, and profiles.role stayed 'customer'. Since
+   * hydrate() prefers the profiles row, anyone who picked Partner was quietly
+   * turned into a traveller — permanently, with no error anywhere.
+   *
+   * /api/auth/choose-role does both writes with the service role, which the
+   * trigger exempts, and it can only ever set traveller or partner.
+   * ---------------------------------------------------------------------------
    */
   const chooseRole = React.useCallback(
     async (role: AccountRole, businessCategory?: CategorySlug) => {
       const { data: sess } = await supabase.auth.getSession();
-      const su = sess.session?.user;
-      if (!su) throw new Error("Please sign in again.");
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Please sign in again.");
 
-      const { error } = await supabase.auth.updateUser({
-        data: { role, business_category: businessCategory ?? null },
+      const res = await fetch("/api/auth/choose-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role, businessCategory: businessCategory ?? null }),
       });
-      if (error) throw new Error(error.message);
 
-      await supabase
-        .from("profiles")
-        .update({
-          role: role === "traveler" ? "customer" : role,
-          business_category: businessCategory ?? null,
-        })
-        .eq("id", su.id);
+      const out = (await res.json().catch(() => null)) as
+        | { ok?: boolean; error?: string }
+        | null;
+      if (!res.ok || !out?.ok) {
+        throw new Error(out?.error ?? "Could not save your account type.");
+      }
 
+      /* The server changed the metadata, so this browser's cached user is
+         stale. Ask Supabase for a fresh copy before re-hydrating, or the
+         gate re-renders against the old role and asks again. */
       const { data: fresh } = await supabase.auth.getUser();
       await hydrate((fresh.user as SupaUser) ?? null);
     },
