@@ -68,24 +68,6 @@ const tabs = [
   { id: "location", label: "Location" },
 ];
 
-const amenities = [
-  "Free Wi-Fi",
-  "Breakfast included",
-  "Mountain views",
-  "24/7 room service",
-  "Free parking",
-  "Central heating",
-  "On-site restaurant",
-  "Airport pickup",
-];
-
-
-const ratingBreakdown = [
-  { label: "Cleanliness", value: 4.9 },
-  { label: "Location", value: 4.8 },
-  { label: "Service", value: 4.9 },
-  { label: "Value", value: 4.6 },
-];
 
 function buildRooms(listing: Listing) {
   const base = listing.price;
@@ -175,8 +157,17 @@ export function HotelProfile({
           },
         ]
     : buildRooms(listing);
-  const amenityList =
-    dbAmenities && dbAmenities.length > 0 ? dbAmenities : amenities;
+  /* ------------------------------------------------------------------
+     ONLY THE AMENITIES THE OWNER TICKED
+
+     This used to fall back to a hard-coded list — free Wi-Fi, breakfast
+     included, on-site restaurant, airport pickup — for any hotel that had
+     entered none. Those are not decoration: a traveller books on them, and
+     the feature cards above are DERIVED from this list, so an empty hotel
+     was advertising parking, Wi-Fi and a restaurant it may not have.
+
+     Empty now means empty. The section below hides itself. */
+  const amenityList = dbAmenities ?? [];
 
   // Feature cards — derived from real data; empties are hidden by FeatureCards.
   const hasAmenity = (re: RegExp) => amenityList.some((a) => re.test(a));
@@ -576,13 +567,28 @@ export function HotelProfile({
             <h2 className="font-display text-xl font-bold text-forest">
               About {listing.title}
             </h2>
+            {/* ------------------------------------------------------------
+                NO INVENTED MARKETING COPY
+
+                The fallback here promised "sweeping mountain views" and
+                "authentic local hospitality" for a property nobody had
+                written a word about, and opened by quoting the rating —
+                which on a new listing reads "rated 0.0 by 0 guests".
+
+                A hotel with no description now says so plainly. The owner
+                sees the gap on their own page and fills it.
+                ------------------------------------------------------------ */}
             <p className="mt-3 leading-relaxed text-muted-foreground">
-              {dbDescription
-                ? dbDescription
-                : `${listing.title} in ${listing.location} is a verified Rego partner rated ${listing.rating.toFixed(
-                    1
-                  )} by ${listing.reviews} guests. Wake up to sweeping mountain views, enjoy authentic local hospitality, and use it as the perfect base to explore Gilgit Baltistan.`}
+              {dbDescription?.trim() ? (
+                dbDescription
+              ) : (
+                <span className="italic">
+                  {listing.title} hasn&rsquo;t added a description yet. Contact
+                  them through the booking form for details about the property.
+                </span>
+              )}
             </p>
+            {amenityList.length > 0 && (
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {amenityList.map((a) => (
                 <div key={a} className="flex items-center gap-2 text-sm text-forest">
@@ -593,6 +599,7 @@ export function HotelProfile({
                 </div>
               ))}
             </div>
+            )}
           </section>
 
           {/* Rooms */}
@@ -733,21 +740,31 @@ export function HotelProfile({
                   {reviewCount} {reviewCount === 1 ? "review" : "reviews"}
                 </p>
               </div>
-              <div className="space-y-2 sm:border-l sm:border-border sm:pl-6">
-                {ratingBreakdown.map((b) => (
-                  <div key={b.label} className="flex items-center gap-3 text-sm">
-                    <span className="w-24 text-muted-foreground">{b.label}</span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                      <span
-                        className="block h-full rounded-full bg-forest-600"
-                        style={{ width: `${(b.value / 5) * 100}%` }}
-                      />
-                    </span>
-                    <span className="w-8 text-right font-semibold text-forest">
-                      {b.value}
-                    </span>
-                  </div>
-                ))}
+              {/* ------------------------------------------------------------
+                  THE CLEANLINESS / LOCATION / SERVICE / VALUE BARS ARE GONE
+
+                  They were four hard-coded numbers — 4.9, 4.8, 4.9, 4.6 —
+                  identical on every hotel in the country, and they rendered
+                  beside a genuine "0 reviews" count. Rego collects one
+                  overall star rating per review and nothing per category, so
+                  there is no honest version of that panel to show; it is
+                  removed rather than reworked.
+
+                  Bringing it back means collecting the four sub-scores on the
+                  review form first, then averaging real rows.
+                  ------------------------------------------------------------ */}
+              <div className="space-y-1 sm:border-l sm:border-border sm:pl-6">
+                {reviewCount > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Average of {reviewCount} verified guest{" "}
+                    {reviewCount === 1 ? "review" : "reviews"}.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No reviews yet. Only guests with a completed booking can
+                    review, so the first one will be from someone who stayed.
+                  </p>
+                )}
               </div>
             </div>
 
