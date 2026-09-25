@@ -808,7 +808,7 @@ function ServiceForm({
       available_dates: [f.available_from, f.available_to].filter(Boolean),
       image:
         f.image.trim() ||
-        `https://picsum.photos/seed/svc-${Math.floor(Math.random() * 90) + 10}/900/600`,
+        null,
       images: f.images,
       description: f.description.trim() || null,
       rules: f.rules.trim() || null,
@@ -1083,7 +1083,7 @@ function RentalForm({
       available_dates: [f.available_from, f.available_to].filter(Boolean),
       image:
         f.image.trim() ||
-        `https://picsum.photos/seed/rnt-${Math.floor(Math.random() * 90) + 10}/900/600`,
+        null,
       images: f.images,
       description: f.description.trim() || null,
       terms: f.terms.trim() || null,

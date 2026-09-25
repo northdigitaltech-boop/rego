@@ -1604,11 +1604,7 @@ function AddListingAdmin({ onAdded }: { onAdded: () => void }) {
       price: priceNum,
       unit: unit.trim() || "night",
       description: description.trim(),
-      image:
-        image.trim() ||
-        `https://picsum.photos/seed/${category}-${
-          Math.floor(Math.random() * 90) + 70
-        }/900/600`,
+      image: image.trim(),
       phone: phone.trim() || undefined,
     });
     onAdded();
@@ -2488,9 +2484,7 @@ export function DestinationsAdmin({
       location: location.trim(),
       stays: stays.trim() || null,
       tagline: tagline.trim() || null,
-      image:
-        image.trim() ||
-        `https://picsum.photos/seed/${slugify(location) || "gb"}-dest/1200/700`,
+      image: image.trim() || null,
     });
     setSaving(false);
     if (dbError) {

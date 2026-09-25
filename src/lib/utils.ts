@@ -59,21 +59,109 @@ export function photo(url?: string | null, width = 1080) {
      ------------------------------------------------------------------ */
   if (!Number.isFinite(width) || width < 64) width = 1080;
 
-  if (!url) return `https://picsum.photos/seed/safarigb/${width}/${Math.round(width * 0.66)}`;
-  if (url.includes("loremflickr.com")) {
-    const m = url.match(
-      /loremflickr\.com\/(\d+)\/(\d+)\/([^?]*)(?:\?lock=(\d+))?/
-    );
-    if (m) {
-      const [, w, h, rawKeywords, lock] = m;
-      const seed =
-        (rawKeywords || "gb")
-          .replace(/[^a-zA-Z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "") + (lock || "");
-      return `https://picsum.photos/seed/${seed}/${w}/${h}`;
-    }
-  }
+  /* ------------------------------------------------------------------
+     NO IMAGE → SAY SO, DO NOT INVENT ONE
+
+     This used to return a random picsum photograph, which is how a
+     listing with no picture ended up showing a stranger's mountain on
+     every card that rendered it. The traveller had no way to tell that
+     apart from a photo the provider actually supplied.
+
+     /no-photo.svg is a flat brand-coloured panel that reads "No photo
+     yet". It is a few hundred bytes, served from our own origin, and
+     cannot be mistaken for a photograph of anything.
+     ------------------------------------------------------------------ */
+  if (!url) return "/no-photo.svg";
+
+  /* A stock URL already sitting in an old database row gets the same
+     treatment, so rows written before this rule existed stop showing
+     invented photographs without needing a data migration. */
+  if (isStockPhoto(url)) return "/no-photo.svg";
+
+  /* The loremflickr→picsum rewrite and the picsum downscaling branch that
+     used to live here are both gone: neither host reaches this line any
+     more. Their reason for existing (picsum served a 1200×700 original to
+     paint a 528×308 tile, 274 KB of it waste) is settled more simply by not
+     requesting a remote placeholder at all. */
   return optimizeImg(url, width);
+}
+
+/* ============================================================
+ * Telling a real photograph from a decorative one.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY THIS EXISTS
+ *
+ * Every listing profile used to pad its gallery out to five or six
+ * tiles with stock images — loremflickr keyword URLs picked from the
+ * listing id. On a demo that reads as layout. On a real hotel with
+ * one uploaded photo it reads as five photographs OF THAT HOTEL:
+ * a bedroom nobody sleeps in, a restaurant that is not on site, a
+ * view from a window that does not exist.
+ *
+ * A traveller choosing where to spend money in a valley they have
+ * never visited cannot tell the difference, and the whole point of
+ * the VERIFIED badge above the gallery is that they should not have
+ * to. Padding is not a presentation choice here; it is a claim about
+ * the property.
+ *
+ * So galleries now show exactly what the provider uploaded. One
+ * photo means one photo.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY IT MATCHES ON HOST AND NOT ON A FLAG
+ *
+ * There is no column saying "this image is decorative" and adding
+ * one would not help: the stock URLs are already saved in listing
+ * rows by provider dashboards that filled a blank field with a
+ * random picsum seed. The host is the only honest signal available
+ * for rows that already exist, and it is exact — nobody uploads
+ * their hotel to loremflickr.com.
+ * ============================================================ */
+
+/** Hosts that only ever serve decorative filler, never a provider's own photo. */
+const STOCK_IMAGE_HOSTS = [
+  "picsum.photos",
+  "loremflickr.com",
+  "placehold.co",
+  "via.placeholder.com",
+  "placekitten.com",
+  "source.unsplash.com", // the random-photo endpoint, not images.unsplash.com
+];
+
+/** True when `url` is decorative filler rather than a real photograph. */
+export function isStockPhoto(url?: string | null): boolean {
+  if (!url) return false;
+  return STOCK_IMAGE_HOSTS.some((h) => url.includes(h));
+}
+
+/**
+ * The images a listing may honestly show: the cover first, then the
+ * uploaded gallery, with filler and duplicates removed.
+ *
+ * Returns an empty array when a listing has no real photograph at all.
+ * That is deliberate — ProfileGallery renders an honest "no photos yet"
+ * panel for the empty case, which is information a traveller can act on.
+ * A random picture of somebody else's lobby is not.
+ */
+export function realGallery(
+  cover?: string | null,
+  gallery?: string[] | null
+): string[] {
+  const all = [cover, ...(gallery ?? [])];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of all) {
+    const url = typeof raw === "string" ? raw.trim() : "";
+    if (!url || isStockPhoto(url)) continue;
+    /* Deduped on the stored URL. The same photo saved as both the cover
+       and the first gallery entry is one photo, and showing it twice
+       makes a one-photo listing look like a two-photo listing. */
+    if (seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+  }
+  return out;
 }
 
 /**
@@ -90,33 +178,6 @@ function optimizeImg(url: string, width: number): string {
     if (/[?&]w=\d+/.test(url)) return url.replace(/([?&]w=)\d+/, `$1${width}`);
     const sep = url.includes("?") ? "&" : "?";
     return `${url}${sep}w=${width}&q=70&auto=format&fit=crop`;
-  }
-  /* ------------------------------------------------------------------
-     Picsum — the placeholder every listing without a photo falls back to.
-
-     This branch did not exist, so picsum URLs were the one source
-     photo() passed through untouched. That mattered more than it
-     sounds: the destination tiles have `picsum.photos/seed/<x>/1200/700`
-     stored in the DATABASE, so a phone downloaded a 1200×700 image to
-     paint it at 528×308 — PageSpeed measured 367 KB from picsum on the
-     homepage alone, 274 KB of it waste, charged against LCP and FCP.
-
-     Picsum takes its dimensions in the path, so the fix is to rewrite
-     them, keeping the original aspect ratio. Nothing else changes: same
-     seed, so the same picture, just at the size it is actually shown.
-     ------------------------------------------------------------------ */
-  if (url.includes("picsum.photos")) {
-    const m = url.match(/^(https?:\/\/picsum\.photos\/(?:seed\/[^/]+\/)?)(\d+)\/(\d+)(.*)$/);
-    if (m) {
-      const [, base, w, h, rest] = m;
-      const ow = Number(w) || width;
-      const oh = Number(h) || Math.round(width * 0.66);
-      // Never upscale — a tile asking for more than the source has gains nothing.
-      if (ow <= width) return url;
-      const scaled = Math.max(1, Math.round((oh / ow) * width));
-      return `${base}${width}/${scaled}${rest}`;
-    }
-    return url;
   }
 
   // Cloudinary — replace an existing width in the transformation, else inject one.

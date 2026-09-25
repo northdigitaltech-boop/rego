@@ -57,7 +57,7 @@ import {
   useResumeBooking,
 } from "@/lib/pending-booking";
 import { sendBookingNotification } from "@/lib/messages";
-import { cn, formatPrice, photo } from "@/lib/utils";
+import { cn, formatPrice, realGallery } from "@/lib/utils";
 
 
 function nightsBetween(a: string, b: string) {
@@ -97,14 +97,12 @@ export function HomestayProfile({
     else setCanReview(false);
   }, [user, homestay.id]);
 
-  const gallery = React.useMemo(() => {
-    const imgs = [homestay.image, ...(homestay.gallery ?? [])].filter(
-      Boolean
-    ) as string[];
-    return (imgs.length > 0 ? imgs : ["https://picsum.photos/seed/homestay/900/600"]).map(
-      photo
-    );
-  }, [homestay]);
+  /* Real photos only. A host with none gets the empty state rather than a
+     stock picture of somebody else's house — see realGallery(). */
+  const gallery = React.useMemo(
+    () => realGallery(homestay.image, homestay.gallery),
+    [homestay.image, homestay.gallery]
+  );
 
   const amenityList = homestay.amenities ?? [];
   const hasAmenity = (re: RegExp) => amenityList.some((a) => re.test(a));

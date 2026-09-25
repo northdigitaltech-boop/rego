@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ListingCard } from "@/components/home/listing-card";
 import { listings, type Listing, type CategorySlug } from "@/lib/data";
-import { cn, formatPrice, photo } from "@/lib/utils";
+import { cn, formatPrice, photo, realGallery } from "@/lib/utils";
 
 const defaultHighlights = [
   "Trusted local provider",
@@ -102,16 +102,6 @@ const highlightsByCategory: Partial<Record<CategorySlug, string[]>> = {
   ],
 };
 
-function buildGallery(listing: Listing) {
-  const n = parseInt(listing.id.replace(/\D/g, ""), 10) || 1;
-  return [
-    listing.image,
-    `https://loremflickr.com/900/600/gilgit,mountains?lock=${n + 50}`,
-    `https://loremflickr.com/900/600/valley,landscape?lock=${n + 70}`,
-    `https://loremflickr.com/900/600/lake,nature?lock=${n + 90}`,
-  ].map((u) => photo(u, 800));
-}
-
 function nightsBetween(a: string, b: string) {
   if (!a || !b) return 0;
   const diff = (new Date(b).getTime() - new Date(a).getTime()) / 86400000;
@@ -119,7 +109,15 @@ function nightsBetween(a: string, b: string) {
 }
 
 export function ListingDetail({ listing }: { listing: Listing }) {
-  const gallery = React.useMemo(() => buildGallery(listing), [listing]);
+  /* The listing's own photo, nothing invented around it. See realGallery().
+     Unlike ProfileGallery, this page renders the URLs straight into <img>,
+     so photo() is applied here — and the placeholder is substituted for the
+     empty case, because gallery[0] on an empty array is undefined and an
+     <img> with no src renders as a broken-image icon. */
+  const gallery = React.useMemo(() => {
+    const real = realGallery(listing.image).map((u) => photo(u, 900));
+    return real.length > 0 ? real : ["/no-photo.svg"];
+  }, [listing.image]);
   const [activeImg, setActiveImg] = React.useState(0);
   const [checkIn, setCheckIn] = React.useState("");
   const [checkOut, setCheckOut] = React.useState("");

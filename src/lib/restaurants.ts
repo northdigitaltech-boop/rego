@@ -96,7 +96,7 @@ export function restaurantToListing(r: RestaurantRow): Listing {
     unit: "",
     rating: Number(r.rating),
     reviews: r.reviews,
-    image: r.cover_image || r.logo || "https://picsum.photos/seed/restaurant/900/600",
+    image: r.cover_image || r.logo || "",
     provider: r.property_name || undefined,
     featured: r.featured,
     featuredOrder: r.featured_order ?? null,

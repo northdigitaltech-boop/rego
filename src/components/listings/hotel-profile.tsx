@@ -57,7 +57,7 @@ import {
 } from "@/lib/reviews";
 import { ReviewCard } from "@/components/listings/reviews-section";
 import { sendBookingNotification } from "@/lib/messages";
-import { cn, formatPrice, photo } from "@/lib/utils";
+import { cn, formatPrice, realGallery } from "@/lib/utils";
 
 
 const tabs = [
@@ -86,18 +86,6 @@ const ratingBreakdown = [
   { label: "Service", value: 4.9 },
   { label: "Value", value: 4.6 },
 ];
-
-function buildGallery(listing: Listing) {
-  const n = parseInt(listing.id.replace(/\D/g, ""), 10) || 1;
-  return [
-    listing.image,
-    `https://loremflickr.com/900/600/hotel,room,interior?lock=${n + 60}`,
-    `https://loremflickr.com/900/600/hotel,bedroom,cozy?lock=${n + 61}`,
-    `https://loremflickr.com/900/600/mountains,view,window?lock=${n + 62}`,
-    `https://loremflickr.com/900/600/restaurant,dining,hotel?lock=${n + 63}`,
-    `https://loremflickr.com/900/600/lobby,interior,resort?lock=${n + 64}`,
-  ].map((u) => photo(u, 800));
-}
 
 function buildRooms(listing: Listing) {
   const base = listing.price;
@@ -165,12 +153,12 @@ export function HotelProfile({
   const { user } = useAuth();
   const { isWished, toggle } = useWishlist();
   const wished = isWished(listing.id);
-  const gallery = React.useMemo(() => {
-    if (dbGallery && dbGallery.length > 0) {
-      return [listing.image, ...dbGallery].filter(Boolean);
-    }
-    return buildGallery(listing);
-  }, [listing, dbGallery]);
+  /* The cover plus whatever the owner actually uploaded — no stock padding.
+     See realGallery() for why a short gallery is better than a padded one. */
+  const gallery = React.useMemo(
+    () => realGallery(listing.image, dbGallery),
+    [listing.image, dbGallery]
+  );
   // Database hotel (dbRooms is defined, possibly empty) → show only the owner's
   // real rooms; if none yet, a single room at the hotel's own price. Static
   // sample listings keep the generated demo rooms.

@@ -278,7 +278,7 @@ function ProviderForm({
       company_name: company.name,
       name: f.name.trim(),
       service_type: f.service_type,
-      logo: f.logo.trim() || `https://i.pravatar.cc/300?u=${encodeURIComponent(f.name.trim())}`,
+      logo: f.logo.trim() || null,
       cover_image: f.cover_image.trim() || null,
       phone: f.phone.trim() || null,
       whatsapp: f.whatsapp.trim() || null,

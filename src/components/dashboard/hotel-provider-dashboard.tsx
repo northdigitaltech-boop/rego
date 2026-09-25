@@ -346,9 +346,7 @@ export function HotelProviderDashboard({
       unit: form.unit.trim() || "night",
       image:
         form.image.trim() ||
-        `https://picsum.photos/seed/hotel-resort-${
-          Math.floor(Math.random() * 90) + 70
-        }/900/600`,
+        null,
       description: form.description.trim() || null,
       amenities: form.amenities,
       gallery: form.gallery,

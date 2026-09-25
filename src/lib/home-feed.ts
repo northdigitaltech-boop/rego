@@ -52,7 +52,7 @@ function companyToListing(c: TourCompanyRow): Listing {
     unit: "trip",
     rating: Number(c.rating),
     reviews: c.reviews,
-    image: photo(c.cover_image || c.logo || "https://picsum.photos/seed/company/900/600"),
+    image: photo(c.cover_image || c.logo),
     featured: c.featured,
     featuredOrder: c.featured_order ?? null,
   };
@@ -69,7 +69,7 @@ function transportProviderToListing(p: TransportProviderRow): Listing {
     unit: "trip",
     rating: Number(p.rating),
     reviews: p.reviews,
-    image: photo(p.cover_image || p.logo || "https://picsum.photos/seed/transport/900/600"),
+    image: photo(p.cover_image || p.logo),
     featured: p.featured,
     featuredOrder: p.featured_order ?? null,
   };
@@ -185,7 +185,7 @@ export async function feedRoadside(n = 4): Promise<RoadsideCard[]> {
         location: p.city || "Gilgit Baltistan",
         rating: Number(p.rating),
         reviews: p.total_reviews,
-        image: photo(p.cover_image || p.profile_image || "https://picsum.photos/seed/roadside/900/600"),
+        image: photo(p.cover_image || p.profile_image),
         verified: p.verified,
         featured: p.featured,
         featuredOrder: p.featured_order ?? null,

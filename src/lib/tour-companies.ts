@@ -217,7 +217,7 @@ export function packageToListing(p: TourPackageRow): Listing {
     unit: "person",
     rating: Number(p.rating),
     reviews: p.reviews,
-    image: p.image || "https://picsum.photos/seed/tour/900/600",
+    image: p.image ?? "",
     provider: p.company_name || undefined,
     featured: !!p.featured,
     featuredOrder: p.featured_order ?? null,
@@ -236,7 +236,7 @@ export function transportToListing(t: TransportRow): Listing {
     unit: "day",
     rating: Number(t.rating),
     reviews: t.reviews,
-    image: t.image || "https://picsum.photos/seed/transport/900/600",
+    image: t.image ?? "",
     provider: t.company_name || undefined,
     featured: !!t.featured,
     featuredOrder: t.featured_order ?? null,
@@ -255,7 +255,7 @@ export function guideToListing(g: TourGuideRow): Listing {
     unit: "day",
     rating: Number(g.rating),
     reviews: g.reviews,
-    image: g.image || "https://picsum.photos/seed/guide/900/600",
+    image: g.image ?? "",
     provider: g.company_name || undefined,
     /* ----------------------------------------------------------------
        This converter dropped `featured` entirely, so marking a guide as

@@ -482,9 +482,7 @@ export function HomestayProviderDashboard({
       unit: "night",
       image:
         form.image.trim() ||
-        `https://picsum.photos/seed/homestay-${
-          Math.floor(Math.random() * 90) + 70
-        }/900/600`,
+        null,
       description: form.description.trim() || null,
       amenities: form.amenities,
       gallery: form.gallery,

@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { GalleryGrid } from "@/components/listings/profile-gallery";
 import { type Listing } from "@/lib/data";
-import { cn, formatPrice, photo } from "@/lib/utils";
+import { cn, formatPrice, realGallery } from "@/lib/utils";
 
 
 type Variant = "transport" | "travel-companies";
@@ -78,23 +78,14 @@ const policies = [
   "Advance booking recommended in peak season",
 ];
 
-function buildGallery(listing: Listing) {
-  const n = parseInt(listing.id.replace(/\D/g, ""), 10) || 1;
-  return [
-    listing.image,
-    `https://loremflickr.com/600/400/jeep,mountains?lock=${n + 60}`,
-    `https://loremflickr.com/600/400/road,valley?lock=${n + 61}`,
-    `https://loremflickr.com/600/400/lake,turquoise?lock=${n + 62}`,
-    `https://loremflickr.com/600/400/car,road,mountains?lock=${n + 63}`,
-    `https://loremflickr.com/600/400/landscape,gilgit?lock=${n + 64}`,
-  ].map((u) => photo(u, 800));
-}
-
 export function CompanyProfile({ listing }: { listing: Listing }) {
   const variant = listing.category as Variant;
   const isTransport = variant === "transport";
   const company = isTransport ? listing.provider ?? listing.title : listing.title;
-  const gallery = React.useMemo(() => buildGallery(listing), [listing]);
+  /* Only the company's own cover photo. This page used to pad to six tiles
+     with stock jeeps and valleys, which read as photographs of this
+     operator's fleet. See realGallery(). */
+  const gallery = React.useMemo(() => realGallery(listing.image), [listing.image]);
 
   const [activeTab, setActiveTab] = React.useState("overview");
   const [requested, setRequested] = React.useState(false);
@@ -350,20 +341,21 @@ export function CompanyProfile({ listing }: { listing: Listing }) {
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {isTransport
-                ? fleet.map((v, i) => (
+                ? fleet.map((v) => (
                     <div
                       key={v.name}
                       className="overflow-hidden rounded-2xl border border-border bg-card shadow-premium"
                     >
                       <div className="h-36 overflow-hidden">
+                        {/* No per-vehicle photo is stored yet, so this is the
+                            placeholder rather than a stock jeep — a picture of
+                            somebody else's vehicle is a claim about this
+                            operator's fleet. */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={photo(
-                            `https://loremflickr.com/500/300/suv,car,jeep?lock=${
-                              70 + i
-                            }`
-                          )}
-                          alt={v.name}
+                          src="/no-photo.svg"
+                          alt=""
+                          aria-hidden="true"
                           className="h-full w-full object-cover"
                         />
                       </div>
@@ -392,20 +384,18 @@ export function CompanyProfile({ listing }: { listing: Listing }) {
                       </div>
                     </div>
                   ))
-                : packages.map((p, i) => (
+                : packages.map((p) => (
                     <div
                       key={p.name}
                       className="overflow-hidden rounded-2xl border border-border bg-card shadow-premium"
                     >
                       <div className="h-40 overflow-hidden">
+                        {/* Routes have no stored photo either — same reason. */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={photo(
-                            `https://loremflickr.com/500/300/mountains,valley,lake?lock=${
-                              80 + i
-                            }`
-                          )}
-                          alt={p.name}
+                          src="/no-photo.svg"
+                          alt=""
+                          aria-hidden="true"
                           className="h-full w-full object-cover"
                         />
                       </div>

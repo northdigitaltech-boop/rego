@@ -482,9 +482,7 @@ export function HostelProviderDashboard({
       unit: "night",
       image:
         form.image.trim() ||
-        `https://picsum.photos/seed/hostel-${
-          Math.floor(Math.random() * 90) + 70
-        }/900/600`,
+        null,
       description: form.description.trim() || null,
       amenities: form.amenities,
       gallery: form.gallery,

@@ -57,7 +57,7 @@ import {
   useResumeBooking,
 } from "@/lib/pending-booking";
 import { sendBookingNotification } from "@/lib/messages";
-import { cn, formatPrice, photo } from "@/lib/utils";
+import { cn, formatPrice, realGallery } from "@/lib/utils";
 
 
 function nightsBetween(a: string, b: string) {
@@ -101,9 +101,7 @@ export function HostelProfile({
     const imgs = [hostel.image, ...(hostel.gallery ?? [])].filter(
       Boolean
     ) as string[];
-    return (imgs.length > 0 ? imgs : ["https://picsum.photos/seed/hostel/900/600"]).map(
-      photo
-    );
+    return realGallery(imgs[0], imgs.slice(1));
   }, [hostel]);
 
   const amenityList = hostel.amenities ?? [];

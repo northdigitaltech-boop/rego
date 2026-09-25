@@ -826,7 +826,7 @@ function PackageForm({
       meals_included: f.meals_included,
       image:
         f.image.trim() ||
-        `https://picsum.photos/seed/tour-${Math.floor(Math.random() * 90) + 10}/900/600`,
+        null,
       images: f.images,
       available_dates: splitList(f.available_dates),
       difficulty_level: f.difficulty_level,
@@ -1022,7 +1022,7 @@ function TransportForm({
       location: splitList(f.areas)[0] ?? company.location,
       image:
         f.image.trim() ||
-        `https://picsum.photos/seed/vehicle-${Math.floor(Math.random() * 90) + 10}/900/600`,
+        null,
       images: f.images,
       ac: f.ac,
       fuel_type: f.fuel_type.trim() || null,
@@ -1198,7 +1198,7 @@ function GuideForm({
       name: f.name.trim(),
       image:
         f.image.trim() ||
-        `https://i.pravatar.cc/300?u=${encodeURIComponent(f.name.trim())}`,
+        null,
       phone: f.phone.trim() || null,
       languages: splitList(f.languages),
       experience_years: num(f.experience_years),

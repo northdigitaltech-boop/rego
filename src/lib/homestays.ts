@@ -83,7 +83,7 @@ export function homestayToListing(h: HomestayRow): Listing {
     unit: h.unit,
     rating: Number(h.rating),
     reviews: h.reviews,
-    image: h.image || "https://picsum.photos/seed/homestay/900/600",
+    image: h.image ?? "",
     featured: h.featured,
     featuredOrder: h.featured_order ?? null,
   };

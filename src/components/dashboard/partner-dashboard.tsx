@@ -359,11 +359,7 @@ function AddListing({
       price: priceNum,
       unit: unit.trim() || "night",
       description: description.trim(),
-      image:
-        image.trim() ||
-        `https://picsum.photos/seed/${category}-${
-          Math.floor(Math.random() * 90) + 70
-        }/900/600`,
+      image: image.trim(),
       phone: phone.trim() || undefined,
     });
     onAdded();

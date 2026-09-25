@@ -506,7 +506,7 @@ function GuideForm({
       company_id: null,
       company_name: null,
       name: f.name.trim(),
-      image: f.image.trim() || `https://i.pravatar.cc/300?u=${encodeURIComponent(f.name.trim())}`,
+      image: f.image.trim() || null,
       cnic: f.cnic.trim() || null,
       phone: f.phone.trim() || null,
       whatsapp: f.whatsapp.trim() || null,

@@ -25,7 +25,7 @@ export function rowToListing(h: HotelRow): Listing {
     unit: h.unit,
     rating: Number(h.rating),
     reviews: h.reviews,
-    image: h.image || "https://loremflickr.com/900/600/hotel,mountain",
+    image: h.image ?? "",
     featured: h.featured,
     featuredOrder: h.featured_order ?? null,
   };

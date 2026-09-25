@@ -25,7 +25,31 @@ export function ProfileGallery({ images, title }: { images: string[]; title: str
   const [open, setOpen] = React.useState(false);
   const [idx, setIdx] = React.useState(0);
 
-  if (imgs.length === 0) return null;
+  /* ------------------------------------------------------------------
+     NO PHOTOS IS A FACT, NOT A FAILURE
+
+     This used to return null, which left a headline floating above the
+     feature cards and read as a page that had not finished loading.
+     Galleries were therefore padded with stock images to avoid it —
+     five invented photographs to dodge one honest empty state.
+
+     Saying so plainly is better for everyone. A traveller learns
+     something real about how far along this listing is, and an owner
+     who visits their own page sees the gap and fills it.
+     ------------------------------------------------------------------ */
+  if (imgs.length === 0) {
+    return (
+      <div className="grid h-56 place-items-center rounded-2xl border border-dashed border-border bg-muted/40 px-6 text-center sm:h-72">
+        <div>
+          <Images className="mx-auto h-7 w-7 text-muted-foreground/60" aria-hidden="true" />
+          <p className="mt-2 text-sm font-semibold text-forest">No photos yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {title} hasn&rsquo;t uploaded photos. Contact them for pictures before booking.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const main = imgs[0];
   const side = imgs.slice(1, 5);

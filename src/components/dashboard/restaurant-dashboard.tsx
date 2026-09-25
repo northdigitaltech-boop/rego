@@ -542,7 +542,7 @@ function MenuForm({ restaurant, user, item, onDone, onCancel }: { restaurant: Re
       restaurant_id: restaurant.id,
       name: f.name.trim(),
       category: f.category,
-      image: f.image.trim() || `https://picsum.photos/seed/food-${Math.floor(Math.random() * 90) + 10}/600/400`,
+      image: f.image.trim() || null,
       description: f.description.trim() || null,
       price: Number(f.price),
       discount_price: num(f.discount_price),

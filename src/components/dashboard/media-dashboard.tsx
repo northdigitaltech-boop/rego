@@ -507,7 +507,7 @@ function ProviderForm({
       company_id: null,
       company_name: null,
       name: f.name.trim(),
-      logo: f.logo.trim() || `https://i.pravatar.cc/300?u=${encodeURIComponent(f.name.trim())}`,
+      logo: f.logo.trim() || null,
       cover_image: f.cover_image.trim() || null,
       cnic: f.cnic.trim() || null,
       phone: f.phone.trim() || null,
@@ -833,7 +833,7 @@ function PortfolioManager({
     await addPortfolioItem({
       provider_id: provider.id,
       type,
-      url: f.url || "https://picsum.photos/seed/portfolio/600/400",
+      url: f.url || "",
       title: f.title.trim() || null,
       category: f.category,
       location: f.location.trim() || null,

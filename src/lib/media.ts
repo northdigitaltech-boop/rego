@@ -121,7 +121,7 @@ export function providerToListing(p: MediaProviderRow): Listing {
     unit: "shoot",
     rating: Number(p.rating),
     reviews: p.reviews,
-    image: p.cover_image || p.logo || "https://picsum.photos/seed/media/900/600",
+    image: p.cover_image || p.logo || "",
     provider: p.company_name || undefined,
     featured: p.featured,
     featuredOrder: p.featured_order ?? null,
