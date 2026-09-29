@@ -155,6 +155,7 @@ export function CompanyRegisterWizard({
       validate: () => {
         if (!name.trim()) return "Please enter your company name.";
         if (!office.trim()) return "Please enter your office address or a map link.";
+        if (!logo.trim()) return "Please add your company logo or a photo.";
         /* Compulsory only when the picker is actually offering areas. A hard
            requirement on a field that renders nothing would stop registration
            entirely the first time the areas fail to load. */
@@ -201,7 +202,7 @@ export function CompanyRegisterWizard({
             label="Areas you operate in"
             className="mt-3"
           />
-          <L label="Company logo">
+          <L label="Company logo" required>
             <ImageUpload folder="tour-companies" value={logo} onChange={setLogo} />
           </L>
         </>

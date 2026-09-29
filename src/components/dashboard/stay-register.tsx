@@ -234,6 +234,7 @@ export function StayRegisterWizard({
       validate: () => {
         if (!title.trim()) return `Please enter the ${kind} name.`;
         if (!location.trim()) return "Please say where it is.";
+        if (!image.trim()) return `Please add a photo of the ${kind}.`;
         return null;
       },
       content: (
@@ -263,7 +264,7 @@ export function StayRegisterWizard({
               placeholder="Street, landmark"
             />
           </L>
-          <L label="Main photo">
+          <L label="Main photo" required>
             <ImageUpload folder="hotels" value={image} onChange={setImage} />
           </L>
           <L label="A line or two about the place">

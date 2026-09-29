@@ -170,8 +170,15 @@ export function TransportRegisterWizard({
     {
       title: "Your business",
       hint: "How travellers will find and contact you.",
-      validate: () =>
-        name.trim() ? null : "Please enter your business name.",
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!name.trim()) return "Please enter your business name.";
+        if (!logo.trim()) return "Please add your logo or a photo.";
+        return null;
+      },
       content: (
         <>
           <L label="Business name" required>
@@ -211,7 +218,7 @@ export function TransportRegisterWizard({
             />
           </L>
           {area.picker}
-          <L label="Logo or photo of your business">
+          <L label="Logo or photo of your business" required>
             <ImageUpload folder="transport" value={logo} onChange={setLogo} />
           </L>
         </>

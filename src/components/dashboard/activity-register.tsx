@@ -119,7 +119,15 @@ export function ActivityRegisterWizard({
     {
       title: "The activity",
       hint: "What a traveller will be booking.",
-      validate: () => (title.trim() ? null : "Please name the activity."),
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!title.trim()) return "Please name the activity.";
+        if (!image.trim()) return "Please add a photo of the activity.";
+        return null;
+      },
       content: (
         <>
           <L label="What is it called?" required>
@@ -164,7 +172,7 @@ export function ActivityRegisterWizard({
               placeholder="e.g. Shangrila gate"
             />
           </L>
-          <L label="A photo of it">
+          <L label="A photo of it" required>
             <ImageUpload folder="activities" value={image} onChange={setImage} />
           </L>
         </>

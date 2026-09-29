@@ -126,7 +126,15 @@ export function RestaurantRegisterWizard({
     {
       title: "Your restaurant",
       hint: "How travellers will find you.",
-      validate: () => (name.trim() ? null : "Please enter the restaurant name."),
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!name.trim()) return "Please enter the restaurant name.";
+        if (!logo.trim()) return "Please add a photo of the restaurant.";
+        return null;
+      },
       content: (
         <>
           <L label="Restaurant name" required>
@@ -158,7 +166,7 @@ export function RestaurantRegisterWizard({
               <input value={hours} onChange={(e) => setHours(e.target.value)} className="auth-input" placeholder="e.g. 8 AM – 11 PM" />
             </L>
           </div>
-          <L label="Photo of your restaurant">
+          <L label="Photo of your restaurant" required>
             <ImageUpload folder="restaurants" value={logo} onChange={setLogo} />
           </L>
         </>

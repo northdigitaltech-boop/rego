@@ -129,7 +129,15 @@ export function MediaRegisterWizard({
     {
       title: "About you",
       hint: "This is what a traveller sees first.",
-      validate: () => (name.trim() ? null : "Please enter your name."),
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!name.trim()) return "Please enter your name.";
+        if (!logo.trim()) return "Please add your photo or logo.";
+        return null;
+      },
       content: (
         <>
           <L label="Your name or studio name" required>
@@ -157,7 +165,7 @@ export function MediaRegisterWizard({
           <L label="Languages you speak">
             <input value={languages} onChange={(e) => setLanguages(e.target.value)} className="auth-input" placeholder="English, Urdu, Balti" />
           </L>
-          <L label="Your photo or logo">
+          <L label="Your photo or logo" required>
             <ImageUpload folder="media" value={logo} onChange={setLogo} />
           </L>
         </>

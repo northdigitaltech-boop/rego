@@ -168,12 +168,21 @@ export function ExpeditionRegisterWizard({
     {
       title: isCompany ? "Your company" : "About you",
       hint: "This is what a climber sees first.",
-      validate: () =>
-        name.trim()
-          ? null
-          : isCompany
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!name.trim())
+          return isCompany
             ? "Please enter your company name."
-            : "Please enter your name.",
+            : "Please enter your name.";
+        if (!photo.trim())
+          return isCompany
+            ? "Please add your company logo or a photo."
+            : "Please add your photo.";
+        return null;
+      },
       content: (
         <>
           <L label={isCompany ? "Company name" : "Your full name"} required>
@@ -213,7 +222,7 @@ export function ExpeditionRegisterWizard({
             </>
           )}
 
-          <L label={isCompany ? "Company logo" : "Your photo"}>
+          <L label={isCompany ? "Company logo" : "Your photo"} required>
             <ImageUpload folder="expeditions" value={photo} onChange={setPhoto} />
           </L>
           <L label={isCompany ? "About the company" : "A short introduction"}>

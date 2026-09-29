@@ -125,7 +125,15 @@ export function GuideRegisterWizard({
     {
       title: "About you",
       hint: "This is what a traveller sees first.",
-      validate: () => (name.trim() ? null : "Please enter your name."),
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!name.trim()) return "Please enter your name.";
+        if (!image.trim()) return "Please add your photo.";
+        return null;
+      },
       content: (
         <>
           <L label="Your name" required>
@@ -156,7 +164,7 @@ export function GuideRegisterWizard({
               placeholder="English, Urdu, Balti"
             />
           </L>
-          <L label="Your photo">
+          <L label="Your photo" required>
             <ImageUpload folder="guides" value={image} onChange={setImage} />
           </L>
         </>

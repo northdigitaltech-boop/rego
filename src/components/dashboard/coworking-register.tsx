@@ -105,7 +105,15 @@ export function CoworkingRegisterWizard({
     {
       title: "Your space",
       hint: "How people will find you.",
-      validate: () => (name.trim() ? null : "Please enter the name of your space."),
+      /* A business profile with no photograph is a listing travellers
+         scroll past, and the placeholder panel says so plainly. Required
+         on registration only: an existing provider editing a price is
+         never blocked by this. */
+      validate: () => {
+        if (!name.trim()) return "Please enter the name of your space.";
+        if (!logo.trim()) return "Please add a photo of the space.";
+        return null;
+      },
       content: (
         <>
           <L label="Name of the space" required>
@@ -129,7 +137,7 @@ export function CoworkingRegisterWizard({
           <L label="Address">
             <input value={address} onChange={(e) => setAddress(e.target.value)} className="auth-input" placeholder="Street, landmark, floor" />
           </L>
-          <L label="Photo of the space">
+          <L label="Photo of the space" required>
             <ImageUpload folder="coworking" value={logo} onChange={setLogo} />
           </L>
         </>
