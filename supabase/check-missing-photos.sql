@@ -24,22 +24,27 @@
 --                     is a bug — send me the row.
 -- ============================================================
 
+/* The label column is NOT the same in every table: tour_guides and
+   transports call it `name`, the rest call it `title`. Getting this
+   wrong is what made the first version of this file fail in the SQL
+   editor with 42703 "column title does not exist" — the aliases below
+   were checked against the migrations rather than assumed. */
 with all_listings as (
-  select 'tour_packages'       as source, id::text, title            as name, image, owner_email from public.tour_packages
+  select 'tour_packages'      as source, id::text as id, title as name, image, owner_email from public.tour_packages
   union all
-  select 'transports',              id::text, title,                    image, owner_email from public.transports
+  select 'transports',             id::text, name,       image, owner_email from public.transports
   union all
-  select 'tour_guides',             id::text, name,                     image, owner_email from public.tour_guides
+  select 'tour_guides',            id::text, name,       image, owner_email from public.tour_guides
   union all
-  select 'hotels',                  id::text, title,                    image, owner_email from public.hotels
+  select 'hotels',                 id::text, title,      image, owner_email from public.hotels
   union all
-  select 'homestays',               id::text, title,                    image, owner_email from public.homestays
+  select 'homestays',              id::text, title,      image, owner_email from public.homestays
   union all
-  select 'hostels',                 id::text, title,                    image, owner_email from public.hostels
+  select 'hostels',                id::text, title,      image, owner_email from public.hostels
   union all
-  select 'transport_services',      id::text, title,                    image, owner_email from public.transport_services
+  select 'transport_services',     id::text, title,      image, owner_email from public.transport_services
   union all
-  select 'rental_vehicles',         id::text, title,                    image, owner_email from public.rental_vehicles
+  select 'rental_vehicles',        id::text, title,      image, owner_email from public.rental_vehicles
 )
 select
   case
