@@ -131,8 +131,8 @@ export function MediaTeamManager({
             <h2 className="font-display text-xl font-bold text-forest">Media Team</h2>
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
               Add photographers &amp; videographers under your company. They appear
-              on your company profile and the customer Photographers page once an
-              admin approves them.
+              on your company profile and the customer Photographers page as soon
+              as you save them.
             </p>
           </div>
           <Button variant="gold" className="rounded-lg" onClick={() => setAdding(true)}>

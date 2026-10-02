@@ -326,8 +326,8 @@ export function TransportProviderDashboard({
         )}
       </div>
       <p className="mt-1 text-muted-foreground">
-        Manage your transport services, rental vehicles and bookings — listings
-        go live once an admin approves them.
+        Manage your transport services, rental vehicles and bookings — changes and
+        new listings go live as soon as you save them.
       </p>
       <div className="mt-3">
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
@@ -719,7 +719,7 @@ function ServicesManager({
   return (
     <ManagerShell
       title="Manage Transport Services"
-      subtitle="Vehicle-with-driver and route-based services. They appear on the customer Transport page once approved."
+      subtitle="Vehicle-with-driver and route-based services. They appear on the customer Transport page as soon as you save them."
       onAdd={() => setAdding(true)}
       addLabel="Add transport service"
       empty={items.length === 0}

@@ -223,7 +223,7 @@ export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut
           <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-2.5 py-1 text-xs font-semibold text-gold-700">Edits pending admin review</span>
         )}
       </div>
-      <p className="mt-1 text-muted-foreground">Manage your profile, menu and bookings — your restaurant goes live once an admin approves it.</p>
+      <p className="mt-1 text-muted-foreground">Manage your profile, menu and bookings — changes go live as soon as you save them.</p>
       <div className="mt-3"><ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} /></div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[240px_1fr] rego-dash" {...drill.gridProps}>

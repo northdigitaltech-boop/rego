@@ -446,7 +446,7 @@ export function HotelProviderDashboard({
         </span>
       </div>
       <p className="mt-1 text-muted-foreground">
-        Manage your hotel listings — they go live once an admin approves them.
+        Manage your hotel listings — changes go live as soon as you save them.
       </p>
       <div className="mt-3">
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
@@ -1000,7 +1000,7 @@ function Overview({
           {count === 0 ? "Add your first hotel" : "Add another hotel"}
         </h2>
         <p className="mt-1 text-muted-foreground">
-          Submit your hotel — it appears on the site once an admin approves it.
+          Add your hotel — it appears on the site as soon as you save it.
         </p>
         <Button variant="gold" className="mt-5 rounded-lg" onClick={onAdd}>
           Add hotel

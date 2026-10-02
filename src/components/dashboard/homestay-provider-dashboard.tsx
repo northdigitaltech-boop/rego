@@ -577,7 +577,7 @@ export function HomestayProviderDashboard({
         </span>
       </div>
       <p className="mt-1 text-muted-foreground">
-        Manage your homestay listings — they go live once an admin approves them.
+        Manage your homestay listings — changes go live as soon as you save them.
       </p>
       <div className="mt-3">
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
@@ -852,7 +852,7 @@ function Overview({
           {count === 0 ? "Add your first homestay" : "Add another homestay"}
         </h2>
         <p className="mt-1 text-muted-foreground">
-          Submit your homestay — it appears on the site once an admin approves it.
+          Add your homestay — it appears on the site as soon as you save it.
         </p>
         <Button variant="gold" className="mt-5 rounded-lg" onClick={onAdd}>
           Add homestay

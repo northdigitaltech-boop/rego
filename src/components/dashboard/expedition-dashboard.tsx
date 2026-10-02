@@ -426,7 +426,7 @@ function ProForm({ pro, roles, peaks, routes, onSaved }: { pro: ExpeditionProRow
 function SaveBar({ status, onSave }: { status: "idle" | "saving" | "saved"; onSave: () => void }) {
   return (
     <div className="flex items-center justify-end gap-2">
-      {status === "saved" && <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600"><Check className="h-4 w-4" /> Saved — pending admin review</span>}
+      {status === "saved" && <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600"><Check className="h-4 w-4" /> Saved</span>}
       <Button variant="gold" onClick={onSave} disabled={status === "saving"}>
         {status === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save profile
       </Button>

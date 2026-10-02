@@ -1,9 +1,11 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 /**
- * Edit re-approval system. When an owner edits an already-approved listing, the
- * new values are queued in `pending_changes` instead of overwriting the live
- * row, so customers keep seeing the approved version until an admin approves.
+ * Owner edits, and the review queue for edits queued before October 2026.
+ *
+ * Edits are now saved directly (see updateOrQueue). The review functions
+ * below stay so that any edit already sitting in `pending_changes` can still
+ * be approved or discarded from the admin and staff screens.
  */
 
 export interface PendingTable {
@@ -45,8 +47,22 @@ const HIDDEN_FIELDS = new Set([
 ]);
 
 /**
- * Update a listing — but if it's already approved, queue the edit for admin
- * re-approval instead of changing the live row. Returns a supabase-style result.
+ * Save an owner's edit straight to the live listing.
+ *
+ * This used to queue edits to APPROVED listings in `pending_changes` for an
+ * admin to re-approve, so a hotel fixing a typo waited for review. The
+ * business decision changed: a partner is reviewed once, at registration,
+ * and after that their edits are saved directly.
+ *
+ * What still protects the listing:
+ *   • status / is_verified / is_featured cannot be changed by an owner —
+ *     the phase111 trigger refuses it, whatever the browser sends;
+ *   • an admin can still reject or suspend the listing at any time.
+ *
+ * The name and the `queued` field are kept so no caller changes. `queued`
+ * is now always false. Edits that were already queued before this change
+ * are still in `pending_changes` and still appear in the admin and staff
+ * review screens until someone approves or discards them.
  */
 export async function updateOrQueue(
   table: string,
@@ -54,19 +70,6 @@ export async function updateOrQueue(
   payload: Record<string, unknown>
 ) {
   if (!isSupabaseConfigured) return { data: null, error: null, queued: false };
-  const { data: row } = await supabase
-    .from(table)
-    .select("status")
-    .eq("id", id)
-    .maybeSingle();
-  const status = (row as { status?: string } | null)?.status;
-  if (status === "approved") {
-    const res = await supabase
-      .from(table)
-      .update({ pending_changes: payload, pending_at: new Date().toISOString() })
-      .eq("id", id);
-    return { ...res, queued: true };
-  }
   const res = await supabase.from(table).update(payload).eq("id", id);
   return { ...res, queued: false };
 }

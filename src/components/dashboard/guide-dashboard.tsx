@@ -310,8 +310,8 @@ export function GuideDashboard({
         )}
       </div>
       <p className="mt-1 text-muted-foreground">
-        Manage your profile, services, availability and bookings — your profile
-        goes live once an admin approves it.
+        Manage your profile, services, availability and bookings — changes go live as
+        soon as you save them.
       </p>
       <div className="mt-3">
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />

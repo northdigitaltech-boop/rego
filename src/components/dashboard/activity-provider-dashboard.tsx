@@ -91,7 +91,7 @@ export function ActivityProviderDashboard({
       <div>
         <h1 className="font-display text-3xl font-bold text-forest">Activities Dashboard</h1>
         <p className="mt-1 text-muted-foreground">
-          List your adventures — camping, treks, safaris and more. They go live once an admin approves.
+          List your adventures — camping, treks, safaris and more. Changes and new activities go live as soon as you save them.
         </p>
       </div>
 

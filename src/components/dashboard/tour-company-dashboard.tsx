@@ -332,8 +332,8 @@ export function TourCompanyDashboard({
         )}
       </div>
       <p className="mt-1 text-muted-foreground">
-        Manage your packages, transport, guides and bookings — items go live once
-        an admin approves them.
+        Manage your packages, transport, guides and bookings — changes and new items
+        go live as soon as you save them.
       </p>
       <div className="mt-3">
         <ContactAdminButton ownerEmail={user.email} ownerName={user.name} ownerAvatar={user.avatar} />
@@ -741,7 +741,7 @@ function PackagesManager({
   return (
     <ManagerShell
       title="Manage Tour Packages"
-      subtitle="Add the tour packages you offer. They appear on your profile and the customer Tour Packages page once approved."
+      subtitle="Add the tour packages you offer. They appear on your profile and the customer Tour Packages page as soon as you save them."
       onAdd={() => setAdding(true)}
       addLabel="Add package"
       empty={items.length === 0}
@@ -953,7 +953,7 @@ function TransportManager({
   return (
     <ManagerShell
       title="Manage Transport"
-      subtitle="Add the vehicles you offer. They appear on your profile and the customer Transport / Rental page once approved."
+      subtitle="Add the vehicles you offer. They appear on your profile and the customer Transport / Rental page as soon as you save them."
       onAdd={() => setAdding(true)}
       addLabel="Add vehicle"
       empty={items.length === 0}
@@ -1145,7 +1145,7 @@ function GuidesManager({
   return (
     <ManagerShell
       title="Manage Tour Guides"
-      subtitle="Add your guides. They appear on your profile and the customer Tour Guides page once approved."
+      subtitle="Add your guides. They appear on your profile and the customer Tour Guides page as soon as you save them."
       onAdd={() => setAdding(true)}
       addLabel="Add guide"
       empty={items.length === 0}
