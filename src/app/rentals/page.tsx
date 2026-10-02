@@ -81,7 +81,13 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
      the type page without the extra filters — otherwise every price
      bracket becomes a near-duplicate of the same list. */
   if (def) {
+    /* A type with nothing listed is a dead end — keep it out of the index
+       until somebody lists one (the sitemap applies the same rule). {}
+       means the count failed, which is not the same as empty. */
+    const counts = await getRentalCounts().catch(() => ({}) as Record<string, number>);
+    const empty = Object.keys(counts).length > 0 && !(counts[def.type] > 0);
     return buildMetadata({
+      noindex: empty,
       title: place
         ? `${def.label} in ${place} | REGO`
         : `${def.label} in Gilgit-Baltistan | REGO`,

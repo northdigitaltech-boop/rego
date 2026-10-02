@@ -18,8 +18,9 @@ import { getApprovedRoadsideProviders } from "@/lib/roadside";
 import { getApprovedStories } from "@/lib/safarnama";
 import { legalPolicies } from "@/lib/legal";
 import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getExpeditionPros } from "@/lib/expeditions";
-import { categoryHasOwnPage } from "@/lib/category-routing";
-import { RENTAL_TYPE_DEFS } from "@/lib/rentals";
+import { categoryHasOwnPage, categoryIsEmpty } from "@/lib/category-routing";
+import { RENTAL_TYPE_DEFS, getRentalCounts } from "@/lib/rentals";
+import { cachedAllListings } from "@/lib/home-feed-cached";
 import { getDestinations } from "@/lib/destinations";
 import { isStockPhoto } from "@/lib/utils";
 
@@ -52,7 +53,7 @@ async function safe<T>(fn: () => Promise<T[]>): Promise<T[]> {
  * admin can edit.
  * ---------------------------------------------------------------------------
  */
-function toDate(value: unknown, fallback: Date): Date {
+function toDate(value: unknown, fallback?: Date): Date | undefined {
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? fallback : value;
   if (typeof value !== "string" || !value.trim()) return fallback;
   const d = new Date(value);
@@ -60,7 +61,7 @@ function toDate(value: unknown, fallback: Date): Date {
 }
 
 type Row = { id: string; updated_at?: string | null; created_at?: string | null };
-const when = (r: Row, fallback: Date) =>
+const when = (r: Row, fallback?: Date) =>
   toDate(r.updated_at ?? r.created_at, fallback);
 
 /* ------------------------------------------------------------------
@@ -107,7 +108,21 @@ function rowPhotos(r: unknown): string[] {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
+  /* ------------------------------------------------------------------
+     NO lastmod IS BETTER THAN A FAKE ONE.
+
+     Every static page, and every listing whose row carried no date, was
+     stamped with the time the sitemap was generated — so their lastmod
+     moved forward every hour although nothing on them had changed.
+     Google's guidance is explicit: it uses lastmod only when it is
+     "consistently and verifiably accurate", and a site that cries wolf
+     gets its lastmod ignored everywhere, including on the pages where it
+     is true (blog posts, listings with a real updated_at).
+
+     So `now` is gone. A URL with a real content date carries it; a URL
+     without one carries no lastmod at all, which the protocol allows.
+     ------------------------------------------------------------------ */
+  const now: Date | undefined = undefined;
   const urls: MetadataRoute.Sitemap = [];
   const add = (path: string, opts: Partial<MetadataRoute.Sitemap[number]> = {}) =>
     urls.push({ url: absoluteUrl(path), lastModified: now, changeFrequency: "weekly", priority: 0.6, ...opts });
@@ -121,8 +136,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
      style queries land on, and each is a genuinely different list — unlike
      the price and rating filters, which are excluded on purpose because
      they only reorder the same rows. */
+  /* An empty type page is noindex (rentals/page.tsx) — offer only the ones
+     with something to rent. {} means the count failed: keep them all
+     rather than drop real pages on a database blip. */
+  const rentalCounts = await getRentalCounts().catch(() => ({}) as Record<string, number>);
+  const countsKnown = Object.keys(rentalCounts).length > 0;
   for (const d of RENTAL_TYPE_DEFS) {
     if (d.type === "other") continue;
+    if (countsKnown && !(rentalCounts[d.type] > 0)) continue;
     add(`/rentals?type=${d.slug}`, { changeFrequency: "daily", priority: 0.7 });
   }
   /* Twenty of the category slugs redirect straight into /roadside,
@@ -130,6 +151,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
      twenty URLs that immediately bounce — so only real pages go in. */
   for (const c of allCategories) {
     if (!categoryHasOwnPage(c.slug)) continue;
+    /* The same test the category page uses to mark itself noindex. Listing
+       a noindex page here asks Google to crawl something it is then told
+       to drop. Only three catch-all slugs can be empty; for the rest this
+       returns false without loading anything. */
+    if (await categoryIsEmpty(c.slug, () => cachedAllListings().catch(() => null))) continue;
     add(`/categories/${c.slug}`, { changeFrequency: "daily", priority: 0.8 });
   }
   // --- Legal & policy pages (static, cannot fail) ---
@@ -181,7 +207,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 /** Everything that needs the database. Pushes into `urls`; may throw. */
-async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date): Promise<void> {
+async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date | undefined): Promise<void> {
   const add = (path: string, opts: Partial<MetadataRoute.Sitemap[number]> = {}) =>
     urls.push({ url: absoluteUrl(path), lastModified: now, changeFrequency: "weekly", priority: 0.6, ...opts });
 
@@ -307,7 +333,7 @@ async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date): Promise<
  * the whole site rather than from one section.
  */
 async function safeMarketPages(): Promise<
-  { path: string; service: string | null; lastModified: Date }[]
+  { path: string; service: string | null; lastModified: Date | undefined }[]
 > {
   try {
     const { supabase, isSupabaseConfigured } = await import("@/lib/supabase");
@@ -343,7 +369,7 @@ async function safeMarketPages(): Promise<
       return v;
     };
 
-    const out: { path: string; service: string | null; lastModified: Date }[] = [];
+    const out: { path: string; service: string | null; lastModified: Date | undefined }[] = [];
 
     /* ------------------------------------------------------------------
        A BUDGET, BECAUSE THIS LOOP IS TWO ROUND TRIPS PER ROW
@@ -388,7 +414,7 @@ async function safeMarketPages(): Promise<
         service: r.service_slug,
         /* lastmod reflects when the CONTENT changed, not when we deployed.
            A lastmod that moves on every build teaches crawlers to ignore it. */
-        lastModified: toDate(r.content_updated_at, new Date()),
+        lastModified: toDate(r.content_updated_at),
       });
     }
 
