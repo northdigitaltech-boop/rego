@@ -1,5 +1,6 @@
 "use client";
 
+import { gateFor, PendingApproval, RegisterShell } from "@/components/dashboard/provider-gate";
 import * as React from "react";
 import { friendlyAreaError } from "@/lib/area-rules";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
@@ -101,6 +102,38 @@ export function CoworkingProviderDashboard({
 
   const pending = bookings.filter((b) => b.status === "pending").length;
 
+
+  /* APPROVAL GATE — see components/dashboard/provider-gate.tsx. All hooks
+     are above this line. */
+  if (loading && !space) {
+    return (
+      <div className="container-px py-24 text-center text-muted-foreground">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (!space) {
+    return (
+      <RegisterShell
+        user={user}
+        title="Co-working Spaces"
+        subtitle="Tell us about your space. Your dashboard opens once the Rego team approves it."
+        onSignOut={onSignOut}
+      >
+        <CoworkingRegisterWizard user={user} onDone={() => void refresh()} />
+      </RegisterShell>
+    );
+  }
+  if (gateFor([space.status]) === "pending") {
+    return (
+      <PendingApproval
+        user={user}
+        businessName={space.name}
+        onSignOut={onSignOut}
+        onRefresh={() => refresh()}
+      />
+    );
+  }
   return (
     <div className="container-px py-10">
       <div>

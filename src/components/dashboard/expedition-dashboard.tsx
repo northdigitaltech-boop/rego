@@ -1,5 +1,6 @@
 "use client";
 
+import { gateFor, PendingApproval } from "@/components/dashboard/provider-gate";
 import * as React from "react";
 import { Loader2, Save, Check, LogOut, User as UserIcon, ShieldCheck, Clock, Plus, Trash2, Pencil, Users, Package, Inbox, Mountain } from "lucide-react";
 
@@ -119,6 +120,20 @@ export function ExpeditionDashboard({ user, onSignOut }: { user: User; onSignOut
             Company" the moment a card was tapped. */}
         <ExpeditionRegisterWizard user={user} onDone={load} />
       </div>
+    );
+  }
+
+  /* Registered but not approved yet → the review screen, not the dashboard.
+     See components/dashboard/provider-gate.tsx. */
+  const owned = [company, pro].filter(Boolean) as { status: string }[];
+  if (gateFor(owned.map((x) => x.status)) === "pending") {
+    return (
+      <PendingApproval
+        user={user}
+        businessName={company?.name ?? pro?.full_name}
+        onSignOut={onSignOut}
+        onRefresh={() => load()}
+      />
     );
   }
 

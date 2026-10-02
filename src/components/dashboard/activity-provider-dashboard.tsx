@@ -2,12 +2,15 @@
 
 import * as React from "react";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
-import { Mountain, BarChart3, UserRound, LogOut } from "lucide-react";
+import { Mountain, BarChart3, UserRound, LogOut, Loader2 } from "lucide-react";
 
 import { AccountSecurity } from "@/components/account/account-security";
 import { ContactAdminButton } from "@/components/chat/contact-admin-button";
 import { OwnerCrm } from "@/components/crm/owner-crm";
 import { ActivitiesManager } from "@/components/dashboard/activities-manager";
+import { ActivityRegisterWizard } from "@/components/dashboard/activity-register";
+import { gateFor, PendingApproval, RegisterShell } from "@/components/dashboard/provider-gate";
+import { getActivitiesByOwner, type ActivityRow } from "@/lib/activities";
 import { type User } from "@/components/auth/auth-context";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +40,51 @@ export function ActivityProviderDashboard({
 }) {
   const [tab, setTab] = React.useState<Tab>("activities");
   const drill = useDashboardDrill();
+
+  /* ------------------------------------------------------------------
+     APPROVAL GATE — see components/dashboard/provider-gate.tsx.
+     An activity provider has no separate business row: their activities
+     are what gets approved. No activity → register the first one. None
+     approved yet → the review screen. One approved → this dashboard.
+     ------------------------------------------------------------------ */
+  const [owned, setOwned] = React.useState<ActivityRow[] | null>(null);
+  const loadOwned = React.useCallback(async () => {
+    setOwned(await getActivitiesByOwner(user.email).catch(() => []));
+  }, [user.email]);
+  React.useEffect(() => {
+    void loadOwned();
+  }, [loadOwned]);
+
+  if (owned === null) {
+    return (
+      <div className="container-px py-24 text-center text-muted-foreground">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  const gate = gateFor(owned.map((a) => a.status));
+  if (gate === "register") {
+    return (
+      <RegisterShell
+        user={user}
+        title="Activities"
+        subtitle="Add your first activity — camping, a trek, a safari. Your dashboard opens once the Rego team approves it."
+        onSignOut={onSignOut}
+      >
+        <ActivityRegisterWizard user={user} onDone={() => void loadOwned()} />
+      </RegisterShell>
+    );
+  }
+  if (gate === "pending") {
+    return (
+      <PendingApproval
+        user={user}
+        businessName={owned.map((a) => a.title).filter(Boolean).join(", ")}
+        onSignOut={onSignOut}
+        onRefresh={loadOwned}
+      />
+    );
+  }
 
   return (
     <div className="container-px py-10">

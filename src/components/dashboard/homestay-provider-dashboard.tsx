@@ -1,5 +1,6 @@
 "use client";
 
+import { gateFor, PendingApproval, RegisterShell } from "@/components/dashboard/provider-gate";
 import * as React from "react";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import Link from "next/link";
@@ -528,6 +529,43 @@ export function HomestayProviderDashboard({
     await refresh();
   };
 
+
+  /* ------------------------------------------------------------------
+     APPROVAL GATE — see components/dashboard/provider-gate.tsx.
+     No property yet → only the registration wizard. Registered but none
+     approved → the review screen. One approved → this dashboard. Every
+     hook above stays above: these returns must come after all of them.
+     ------------------------------------------------------------------ */
+  const gate = gateFor(homestays.map((x) => x.status));
+  if (loading && homestays.length === 0) {
+    return (
+      <div className="container-px py-24 text-center text-muted-foreground">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (gate === "register") {
+    return (
+      <RegisterShell
+        user={user}
+        title="Homestays"
+        subtitle="Tell us about your homestay and its first room. Your dashboard opens once the Rego team approves it."
+        onSignOut={onSignOut}
+      >
+        <StayRegisterWizard kind="homestay" user={user} onDone={() => { refresh(); setTab("homestays"); }} />
+      </RegisterShell>
+    );
+  }
+  if (gate === "pending") {
+    return (
+      <PendingApproval
+        user={user}
+        businessName={homestays.map((x) => x.title).filter(Boolean).join(", ")}
+        onSignOut={onSignOut}
+        onRefresh={() => refresh()}
+      />
+    );
+  }
   return (
     <div className="container-px py-10">
       <div className="flex flex-wrap items-center gap-2">

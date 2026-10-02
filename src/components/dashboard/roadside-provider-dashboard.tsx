@@ -1,5 +1,6 @@
 "use client";
 
+import { gateFor, PendingApproval, RegisterShell } from "@/components/dashboard/provider-gate";
 import * as React from "react";
 import { friendlyAreaError } from "@/lib/area-rules";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
@@ -125,6 +126,39 @@ export function RoadsideProviderDashboard({
   };
 
   const pendingCount = requests.filter((r) => r.status === "pending").length;
+
+  /* APPROVAL GATE — see components/dashboard/provider-gate.tsx. Roadside
+     has no separate wizard: registering IS the profile form with no
+     provider yet, so that form is what the register screen shows. */
+  if (loading && !provider) {
+    return (
+      <div className="container-px py-24 text-center text-muted-foreground">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (!provider) {
+    return (
+      <RegisterShell
+        user={user}
+        title="Roadside Assistance"
+        subtitle="Add your business details and the services you offer. Your dashboard opens once the Rego team approves them."
+        onSignOut={onSignOut}
+      >
+        <ProfileForm user={user} provider={null} services={[]} onSaved={refresh} />
+      </RegisterShell>
+    );
+  }
+  if (gateFor([provider.status]) === "pending") {
+    return (
+      <PendingApproval
+        user={user}
+        businessName={provider.business_name}
+        onSignOut={onSignOut}
+        onRefresh={() => refresh()}
+      />
+    );
+  }
 
   return (
     <div className="container-px py-10">

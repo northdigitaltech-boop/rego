@@ -1,5 +1,6 @@
 "use client";
 
+import { gateFor, PendingApproval } from "@/components/dashboard/provider-gate";
 import * as React from "react";
 import { useDashboardDrill, DashboardBack } from "@/components/dashboard/dashboard-drill";
 import {
@@ -197,6 +198,19 @@ export function RestaurantDashboard({ user, onSignOut }: { user: User; onSignOut
     );
   }
 
+
+  /* Registered but not yet approved: the review screen, not the dashboard.
+     See components/dashboard/provider-gate.tsx. */
+  if (gateFor([restaurant.status]) === "pending") {
+    return (
+      <PendingApproval
+        user={user}
+        businessName={restaurant.name}
+        onSignOut={onSignOut}
+        onRefresh={() => refresh()}
+      />
+    );
+  }
   return (
     <div className="container-px py-10">
       <div className="flex flex-wrap items-center gap-2">
