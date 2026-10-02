@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { ListingDetail } from "@/components/listings/listing-detail";
 import { PrettyListingUrl } from "@/components/listings/pretty-listing-url";
 import { extractListingId } from "@/lib/utils";
+import { listingMetadata, type ListingSeoInput } from "@/lib/listing-seo";
 import { HotelProfile } from "@/components/listings/hotel-profile";
 import { paymentConfigFrom, type PaymentConfig } from "@/lib/payments";
 import { HomestayProfile } from "@/components/listings/homestay-profile";
@@ -14,20 +15,17 @@ import { CompanyProfile } from "@/components/listings/company-profile";
 import { PhotographerProfile } from "@/components/listings/photographer-profile";
 import { listings, type Listing } from "@/lib/data";
 import {
-  getHotelById,
   getHotelRowById,
   getRoomsByHotel,
   rowToListing,
 } from "@/lib/hotels";
 import {
-  getHomestayById,
   getHomestayRowById,
   getRoomsByHomestay,
   type HomestayRow,
   type HomestayRoomRow,
 } from "@/lib/homestays";
 import {
-  getHostelById,
   getHostelRowById,
   getRoomsByHostel,
   type HostelRow,
@@ -105,43 +103,116 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id: rawId } = await params;
   const id = extractListingId(rawId);
-  const listing =
-    listings.find((l) => l.id === id) ??
-    (await getHotelById(id)) ??
-    (await getHomestayById(id)) ??
-    (await getHostelById(id));
-  if (!listing) {
-    const c = await getCompanyRowById(id);
-    if (c) return { title: `${c.name}` };
-    const p = await getPackageById(id);
-    if (p) return { title: `${p.title}` };
-    const t = await getTransportById(id);
-    if (t) return { title: `${t.name}` };
-    const g = await getGuideById(id);
-    if (g) return { title: `${g.name}` };
-    const svc = await getServiceById(id);
-    if (svc) return { title: `${svc.title}` };
-    const rnt = await getRentalById(id);
-    if (rnt) return { title: `${rnt.title}` };
-    const mp = await getMediaProviderRowById(id);
-    if (mp) return { title: `${mp.name}` };
-    const rest = await getRestaurantRowById(id);
-    if (rest) return { title: `${rest.name}` };
-    return { title: "Listing not found" };
+  const input = await listingSeoInputFor(id);
+  /* Not found: noindex, and the page body calls notFound() for the 404. */
+  if (!input) return { title: "Listing not found", robots: { index: false, follow: false } };
+  return listingMetadata(input);
+}
+
+/* ============================================================
+ * Each listing type, mapped onto the one shape listingMetadata
+ * understands. Order matches the page body's own lookup.
+ *
+ * Stays use the ROW getters rather than the Listing ones: same
+ * one query, but the row carries description and status, which
+ * the Listing shape drops. Without them a hotel with a full
+ * written description would be judged as having none.
+ *
+ * facts are PUBLIC details only. TransportRow also holds
+ * vehicle_number and driver_contact — deliberately absent here.
+ * ============================================================ */
+async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
+  const stayRow =
+    (await getHotelRowById(id)) ??
+    (await getHomestayRowById(id)) ??
+    (await getHostelRowById(id));
+  if (stayRow) {
+    return {
+      id,
+      name: stayRow.title,
+      kind: stayRow.category_label || "Stay",
+      location: stayRow.location,
+      text: stayRow.description,
+      image: stayRow.image,
+      facts: [stayRow.price ? `From PKR ${Number(stayRow.price).toLocaleString("en-PK")}${stayRow.unit ? ` / ${stayRow.unit}` : ""}` : null],
+      status: stayRow.status,
+    };
   }
-  const description = `Book ${listing.title} in ${listing.location}, Gilgit Baltistan on Rego.`;
-  return {
-    title: listing.title,
-    description,
-    alternates: { canonical: `/listings/${id}` },
-    openGraph: {
-      title: `${listing.title} — Rego`,
-      description,
-      url: `/listings/${id}`,
-      type: "website",
-      images: listing.image ? [{ url: listing.image }] : undefined,
-    },
-  };
+
+  const c = await getCompanyRowById(id);
+  if (c) {
+    return {
+      id, name: c.name, kind: "Travel company", location: c.location,
+      text: c.description, image: c.cover_image || c.logo, status: c.status,
+    };
+  }
+
+  const p = await getPackageById(id);
+  if (p) {
+    return {
+      id, name: p.title, kind: "Tour package",
+      location: p.destination || p.location, provider: p.company_name,
+      text: p.itinerary, image: p.image,
+      facts: [p.duration, p.package_type, p.difficulty_level],
+      status: p.status,
+    };
+  }
+
+  const t = await getTransportById(id);
+  if (t) {
+    return {
+      id, name: t.name, kind: "Vehicle hire", location: t.location,
+      provider: t.company_name, image: t.image,
+      facts: [t.vehicle_type, t.model_year, t.fuel_type, t.transmission, t.luggage_capacity],
+      status: t.status,
+    };
+  }
+
+  const g = await getGuideById(id);
+  if (g) {
+    return {
+      id, name: g.name, kind: "Tour guide", location: g.city || g.location,
+      provider: g.company_name, text: g.bio, image: g.image, status: g.status,
+    };
+  }
+
+  const svc = await getServiceById(id);
+  if (svc) {
+    return {
+      id, name: svc.title, kind: "Transport service", location: svc.location,
+      text: svc.description, image: svc.image, facts: [svc.vehicle_type],
+      status: svc.status,
+    };
+  }
+
+  const rnt = await getRentalById(id);
+  if (rnt) {
+    return {
+      id, name: rnt.title, kind: "Vehicle rental", location: rnt.location,
+      text: rnt.description, image: rnt.image, facts: [rnt.vehicle_type],
+      status: rnt.status,
+    };
+  }
+
+  const mp = await getMediaProviderRowById(id);
+  if (mp) {
+    return {
+      id, name: mp.name, kind: mp.service_type || "Photographer",
+      location: mp.city || mp.location, provider: mp.company_name,
+      text: mp.bio, image: mp.cover_image || mp.logo, status: mp.status,
+    };
+  }
+
+  const rest = await getRestaurantRowById(id);
+  if (rest) {
+    return {
+      id, name: rest.name, kind: "Restaurant", location: rest.city || rest.location,
+      text: rest.description, image: rest.cover_image || rest.logo,
+      facts: [rest.address], status: rest.status,
+    };
+  }
+
+  return null;
 }
 
 export default async function ListingDetailPage({
