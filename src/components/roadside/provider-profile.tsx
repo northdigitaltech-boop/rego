@@ -1,5 +1,6 @@
 "use client";
 
+import { visibleRankingBadge } from "@/lib/ranking-badge";
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -55,7 +56,7 @@ export function RoadsideProviderProfile({
   }, [provider.owner_email, provider.id]);
   const cover = photo(provider.cover_image || provider.profile_image || "");
   const logo = photo(provider.profile_image || provider.cover_image || "");
-  const rank = provider.ranking_badge || "";
+  const rank = visibleRankingBadge(provider.ranking_badge, provider.total_reviews);
   const mapQuery = encodeURIComponent(
     `${provider.address || ""} ${provider.city || "Gilgit Baltistan"}`.trim()
   );

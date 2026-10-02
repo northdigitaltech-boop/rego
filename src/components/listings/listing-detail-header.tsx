@@ -5,6 +5,7 @@ import { Star, MapPin, ShieldCheck, Award, Share2, Heart, Check } from "lucide-r
 
 import { cn } from "@/lib/utils";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { visibleRankingBadge } from "@/lib/ranking-badge";
 
 /**
  * Premium detail-page header: large name, address, rating/reviews, verified +
@@ -30,6 +31,8 @@ export function ListingDetailHeader({
   onToggleSave?: () => void;
 }) {
   const [copied, setCopied] = React.useState(false);
+  // "Top Rated" needs a review behind it — see lib/ranking-badge.ts.
+  badge = visibleRankingBadge(badge, reviews) || undefined;
 
   const share = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";

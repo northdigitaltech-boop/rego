@@ -1,5 +1,6 @@
 "use client";
 
+import { visibleRankingBadge } from "@/lib/ranking-badge";
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -82,9 +83,9 @@ export function TourCompanyProfile({
                   <ShieldCheck className="h-3.5 w-3.5" /> Verified
                 </span>
               )}
-              {company.ranking_badge && (
+              {visibleRankingBadge(company.ranking_badge, company.reviews) && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gradient-gold px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-forest-900 shadow-gold-glow">
-                  <Star className="h-3.5 w-3.5" /> {company.ranking_badge}
+                  <Star className="h-3.5 w-3.5" /> {visibleRankingBadge(company.ranking_badge, company.reviews)}
                 </span>
               )}
             </div>

@@ -1,3 +1,4 @@
+import { visibleRankingBadge } from "@/lib/ranking-badge";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -110,9 +111,9 @@ export default async function CoworkingDetailPage({
                       <BadgeCheck className="h-3.5 w-3.5" /> Verified
                     </span>
                   )}
-                  {s.ranking_badge && (
+                  {visibleRankingBadge(s.ranking_badge, s.reviews) && (
                     <span className="rounded-full bg-gold/20 px-2.5 py-0.5 text-xs font-semibold text-gold-700">
-                      {s.ranking_badge}
+                      {visibleRankingBadge(s.ranking_badge, s.reviews)}
                     </span>
                   )}
                 </div>
