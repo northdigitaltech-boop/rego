@@ -270,7 +270,14 @@ export function ArticleJsonLd({
      that moves on every deploy tells a crawler the article changed when it
      did not. */
   if (modifiedAt || publishedAt) data.dateModified = modifiedAt || publishedAt;
-  if (authorName) data.author = { "@type": "Person", name: authorName };
+  /* "Rego Media Team" is not a person. Marking a team byline as Person is
+     an inaccurate claim about who wrote the piece; a desk or team is an
+     Organization. A real name stays a Person. */
+  if (authorName) {
+    data.author = /\b(team|desk|staff|editors?|editorial|rego)\b/i.test(authorName)
+      ? { "@type": "Organization", name: authorName, url: absoluteUrl("/editorial-policy") }
+      : { "@type": "Person", name: authorName };
+  }
   if (section) data.articleSection = section;
   if (tags && tags.length > 0) data.keywords = tags.join(", ");
 

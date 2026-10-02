@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Newspaper, Search } from "lucide-react";
 
 import { Navbar } from "@/components/layout/navbar";
@@ -49,16 +50,26 @@ export async function generateMetadata({
   searchParams: SP;
 }): Promise<Metadata> {
   const sp = await searchParams;
-  const filtered = Boolean(first(sp.q) || first(sp.category) || first(sp.page));
+  const filtered = Boolean(first(sp.q) || first(sp.category));
+  const page = Math.max(1, Math.floor(Number(first(sp.page)) || 1));
+
+  /* PAGINATION IS NOT A FILTER.
+     Page 2 used to be noindex with its canonical pointing at page 1. Google
+     treats a canonical from page 2 to page 1 as an error (the pages list
+     different articles), and a long-term noindex ends up unfollowed — so
+     older articles lost their only crawl path from the blog. Each page now
+     canonicalises to itself and is indexable; search and category views,
+     which really are re-sorts of the same posts, stay noindex. */
+  const pagePath = !filtered && page > 1 ? `/blog-news?page=${page}` : "/blog-news";
 
   return buildMetadata({
-    title: "Blog & News",
+    title:
+      page > 1 && !filtered
+        ? `Gilgit-Baltistan Travel Blog & News — Page ${page}`
+        : "Gilgit-Baltistan Travel Blog & News",
     description:
       "Travel guides, destination features, tourism news and safety updates from across Gilgit-Baltistan — written and checked by the Rego team.",
-    // Always the clean URL, never the filtered one.
-    path: "/blog-news",
-    /* A filtered or paginated view has no unique content of its own; indexing
-       them competes with this page for the same queries. */
+    path: pagePath,
     noindex: filtered,
   });
 }
@@ -71,7 +82,7 @@ export default async function BlogNewsPage({
   const sp = await searchParams;
   const q = first(sp.q).trim();
   const category = first(sp.category) || "all";
-  const page = Math.max(1, Number(first(sp.page)) || 1);
+  const page = Math.max(1, Math.floor(Number(first(sp.page)) || 1));
 
   const [{ posts, total }, featured] = await Promise.all([
     getPublishedPosts({
@@ -86,6 +97,9 @@ export default async function BlogNewsPage({
 
   const listPosts = featured ? posts.filter((p) => p.id !== featured.id) : posts;
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  /* Now that page 2+ is indexable, a page past the end must not be: it would
+     be an empty, 200-status page with its own canonical. A real 404 instead. */
+  if (page > totalPages) notFound();
   const isFiltered = Boolean(q || category !== "all");
 
   /** Preserve the other params when building a link. */

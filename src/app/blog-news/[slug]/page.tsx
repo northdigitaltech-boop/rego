@@ -24,6 +24,7 @@ import {
   getRelatedPosts,
   readingTime,
 } from "@/lib/blog";
+import { blogTripLinks } from "@/lib/blog-trip-links";
 import { absoluteUrl } from "@/lib/site";
 import { photo } from "@/lib/utils";
 
@@ -82,7 +83,10 @@ export default async function ArticlePage({ params }: { params: Params }) {
      rather than an empty page returning 200. */
   if (!post) notFound();
 
-  const related = await getRelatedPosts(post, 3);
+  const [related, tripLinks] = await Promise.all([
+    getRelatedPosts(post, 3),
+    blogTripLinks(post),
+  ]);
   const mins = readingTime(post.content);
   const date = formatPostDate(post.published_at ?? post.created_at);
   const url = absoluteUrl(`/blog-news/${post.slug}`);
@@ -127,7 +131,12 @@ export default async function ArticlePage({ params }: { params: Params }) {
                 <ChevronRight className="h-3.5 w-3.5" />
                 <Link href="/blog-news" className="hover:text-forest">Blog &amp; News</Link>
                 <ChevronRight className="h-3.5 w-3.5" />
-                <span className="text-forest">{categoryLabel}</span>
+                {/* The article itself, as in the BreadcrumbJsonLd above. This
+                    showed the category, so the visible trail and the marked-up
+                    one disagreed; the category is the pill just below. */}
+                <span aria-current="page" className="line-clamp-1 text-forest">
+                  {post.title}
+                </span>
               </nav>
 
               <div className="mx-auto mt-4 max-w-3xl">
@@ -199,6 +208,34 @@ export default async function ArticlePage({ params }: { params: Params }) {
                 text={post.content}
                 paragraphClassName="text-base leading-relaxed text-foreground"
               />
+
+              {/* ---- Plan your trip ----
+                  Links from the article to the pages that can take a booking
+                  for what it is about. Every href is checked to resolve —
+                  see lib/blog-trip-links.ts. */}
+              {tripLinks.length > 0 && (
+                <aside
+                  aria-labelledby="plan-trip"
+                  className="mt-10 rounded-2xl border border-border bg-muted/40 p-5"
+                >
+                  <h2 id="plan-trip" className="font-display text-lg font-bold text-forest">
+                    Plan your trip
+                  </h2>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {tripLinks.map((l) => (
+                      <li key={l.href}>
+                        <Link
+                          href={l.href}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-forest hover:border-forest-600 hover:bg-forest-50"
+                        >
+                          {l.label}
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </aside>
+              )}
 
               {post.tags.length > 0 && (
                 <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-border pt-5">
