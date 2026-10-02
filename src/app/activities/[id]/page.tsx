@@ -142,7 +142,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {a.gallery!.map((g, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={photo(g)} alt="" className="h-32 w-full rounded-xl object-cover" />
+                    <img key={i} src={photo(g)} alt={`${a.title} — photo ${i + 1}`} className="h-32 w-full rounded-xl object-cover" />
                   ))}
                 </div>
               </section>

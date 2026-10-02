@@ -21,6 +21,7 @@ import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getE
 import { categoryHasOwnPage } from "@/lib/category-routing";
 import { RENTAL_TYPE_DEFS } from "@/lib/rentals";
 import { getDestinations } from "@/lib/destinations";
+import { isStockPhoto } from "@/lib/utils";
 
 // Re-generate the sitemap at most hourly.
 export const revalidate = 3600;
@@ -61,6 +62,49 @@ function toDate(value: unknown, fallback: Date): Date {
 type Row = { id: string; updated_at?: string | null; created_at?: string | null };
 const when = (r: Row, fallback: Date) =>
   toDate(r.updated_at ?? r.created_at, fallback);
+
+/* ------------------------------------------------------------------
+   PHOTOS, FOR TWO REASONS
+
+   1. Image sitemap. Each URL carries its real photograph, so the
+      pictures providers upload can be found in image search — a large
+      share of travel discovery. Only absolute http(s) URLs that are not
+      stock filler.
+
+   2. Agreement with the page. A listing with no real photo is noindex
+      (listingIndexability in lib/listing-seo.ts). Offering that URL here
+      asks Google to crawl a page that then says "do not index me".
+
+   The ten listing getters return ten different row shapes (cover_image,
+   logo, image, profile_image, gallery…), so the photo is found by
+   scanning every image-like field rather than by naming one per table.
+   That makes the exclusion conservative on purpose: a URL is dropped only
+   when NO image-like field holds a real photo — and then the page, which
+   reads one of those same fields, certainly has none either.
+   ------------------------------------------------------------------ */
+const IMAGE_KEY = /image|photo|logo|cover|avatar|gallery|picture/i;
+
+const isRealPhotoUrl = (v: unknown): v is string =>
+  typeof v === "string" && /^https?:\/\//i.test(v.trim()) && !isStockPhoto(v);
+
+/* Next writes <image:loc> verbatim, without XML-escaping. One uploaded URL
+   carrying "&" (a signed URL, a query string) would make the whole sitemap
+   invalid XML and Google would read none of it. Escape here. */
+const xmlSafe = (u: string) =>
+  u.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** Real photos on a row, best candidate first (scalar fields, then arrays). */
+function rowPhotos(r: unknown): string[] {
+  if (!r || typeof r !== "object") return [];
+  const scalars: string[] = [];
+  const lists: string[] = [];
+  for (const [k, v] of Object.entries(r as Record<string, unknown>)) {
+    if (!IMAGE_KEY.test(k)) continue;
+    if (isRealPhotoUrl(v)) scalars.push(v.trim());
+    else if (Array.isArray(v)) for (const x of v) if (isRealPhotoUrl(x)) lists.push(x.trim());
+  }
+  return [...new Set([...scalars, ...lists])].map(xmlSafe);
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -145,9 +189,11 @@ async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date): Promise<
      in the admin never gets crawled, and one deleted there is still offered
      to Google. getDestinations() falls back to the built-in list on its own
      when the table is empty. */
-  const dests = (await safe(getDestinations)) as { slug?: string }[];
+  const dests = (await safe(getDestinations)) as { slug?: string; image?: string }[];
   for (const d of dests) {
-    if (d?.slug) add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7 });
+    if (!d?.slug) continue;
+    const images = isRealPhotoUrl(d.image) ? [xmlSafe(d.image)] : undefined;
+    add(`/destinations/${d.slug}`, { changeFrequency: "weekly", priority: 0.7, images });
   }
 
   // --- Published jobs (SEO-friendly /jobs/[slug] routes) ---
@@ -165,9 +211,15 @@ async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date): Promise<
   // --- Blog & News. RLS already limits this to visible posts, so a
   //     scheduled article cannot leak into the sitemap before it is live. ---
   for (const b of await safe(getAllPublishedPosts)) {
-    const post = b as unknown as { slug?: string; updated_at?: string; published_at?: string };
+    const post = b as unknown as {
+      slug?: string;
+      updated_at?: string;
+      published_at?: string;
+      featured_image_url?: string | null;
+    };
     if (!post?.slug) continue;
     urls.push({
+      images: isRealPhotoUrl(post.featured_image_url) ? [xmlSafe(post.featured_image_url)] : undefined,
       url: absoluteUrl(`/blog-news/${post.slug}`),
       // Content date, not build date — a lastmod that moves every deploy
       // teaches crawlers to ignore it.
@@ -197,7 +249,17 @@ async function addDatabaseUrls(urls: MetadataRoute.Sitemap, now: Date): Promise<
   for (const group of listingGroups) {
     for (const r of group) {
       if (!r?.id) continue;
-      urls.push({ url: absoluteUrl(`/listings/${r.id}`), lastModified: when(r, now), changeFrequency: "weekly", priority: 0.6 });
+      const photos = rowPhotos(r);
+      // No real photo → the page is noindex; do not offer it. See rowPhotos.
+      if (photos.length === 0) continue;
+      urls.push({
+        url: absoluteUrl(`/listings/${r.id}`),
+        lastModified: when(r, now),
+        changeFrequency: "weekly",
+        priority: 0.6,
+        // Google reads up to 1,000 per URL; a handful is what matters.
+        images: photos.slice(0, 5),
+      });
     }
   }
 

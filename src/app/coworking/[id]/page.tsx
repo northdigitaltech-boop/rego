@@ -191,7 +191,7 @@ export default async function CoworkingDetailPage({
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {s.gallery!.map((g, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={photo(g)} alt="" className="h-32 w-full rounded-xl object-cover" />
+                    <img key={i} src={photo(g)} alt={`${s.name} — photo ${i + 1}`} className="h-32 w-full rounded-xl object-cover" />
                   ))}
                 </div>
               </section>

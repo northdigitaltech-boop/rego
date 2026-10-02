@@ -219,7 +219,7 @@ export default async function StoryDetailPage({
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {s.gallery!.map((g, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={photo(g)} alt="" className="h-36 w-full rounded-2xl object-cover" />
+                    <img key={i} src={photo(g)} alt={`${s.title} — photo ${i + 1}`} className="h-36 w-full rounded-2xl object-cover" />
                   ))}
                 </div>
               </section>

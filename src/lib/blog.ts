@@ -256,7 +256,7 @@ export async function getAllPublishedPosts(): Promise<BlogPost[]> {
   try {
     const { data } = await supabase
       .from("blog_posts")
-      .select("id,slug,updated_at,published_at,created_at")
+      .select("id,slug,updated_at,published_at,created_at,featured_image_url")
       .order("published_at", { ascending: false, nullsFirst: false })
       .limit(2000);
     return (data as unknown as BlogPost[]) ?? [];

@@ -211,8 +211,10 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     : "opacity-80 hover:opacity-100"
                 )}
               >
+                {/* The thumbnail is the only content of its button, so an empty alt
+                    left the button with no accessible name at all. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <img src={src} alt={`${listing.title} — photo ${i + 1}`} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>

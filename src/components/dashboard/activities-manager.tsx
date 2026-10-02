@@ -37,7 +37,7 @@ import {
   type ActivityBookingRow,
 } from "@/lib/activities";
 import { sendEmail } from "@/lib/email";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatPrice, photo } from "@/lib/utils";
 import { CancellationNotice } from "@/components/bookings/cancellation-notice";
 import { ActivityRegisterWizard } from "@/components/dashboard/activity-register";
 
@@ -122,7 +122,7 @@ export function ActivitiesManager({
             {activities.map((a) => (
               <div key={a.id} className="flex gap-3 rounded-2xl border border-border bg-card p-3 shadow-premium">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={a.image || "https://picsum.photos/seed/act/200/200"} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+                <img src={photo(a.image, 200)} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-forest">{a.title}</p>
                   <p className="text-xs text-muted-foreground">{activityCategoryName(a.category)} · {a.price > 0 ? formatPrice(a.price) : "Enquire"}</p>
