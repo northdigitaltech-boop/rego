@@ -135,7 +135,16 @@ export interface RoadFreshness {
   expired: boolean;
 }
 
-export function roadFreshness(updatedAt: string | null): RoadFreshness {
+/**
+ * `now` is a parameter so the server render and the first client render can
+ * judge age against the SAME instant. Each calling Date.now() separately lets
+ * a report sit at 23h59m on the server and 24h01m in the browser, flipping
+ * stale between the two and failing hydration. Defaults to the current time.
+ */
+export function roadFreshness(
+  updatedAt: string | null,
+  now: number = Date.now()
+): RoadFreshness {
   if (!updatedAt) {
     return { hours: Infinity, label: "Unknown", stale: true, expired: true };
   }
@@ -144,7 +153,7 @@ export function roadFreshness(updatedAt: string | null): RoadFreshness {
     return { hours: Infinity, label: "Unknown", stale: true, expired: true };
   }
 
-  const mins = Math.max(0, Math.floor((Date.now() - t) / 60000));
+  const mins = Math.max(0, Math.floor((now - t) / 60000));
   const hours = mins / 60;
 
   let label: string;

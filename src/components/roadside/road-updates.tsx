@@ -31,6 +31,7 @@ import {
   bannerText,
   defaultSafetyMessage,
   getPublicRoadUpdates,
+  roadFreshness,
   createRoadReport,
   applyAsReporter,
   isTrustedReporter,
@@ -56,10 +57,35 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export function RoadUpdates() {
+/** Index rows by road so a card can look up its own update. */
+function byRoad(rows: RoadUpdateRow[] | undefined): Record<string, RoadUpdateRow> {
+  const map: Record<string, RoadUpdateRow> = {};
+  for (const r of rows ?? []) map[r.road_key] = r;
+  return map;
+}
+
+/**
+ * `initial` + `renderedAt` are supplied by /roadside/updates so the road list
+ * is in the server HTML — the only way a search engine sees it. Without them
+ * (as on /roadside) it behaves exactly as before: a spinner, then a fetch.
+ * Either way the live 5-minute refresh carries on in the browser.
+ */
+export function RoadUpdates({
+  initial,
+  renderedAt,
+}: {
+  initial?: RoadUpdateRow[];
+  renderedAt?: number;
+} = {}) {
   const { user } = useAuth();
-  const [updates, setUpdates] = React.useState<Record<string, RoadUpdateRow>>({});
-  const [loading, setLoading] = React.useState(true);
+  const [updates, setUpdates] = React.useState<Record<string, RoadUpdateRow>>(() =>
+    byRoad(initial)
+  );
+  const [loading, setLoading] = React.useState(!initial);
+  /* One "now" for every card's age, starting at the server's render instant
+     so the server HTML and the first client render agree exactly. Advanced
+     on each refresh. Falls back to 0 only when there is nothing to date. */
+  const [now, setNow] = React.useState<number>(() => renderedAt ?? Date.now());
   const [lastSync, setLastSync] = React.useState<Date | null>(null);
   const [subs, setSubs] = React.useState<string[]>([]);
   const [reportOpen, setReportOpen] = React.useState(false);
@@ -67,9 +93,8 @@ export function RoadUpdates() {
 
   const load = React.useCallback(async () => {
     const rows = await getPublicRoadUpdates();
-    const map: Record<string, RoadUpdateRow> = {};
-    for (const r of rows) map[r.road_key] = r;
-    setUpdates(map);
+    setUpdates(byRoad(rows));
+    setNow(Date.now());
     setLastSync(new Date());
     setLoading(false);
   }, []);
@@ -167,6 +192,7 @@ export function RoadUpdates() {
               roadKey={r.key}
               roadName={r.name}
               update={updates[r.key]}
+              now={now}
               subscribed={subs.includes(r.key)}
               canSub={!!user}
               onToggleSub={() => toggleSub(r.key)}
@@ -187,6 +213,7 @@ function RoadCard({
   roadKey,
   roadName,
   update: u,
+  now,
   subscribed,
   canSub,
   onToggleSub,
@@ -194,6 +221,7 @@ function RoadCard({
   roadKey: string;
   roadName: string;
   update?: RoadUpdateRow;
+  now: number;
   subscribed: boolean;
   canSub: boolean;
   onToggleSub: () => void;
@@ -203,20 +231,37 @@ function RoadCard({
   const level = alertTone(u?.alert_level ?? "low");
   const safety = u?.safety_message || (u ? defaultSafetyMessage(status) : "");
 
+  /* ------------------------------------------------------------------
+     A ROAD REPORT IS ONLY AS GOOD AS ITS AGE
+
+     roadFreshness() and the 24h / 72h thresholds already existed in
+     the library but this card never used them, so a week-old "Open"
+     wore the same green pill as one from ten minutes ago.
+
+     That mattered on screen. It matters more now that this list is in
+     the server HTML: a search snippet reading "Babusar Top: Open" can
+     sit in Google's cache for days, and someone plans a drive around
+     it. So past 72h the old status is shown as history, not as the
+     current state of the road — same treatment as having no report.
+     ------------------------------------------------------------------ */
+  const fresh = u ? roadFreshness(u.updated_at, now) : null;
+  const current = !!u && !fresh?.expired;
+  const stale = !!fresh?.stale && !fresh.expired;
+
   return (
     <article
       className={cn(
         "flex flex-col overflow-hidden rounded-3xl border bg-card shadow-premium",
-        u ? tone.border : "border-border/70"
+        current ? tone.border : "border-border/70"
       )}
     >
       {/* Header strip */}
-      <div className={cn("flex items-center justify-between px-5 py-3", u ? tone.bg : "bg-muted/50")}>
+      <div className={cn("flex items-center justify-between px-5 py-3", current ? tone.bg : "bg-muted/50")}>
         <div className="flex items-center gap-2">
-          <span className={cn("h-2.5 w-2.5 rounded-full", u ? tone.dot : "bg-gray-400")} />
+          <span className={cn("h-2.5 w-2.5 rounded-full", current ? tone.dot : "bg-gray-400")} />
           <h3 className="font-display text-base font-bold text-forest">{roadName}</h3>
         </div>
-        {u && (
+        {current && (
           <span className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase", level.bg, level.text)}>
             {level.label}
           </span>
@@ -226,8 +271,12 @@ function RoadCard({
       <div className="flex flex-1 flex-col gap-3 p-5">
         {/* Status */}
         <div className="flex items-center justify-between">
-          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold", u ? tone.bg : "bg-muted", u ? tone.text : "text-muted-foreground")}>
-            {u ? statusLabel(status) : "No recent update"}
+          <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold", current ? tone.bg : "bg-muted", current ? tone.text : "text-muted-foreground")}>
+            {!u
+              ? "No recent update"
+              : current
+                ? statusLabel(status)
+                : `Last report: ${statusLabel(status)}`}
           </span>
           {u?.verified && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-forest-600">
@@ -242,6 +291,19 @@ function RoadCard({
           </p>
         ) : (
           <>
+            {fresh?.expired && (
+              <p className="rounded-xl bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+                {Number.isFinite(fresh.hours)
+                  ? `This report is ${fresh.label.replace(/ ago$/, " old")} and may no longer be accurate.`
+                  : "This report has no date and may no longer be accurate."}{" "}
+                Check locally before you travel.
+              </p>
+            )}
+            {stale && (
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                Last verified {fresh!.label} — conditions may have changed since.
+              </p>
+            )}
             {u.location && (
               <Row icon={MapPin} label="Location">{u.location}</Row>
             )}
@@ -275,7 +337,17 @@ function RoadCard({
                 )}
               </span>
               <span className="inline-flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" /> {timeAgo(u.updated_at)}
+                <Clock className="h-3.5 w-3.5" />
+                {u.updated_at ? (
+                  <time
+                    dateTime={u.updated_at}
+                    title={new Date(u.updated_at).toUTCString()}
+                  >
+                    {fresh?.label ?? timeAgo(u.updated_at)}
+                  </time>
+                ) : (
+                  "Unknown"
+                )}
               </span>
             </div>
           </>
