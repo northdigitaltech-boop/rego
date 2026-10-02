@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -6,7 +7,8 @@ import { Footer } from "@/components/layout/footer";
 import { ListingDetail } from "@/components/listings/listing-detail";
 import { PrettyListingUrl } from "@/components/listings/pretty-listing-url";
 import { extractListingId } from "@/lib/utils";
-import { listingMetadata, type ListingSeoInput } from "@/lib/listing-seo";
+import { listingMetadata, listingJsonLd, type ListingSeoInput } from "@/lib/listing-seo";
+import { JsonLd } from "@/components/seo/json-ld";
 import { HotelProfile } from "@/components/listings/hotel-profile";
 import { paymentConfigFrom, type PaymentConfig } from "@/lib/payments";
 import { HomestayProfile } from "@/components/listings/homestay-profile";
@@ -130,21 +132,40 @@ export async function generateMetadata({
  * constant those end with is deliberately NOT copied: it is a display
  * default, not something the provider told us.
  * ============================================================ */
-async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
-  const stayRow =
-    (await getHotelRowById(id)) ??
-    (await getHomestayRowById(id)) ??
-    (await getHostelRowById(id));
+/* cache(): generateMetadata and the page body both need this, and Supabase
+   calls are not deduplicated the way fetch() is. Without it every listing
+   page would run the whole lookup chain twice per request. Server-only;
+   outside a request it simply calls through. */
+const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | null> => {
+  /* Looked up one table at a time (not ??-chained) so the schema type can
+     say which kind of stay this is. Same queries, same order as before. */
+  const hotel = await getHotelRowById(id);
+  const homestay = hotel ? null : await getHomestayRowById(id);
+  const hostel = hotel || homestay ? null : await getHostelRowById(id);
+  const stayRow = hotel ?? homestay ?? hostel;
   if (stayRow) {
+    const label = stayRow.category_label || "";
     return {
       id,
       name: stayRow.title,
-      kind: stayRow.category_label || "Stay",
+      kind: label || "Stay",
       location: stayRow.location,
       text: stayRow.description,
       image: stayRow.image,
       facts: [stayRow.price ? `From PKR ${Number(stayRow.price).toLocaleString("en-PK")}${stayRow.unit ? ` / ${stayRow.unit}` : ""}` : null],
       status: stayRow.status,
+      /* Hostels are Hostel. A hotels-table row is only called Hotel or
+         Resort when its own label says so — "The Hunza guest house" lives in
+         that table and is not a hotel. Everything else: LodgingBusiness. */
+      schemaType: hostel
+        ? "Hostel"
+        : hotel && /resort/i.test(label)
+          ? "Resort"
+          : hotel && /hotel/i.test(label)
+            ? "Hotel"
+            : "LodgingBusiness",
+      priceFrom: Number(stayRow.price) || null,
+      priceUnit: stayRow.unit,
     };
   }
 
@@ -153,6 +174,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
     return {
       id, name: c.name, kind: "Travel company", location: c.location,
       text: c.description, image: c.cover_image || c.logo, status: c.status,
+      schemaType: "TravelAgency",
     };
   }
 
@@ -164,6 +186,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
       text: p.itinerary, image: p.image,
       facts: [p.duration, p.package_type, p.difficulty_level],
       status: p.status,
+      schemaType: "TouristTrip",
     };
   }
 
@@ -174,6 +197,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
       provider: t.company_name, image: t.image,
       facts: [t.vehicle_type, t.model_year, t.fuel_type, t.transmission, t.luggage_capacity],
       status: t.status,
+      schemaType: "Service",
     };
   }
 
@@ -182,6 +206,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
     return {
       id, name: g.name, kind: "Tour guide", location: g.city || g.location || g.areas?.[0],
       provider: g.company_name, text: g.bio, image: g.image, status: g.status,
+      schemaType: "Service",
     };
   }
 
@@ -192,6 +217,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
       location: svc.location || svc.route || svc.pickup_location,
       text: svc.description, image: svc.image, facts: [svc.vehicle_type],
       status: svc.status,
+      schemaType: "Service",
     };
   }
 
@@ -202,6 +228,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
       location: rnt.location || rnt.pickup_location,
       text: rnt.description, image: rnt.image, facts: [rnt.vehicle_type],
       status: rnt.status,
+      schemaType: "Service",
     };
   }
 
@@ -211,6 +238,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
       id, name: mp.name, kind: mp.service_type || "Photographer",
       location: mp.city || mp.location || mp.areas?.[0], provider: mp.company_name,
       text: mp.bio, image: mp.cover_image || mp.logo, status: mp.status,
+      schemaType: "Service",
     };
   }
 
@@ -220,11 +248,12 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
       id, name: rest.name, kind: "Restaurant", location: rest.city || rest.location,
       text: rest.description, image: rest.cover_image || rest.logo,
       facts: [rest.address], status: rest.status,
+      schemaType: "Restaurant", streetAddress: rest.address,
     };
   }
 
   return null;
-}
+});
 
 export default async function ListingDetailPage({
   params,
@@ -233,6 +262,8 @@ export default async function ListingDetailPage({
 }) {
   const { id: rawId } = await params;
   const id = extractListingId(rawId);
+  const seoInput = await listingSeoInputFor(id);
+  const seoLd = seoInput ? listingJsonLd(seoInput) : null;
 
   let listing: Listing | null = listings.find((l) => l.id === id) ?? null;
   let dbRooms:
@@ -508,6 +539,10 @@ export default async function ListingDetailPage({
     <>
       <Navbar />
       <PrettyListingUrl id={id} />
+      {/* Same cached lookup as generateMetadata — no extra queries. Null
+          for a listing with no honest address, so nothing is emitted rather
+          than an invalid LocalBusiness block. */}
+      {seoLd && <JsonLd data={seoLd} />}
       <main className="min-h-screen">
         {tourCompany ? (
           <TourCompanyProfile

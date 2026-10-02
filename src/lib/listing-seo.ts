@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { brandedTitle } from "@/lib/seo";
 import { tidyName } from "@/lib/seo-copy";
-import { siteConfig, IS_INDEXABLE } from "@/lib/site";
+import { siteConfig, IS_INDEXABLE, absoluteUrl } from "@/lib/site";
 import { isStockPhoto } from "@/lib/utils";
 
 /* ============================================================
@@ -60,7 +60,27 @@ export interface ListingSeoInput {
   facts?: (string | null | undefined)[];
   /** Moderation status. Anything other than "approved" is never indexed. */
   status?: string | null;
+
+  /* --- structured data only ------------------------------------------ */
+
+  /** schema.org type. Omitted → no JSON-LD is emitted for this listing. */
+  schemaType?: ListingSchemaType;
+  /** A street address the provider actually entered. Never synthesised. */
+  streetAddress?: string | null;
+  /** Lowest nightly/unit price, for lodging priceRange. 0/null → omitted. */
+  priceFrom?: number | null;
+  priceUnit?: string | null;
 }
+
+export type ListingSchemaType =
+  | "Hotel"
+  | "Resort"
+  | "Hostel"
+  | "LodgingBusiness"
+  | "Restaurant"
+  | "TravelAgency"
+  | "TouristTrip"
+  | "Service";
 
 /* ------------------------------------------------------------------ */
 /* Small, pure helpers                                                  */
@@ -284,4 +304,106 @@ export function listingMetadata(i: ListingSeoInput): Metadata {
       images: [ogImage],
     },
   };
+}
+
+/* ============================================================
+ * Structured data for a single listing.
+ *
+ * ---------------------------------------------------------------------------
+ * THE RULES THIS FOLLOWS — from Google's own LocalBusiness docs
+ *
+ *   Required for every LocalBusiness subtype (Hotel, Restaurant,
+ *   TravelAgency, …): `name` and `address`. Address sub-fields are
+ *   "include as many as possible", not individually required — so
+ *   a town and a country is valid, and a street is added only where
+ *   the provider actually typed one.
+ *
+ *   No address we can honestly give → no LocalBusiness block at all.
+ *   An invalid block earns a Search Console error; an invented
+ *   address is a lie. Emitting nothing is the only honest option.
+ *
+ *   Guides, vehicles, transport services and tour packages have no
+ *   fixed premises, so they use Service / TouristTrip — types that
+ *   do not require an address and do not pretend to a shopfront.
+ *
+ * ---------------------------------------------------------------------------
+ * DELIBERATELY NEVER EMITTED
+ *
+ *   aggregateRating — Google: "only recommended for sites that
+ *     capture reviews about other local businesses", and it must
+ *     meet the review-snippet rules. Every listing has 0 reviews
+ *     today, and the per-listing rating column is not yet proven to
+ *     come only from verified reviews. Add it when both are true.
+ *   telephone — a provider's number is not necessarily public on
+ *     the page; structured data must not expose more than the page.
+ *   geo — needs 5-decimal coordinates we do not hold for listings.
+ *   addressRegion — Rego lists Swat and Naran (Khyber Pakhtunkhwa),
+ *     not only Gilgit-Baltistan; hardcoding a region would be false
+ *     for those.
+ *
+ * description is the provider's own text or nothing — never the
+ * generated meta snippet, which carries Rego's own wording.
+ * ============================================================ */
+
+const LOCAL_BUSINESS_TYPES = new Set<ListingSchemaType>([
+  "Hotel",
+  "Resort",
+  "Hostel",
+  "LodgingBusiness",
+  "Restaurant",
+  "TravelAgency",
+]);
+
+const LODGING_TYPES = new Set<ListingSchemaType>([
+  "Hotel",
+  "Resort",
+  "Hostel",
+  "LodgingBusiness",
+]);
+
+export function listingJsonLd(i: ListingSeoInput): Record<string, unknown> | null {
+  const type = i.schemaType;
+  const name = clean(i.name);
+  if (!type || !name) return null;
+
+  const place = tidyName(clean(i.location));
+  const ld: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": type,
+    name,
+    url: absoluteUrl(`/listings/${i.id}`),
+  };
+  if (hasRealPhoto(i.image)) ld.image = clean(i.image);
+  const own = clean(i.text);
+  if (own) ld.description = clip(own, 300);
+
+  if (LOCAL_BUSINESS_TYPES.has(type)) {
+    /* Required by Google. No real place → no block, not a broken one. */
+    if (!place) return null;
+    const street = clean(i.streetAddress);
+    ld.address = {
+      "@type": "PostalAddress",
+      ...(street ? { streetAddress: street } : {}),
+      addressLocality: place,
+      addressCountry: "PK",
+    };
+    const from = Number(i.priceFrom);
+    if (LODGING_TYPES.has(type) && Number.isFinite(from) && from > 0) {
+      const unit = clean(i.priceUnit);
+      ld.priceRange = `From PKR ${from.toLocaleString("en-PK")}${unit ? ` / ${unit}` : ""}`;
+    }
+    return ld;
+  }
+
+  const provider = clean(i.provider);
+  if (provider && provider.toLowerCase() !== name.toLowerCase()) {
+    ld.provider = { "@type": "Organization", name: provider };
+  }
+
+  if (type === "Service") {
+    ld.serviceType = clean(i.kind);
+    if (place) ld.areaServed = { "@type": "Place", name: place };
+  }
+
+  return ld;
 }

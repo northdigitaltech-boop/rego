@@ -1,4 +1,5 @@
 import { getCategoryIntro } from "@/lib/category-intro";
+import { JsonLd } from "@/components/seo/json-ld";
 
 /* ============================================================
  * Written copy under a category's card grid.
@@ -58,18 +59,20 @@ export function CategoryIntro({ slug }: { slug: string }) {
                 Emitted only for questions that are actually on the page —
                 Google treats schema describing invisible content as a
                 violation, and it would also be a lie. */}
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
-                  "@context": "https://schema.org",
-                  "@type": "FAQPage",
-                  mainEntity: intro.faqs.map((f) => ({
-                    "@type": "Question",
-                    name: f.q,
-                    acceptedAnswer: { "@type": "Answer", text: f.a },
-                  })),
-                }),
+            {/* Through the shared helper, which escapes "<" so text can never
+                close the <script> early. This block wrote raw JSON; the FAQs
+                are hardcoded today so it was not exploitable, but the
+                location SEO panel already makes similar copy admin-editable,
+                and this is the one place that would not have survived it. */}
+            <JsonLd
+              data={{
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                mainEntity: intro.faqs.map((f) => ({
+                  "@type": "Question",
+                  name: f.q,
+                  acceptedAnswer: { "@type": "Answer", text: f.a },
+                })),
               }}
             />
           </>
