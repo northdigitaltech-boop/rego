@@ -89,6 +89,19 @@ export default async function ArticlePage({ params }: { params: Params }) {
   ]);
   const mins = readingTime(post.content);
   const date = formatPostDate(post.published_at ?? post.created_at);
+  /* A visible "Updated" date when the article really changed after it was
+     published — more than a day later, so the save that publishes it does
+     not count. Readers and answer engines both weigh how current a travel
+     page is; the date was already in the Article markup but not on the page,
+     and markup should describe what the page shows. */
+  const publishedMs = Date.parse(post.published_at ?? post.created_at);
+  const updatedMs = Date.parse(post.updated_at);
+  const updated =
+    Number.isFinite(publishedMs) &&
+    Number.isFinite(updatedMs) &&
+    updatedMs - publishedMs > 86_400_000
+      ? formatPostDate(post.updated_at)
+      : "";
   const url = absoluteUrl(`/blog-news/${post.slug}`);
   const categoryLabel = CATEGORY_LABEL[post.category] ?? post.category;
 
@@ -171,6 +184,11 @@ export default async function ArticlePage({ params }: { params: Params }) {
                     >
                       <CalendarDays className="h-4 w-4" /> {date}
                     </time>
+                  )}
+                  {updated && (
+                    <span>
+                      Updated <time dateTime={post.updated_at}>{updated}</time>
+                    </span>
                   )}
                   <span className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4" /> {mins} min read

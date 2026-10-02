@@ -38,6 +38,9 @@ export function ListingsBrowser({
   const params = useSearchParams();
   const queryCategory = (params.get("category") as CategorySlug | null) ?? undefined;
   const queryLocation = params.get("location") ?? undefined;
+  /* The site's WebSite markup advertises /listings?q=… as the search URL,
+     but the browser never read q — the link opened an unfiltered list. */
+  const queryText = params.get("q")?.trim() ?? "";
 
   const [category, setCategory] = React.useState<CategorySlug | "all">(
     propCategory ?? queryCategory ?? "all"
@@ -47,7 +50,7 @@ export function ListingsBrowser({
   );
   const [maxPrice, setMaxPrice] = React.useState(PRICE_MAX);
   const [minRating, setMinRating] = React.useState(0);
-  const [query, setQuery] = React.useState("");
+  const [query, setQuery] = React.useState(queryText);
   const [sort, setSort] = React.useState<SortId>("featured");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
 

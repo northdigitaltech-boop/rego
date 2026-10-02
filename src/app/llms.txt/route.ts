@@ -1,6 +1,8 @@
 import { siteConfig, companyRegistration, absoluteUrl, IS_INDEXABLE } from "@/lib/site";
 import { aboutContent } from "@/lib/about-content";
 import { ALLOW_AI_CRAWLERS } from "@/lib/ai-crawlers";
+import { getDestinationRows } from "@/lib/destinations";
+import { getPublishedPosts, formatPostDate } from "@/lib/blog";
 
 /* ============================================================
  * /llms.txt
@@ -24,9 +26,47 @@ import { ALLOW_AI_CRAWLERS } from "@/lib/ai-crawlers";
  */
 
 export const dynamic = "force-static";
-export const revalidate = 86_400; // a day — none of this changes hourly
+/* An hour, not a day: the destination and guide lists below come from the
+   database and a new article should not wait a day to be listed. */
+export const revalidate = 3_600;
 
-export function GET() {
+/** One line of markdown-safe text: no newlines, no stray brackets. */
+const oneLine = (s: string | null | undefined, max = 220) => {
+  const t = (s ?? "").replace(/\s+/g, " ").replace(/[[\]]/g, "").trim();
+  return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
+};
+
+/* ------------------------------------------------------------------
+   The specific pages, not just the section pages.
+
+   The file used to list only /destinations and /blog-news. An answer
+   engine looking for "Hunza" had to find the page itself. These two lists
+   name the actual pages — real rows only: getDestinationRows() returns []
+   on failure rather than the built-in fallback, whose slugs are not
+   pages, and posts come through RLS, so drafts never appear.
+   ------------------------------------------------------------------ */
+async function destinationLines(): Promise<string> {
+  const rows = await getDestinationRows().catch(() => []);
+  return rows
+    .map((d) => {
+      const tag = oneLine(d.tagline);
+      return `- [${oneLine(d.name, 80)}](${absoluteUrl(`/destinations/${d.slug}`)})${tag ? `: ${tag}` : ""}`;
+    })
+    .join("\n");
+}
+
+async function guideLines(): Promise<string> {
+  const { posts } = await getPublishedPosts({ limit: 30 }).catch(() => ({ posts: [] }));
+  return posts
+    .map((p) => {
+      const date = formatPostDate(p.published_at ?? p.created_at);
+      const summary = oneLine(p.meta_description || p.excerpt);
+      return `- [${oneLine(p.title, 120)}](${absoluteUrl(`/blog-news/${p.slug}`)})${date ? ` (${date})` : ""}${summary ? `: ${summary}` : ""}`;
+    })
+    .join("\n");
+}
+
+export async function GET() {
   /* A preview or staging deployment must not describe itself as the real
      Rego. Same reasoning as robots.txt returning Disallow: / there. */
   if (!IS_INDEXABLE) {
@@ -35,6 +75,8 @@ export function GET() {
       { headers: { "Content-Type": "text/plain; charset=utf-8" } }
     );
   }
+
+  const [destinations, guides] = await Promise.all([destinationLines(), guideLines()]);
 
   const body = `# ${siteConfig.name}
 
@@ -81,7 +123,7 @@ one.
 - [About](${absoluteUrl("/about")}): who runs this site
 - [Contact](${absoluteUrl("/contact")}): how to reach us
 
-## Live data
+${destinations ? `## Destinations\n\nEach page lists what can be booked there.\n\n${destinations}\n\n` : ""}${guides ? `## Guides and articles\n\nMost recent first, with the publication date.\n\n${guides}\n\n` : ""}## Live data
 
 Road conditions at [${absoluteUrl("/roadside/updates")}](${absoluteUrl("/roadside/updates")})
 are reported by people travelling those roads and change frequently. Any road
