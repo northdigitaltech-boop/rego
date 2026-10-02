@@ -6,9 +6,59 @@
 
 const PROD_URL = "https://rego.services";
 
-// Preferred (canonical) origin. Falls back to the production domain. We strip a
-// trailing slash so `absoluteUrl("/x")` never produces a double slash.
-const rawUrl = (process.env.NEXT_PUBLIC_SITE_URL || PROD_URL).replace(/\/+$/, "");
+/* ============================================================
+ * THE CANONICAL ORIGIN, AND WHY IT IS SCRUBBED
+ *
+ * ---------------------------------------------------------------------------
+ * THE BUG THIS FIXES
+ *
+ * NEXT_PUBLIC_SITE_URL was set to https://www.rego.services in
+ * production, while the host 301-redirects www → non-www. Every
+ * URL the app emitted therefore pointed at an address that
+ * immediately redirects away:
+ *
+ *   <link rel="canonical" href="https://www.rego.services/...">   301 →
+ *   robots.txt  Host: https://www.rego.services                   301 →
+ *   robots.txt  Sitemap: https://www.rego.services/sitemap.xml    301 →
+ *   every single <loc> in sitemap.xml                             301 →
+ *
+ * A canonical tag that redirects is a contradiction: the page says
+ * "the real version of me lives at www", the server answers "no it
+ * does not". Google has to guess, and a sitemap in which every
+ * entry redirects is treated as low quality. This was suppressing
+ * indexing across the whole site, silently.
+ *
+ * ---------------------------------------------------------------------------
+ * WHY NORMALISE IN CODE RATHER THAN JUST FIX THE ENV VAR
+ *
+ * Changing the Vercel variable fixes it once. This makes it
+ * impossible to reintroduce: whatever the variable says, the
+ * emitted origin is the one the server actually serves without a
+ * redirect. The env var still chooses the host — it just cannot
+ * choose the `www.` prefix, because the host has already decided
+ * that and disagreeing with it is never correct.
+ *
+ * Preview and localhost URLs are untouched; only a leading `www.`
+ * is removed.
+ * ============================================================ */
+function canonicalOrigin(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, "");
+  try {
+    const u = new URL(trimmed);
+    if (u.hostname.startsWith("www.")) {
+      u.hostname = u.hostname.slice(4);
+    }
+    /* new URL() re-adds a trailing slash on a bare origin; strip it again so
+       absoluteUrl("/x") cannot produce a double slash. */
+    return u.toString().replace(/\/+$/, "");
+  } catch {
+    /* Not a parseable URL (empty or malformed env var) — fall back rather
+       than ship a broken canonical on every page. */
+    return PROD_URL;
+  }
+}
+
+const rawUrl = canonicalOrigin(process.env.NEXT_PUBLIC_SITE_URL || PROD_URL);
 
 export const siteConfig = {
   name: "Rego",
