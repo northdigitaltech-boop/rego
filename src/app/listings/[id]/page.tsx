@@ -120,6 +120,15 @@ export async function generateMetadata({
  *
  * facts are PUBLIC details only. TransportRow also holds
  * vehicle_number and driver_contact — deliberately absent here.
+ *
+ * LOCATION USES EVERY REAL FIELD THE SITE SHOWS — learned the hard
+ * way. The listing card reads `location || route` for a transport
+ * service; reading only `location` marked "Female drivers" (Skardu,
+ * real photo) as having no location, so it would have been dropped
+ * from Google while showing "Skardu" to every visitor. Each fallback
+ * below mirrors that type's *ToListing(). The "Gilgit Baltistan"
+ * constant those end with is deliberately NOT copied: it is a display
+ * default, not something the provider told us.
  * ============================================================ */
 async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
   const stayRow =
@@ -161,7 +170,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
   const t = await getTransportById(id);
   if (t) {
     return {
-      id, name: t.name, kind: "Vehicle hire", location: t.location,
+      id, name: t.name, kind: "Vehicle hire", location: t.location || t.areas?.[0],
       provider: t.company_name, image: t.image,
       facts: [t.vehicle_type, t.model_year, t.fuel_type, t.transmission, t.luggage_capacity],
       status: t.status,
@@ -171,7 +180,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
   const g = await getGuideById(id);
   if (g) {
     return {
-      id, name: g.name, kind: "Tour guide", location: g.city || g.location,
+      id, name: g.name, kind: "Tour guide", location: g.city || g.location || g.areas?.[0],
       provider: g.company_name, text: g.bio, image: g.image, status: g.status,
     };
   }
@@ -179,7 +188,8 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
   const svc = await getServiceById(id);
   if (svc) {
     return {
-      id, name: svc.title, kind: "Transport service", location: svc.location,
+      id, name: svc.title, kind: "Transport service",
+      location: svc.location || svc.route || svc.pickup_location,
       text: svc.description, image: svc.image, facts: [svc.vehicle_type],
       status: svc.status,
     };
@@ -188,7 +198,8 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
   const rnt = await getRentalById(id);
   if (rnt) {
     return {
-      id, name: rnt.title, kind: "Vehicle rental", location: rnt.location,
+      id, name: rnt.title, kind: "Vehicle rental",
+      location: rnt.location || rnt.pickup_location,
       text: rnt.description, image: rnt.image, facts: [rnt.vehicle_type],
       status: rnt.status,
     };
@@ -198,7 +209,7 @@ async function listingSeoInputFor(id: string): Promise<ListingSeoInput | null> {
   if (mp) {
     return {
       id, name: mp.name, kind: mp.service_type || "Photographer",
-      location: mp.city || mp.location, provider: mp.company_name,
+      location: mp.city || mp.location || mp.areas?.[0], provider: mp.company_name,
       text: mp.bio, image: mp.cover_image || mp.logo, status: mp.status,
     };
   }

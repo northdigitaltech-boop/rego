@@ -26,6 +26,12 @@
 -- Only approved listings are shown: anything else is never
 -- indexed, and anonymous visitors cannot reach it anyway.
 --
+-- LOCATION reads every real field the site displays for that type,
+-- e.g. a transport service shows `location`, then `route`. Reading
+-- only `location` dropped "Female drivers" (shown as Skardu, with a
+-- real photo) — the site's own "Gilgit Baltistan" display default is
+-- deliberately NOT counted as a location.
+--
 -- Every column below was checked against the migrations, scoped
 -- to its own table. tour_guides, transports, media_providers and
 -- restaurants call the label `name`; the rest call it `title`.
@@ -59,7 +65,7 @@ with listings as (
   -- Vehicles: no description column exists, so their specs are the content.
   -- vehicle_number and driver_contact are deliberately not read.
   union all
-  select 'transports', id::text, name, location, image, null,
+  select 'transports', id::text, name, coalesce(nullif(location, ''), areas[1]), image, null,
          (case when coalesce(trim(vehicle_type), '')     <> '' then 1 else 0 end
         + case when coalesce(trim(model_year), '')       <> '' then 1 else 0 end
         + case when coalesce(trim(fuel_type), '')        <> '' then 1 else 0 end
@@ -68,21 +74,25 @@ with listings as (
     from public.transports where status = 'approved'
 
   union all
-  select 'tour_guides', id::text, name, coalesce(nullif(city, ''), location), image, bio, 0
+  select 'tour_guides', id::text, name,
+         coalesce(nullif(city, ''), nullif(location, ''), areas[1]), image, bio, 0
     from public.tour_guides where status = 'approved'
 
   union all
-  select 'transport_services', id::text, title, location, image, description,
+  select 'transport_services', id::text, title,
+         coalesce(nullif(location, ''), nullif(route, ''), pickup_location), image, description,
          case when coalesce(trim(vehicle_type), '') <> '' then 1 else 0 end
     from public.transport_services where status = 'approved'
 
   union all
-  select 'rental_vehicles', id::text, title, location, image, description,
+  select 'rental_vehicles', id::text, title,
+         coalesce(nullif(location, ''), pickup_location), image, description,
          case when coalesce(trim(vehicle_type), '') <> '' then 1 else 0 end
     from public.rental_vehicles where status = 'approved'
 
   union all
-  select 'media_providers', id::text, name, coalesce(nullif(city, ''), location),
+  select 'media_providers', id::text, name,
+         coalesce(nullif(city, ''), nullif(location, ''), areas[1]),
          coalesce(nullif(cover_image, ''), logo), bio, 0
     from public.media_providers where status = 'approved'
 
