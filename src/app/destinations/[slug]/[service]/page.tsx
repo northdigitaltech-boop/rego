@@ -164,11 +164,15 @@ export default async function LocationServicePage({
 
   return (
     <>
+      {/* The place crumb is included only when /destinations/<slug> exists.
+          That page 404s without a `destinations` row even when the location
+          is public — and this page does not need one — so linking to it
+          unconditionally pointed both breadcrumbs at a dead page. */}
       <BreadcrumbJsonLd
         items={[
           { name: "Home", path: "/" },
           { name: "Destinations", path: "/destinations" },
-          { name: place, path: locationPath(slug) },
+          ...(destination ? [{ name: place, path: locationPath(slug) }] : []),
           { name: svc.name, path: locationPath(slug, service) },
         ]}
       />
@@ -202,10 +206,14 @@ export default async function LocationServicePage({
               <Link href="/destinations" className="hover:text-gold">
                 Destinations
               </Link>
-              <ChevronRight className="h-3.5 w-3.5" />
-              <Link href={locationPath(slug)} className="hover:text-gold">
-                {place}
-              </Link>
+              {destination && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                  <Link href={locationPath(slug)} className="hover:text-gold">
+                    {place}
+                  </Link>
+                </>
+              )}
               <ChevronRight className="h-3.5 w-3.5" />
               <span className="text-gold">{svc.name}</span>
             </nav>
@@ -299,13 +307,15 @@ export default async function LocationServicePage({
               </ul>
             </>
           )}
-          <Link
-            href={locationPath(slug)}
-            className="mt-5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest hover:border-forest-600 hover:bg-forest-50"
-          >
-            {place} travel guide
-            <ChevronRight className="h-4 w-4" />
-          </Link>
+          {destination && (
+            <Link
+              href={locationPath(slug)}
+              className="mt-5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest hover:border-forest-600 hover:bg-forest-50"
+            >
+              {place} travel guide
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          )}
         </section>
       </main>
       <Footer />

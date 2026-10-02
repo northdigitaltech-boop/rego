@@ -70,6 +70,13 @@ export interface ListingSeoInput {
   /** Lowest nightly/unit price, for lodging priceRange. 0/null → omitted. */
   priceFrom?: number | null;
   priceUnit?: string | null;
+
+  /* --- internal linking only ----------------------------------------- */
+
+  /** Source table — lets listingHubLinks() read this row's location_id. */
+  table?: string;
+  /** service_categories.slug this listing belongs under ("hotels", "tours"). */
+  serviceSlug?: string;
 }
 
 export type ListingSchemaType =

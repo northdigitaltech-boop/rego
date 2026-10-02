@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -9,6 +10,7 @@ import { PrettyListingUrl } from "@/components/listings/pretty-listing-url";
 import { extractListingId } from "@/lib/utils";
 import { listingMetadata, listingJsonLd, type ListingSeoInput } from "@/lib/listing-seo";
 import { JsonLd } from "@/components/seo/json-ld";
+import { listingHubLinks } from "@/lib/listing-hub-links";
 import { HotelProfile } from "@/components/listings/hotel-profile";
 import { paymentConfigFrom, type PaymentConfig } from "@/lib/payments";
 import { HomestayProfile } from "@/components/listings/homestay-profile";
@@ -166,6 +168,8 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
             : "LodgingBusiness",
       priceFrom: Number(stayRow.price) || null,
       priceUnit: stayRow.unit,
+      table: hotel ? "hotels" : homestay ? "homestays" : "hostels",
+      serviceSlug: hotel ? "hotels" : homestay ? "homestays" : "hostels",
     };
   }
 
@@ -174,7 +178,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
     return {
       id, name: c.name, kind: "Travel company", location: c.location,
       text: c.description, image: c.cover_image || c.logo, status: c.status,
-      schemaType: "TravelAgency",
+      schemaType: "TravelAgency", table: "tour_companies", serviceSlug: "travel-companies",
     };
   }
 
@@ -186,7 +190,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
       text: p.itinerary, image: p.image,
       facts: [p.duration, p.package_type, p.difficulty_level],
       status: p.status,
-      schemaType: "TouristTrip",
+      schemaType: "TouristTrip", table: "tour_packages", serviceSlug: "tours",
     };
   }
 
@@ -197,7 +201,8 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
       provider: t.company_name, image: t.image,
       facts: [t.vehicle_type, t.model_year, t.fuel_type, t.transmission, t.luggage_capacity],
       status: t.status,
-      schemaType: "Service",
+      /* transports has no location_id (phase72 skipped it) — no hub links. */
+      schemaType: "Service", table: "transports", serviceSlug: "transport",
     };
   }
 
@@ -206,7 +211,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
     return {
       id, name: g.name, kind: "Tour guide", location: g.city || g.location || g.areas?.[0],
       provider: g.company_name, text: g.bio, image: g.image, status: g.status,
-      schemaType: "Service",
+      schemaType: "Service", table: "tour_guides", serviceSlug: "guides",
     };
   }
 
@@ -217,7 +222,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
       location: svc.location || svc.route || svc.pickup_location,
       text: svc.description, image: svc.image, facts: [svc.vehicle_type],
       status: svc.status,
-      schemaType: "Service",
+      schemaType: "Service", table: "transport_services", serviceSlug: "transport",
     };
   }
 
@@ -228,7 +233,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
       location: rnt.location || rnt.pickup_location,
       text: rnt.description, image: rnt.image, facts: [rnt.vehicle_type],
       status: rnt.status,
-      schemaType: "Service",
+      schemaType: "Service", table: "rental_vehicles", serviceSlug: "transport",
     };
   }
 
@@ -238,7 +243,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
       id, name: mp.name, kind: mp.service_type || "Photographer",
       location: mp.city || mp.location || mp.areas?.[0], provider: mp.company_name,
       text: mp.bio, image: mp.cover_image || mp.logo, status: mp.status,
-      schemaType: "Service",
+      schemaType: "Service", table: "media_providers", serviceSlug: "photographers",
     };
   }
 
@@ -249,6 +254,7 @@ const listingSeoInputFor = cache(async (id: string): Promise<ListingSeoInput | n
       text: rest.description, image: rest.cover_image || rest.logo,
       facts: [rest.address], status: rest.status,
       schemaType: "Restaurant", streetAddress: rest.address,
+      table: "restaurants", serviceSlug: "restaurants",
     };
   }
 
@@ -264,6 +270,10 @@ export default async function ListingDetailPage({
   const id = extractListingId(rawId);
   const seoInput = await listingSeoInputFor(id);
   const seoLd = seoInput ? listingJsonLd(seoInput) : null;
+  const hubLinks =
+    seoInput?.table && seoInput.serviceSlug
+      ? await listingHubLinks(seoInput.table, id, seoInput.serviceSlug)
+      : [];
 
   let listing: Listing | null = listings.find((l) => l.id === id) ?? null;
   let dbRooms:
@@ -616,6 +626,26 @@ export default async function ListingDetailPage({
         ) : listing ? (
           <ListingDetail listing={listing} />
         ) : null}
+        {/* Up-links to the hub pages above this listing. Rendered only when
+            each target page is confirmed to exist — see listingHubLinks().
+            A listing with no location_id simply shows nothing here. */}
+        {hubLinks.length > 0 && (
+          <nav aria-label="Explore this area" className="container-px pb-14">
+            <h2 className="font-display text-xl font-bold text-forest">Explore more</h2>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {hubLinks.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-forest hover:border-forest-600 hover:bg-forest-50"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </main>
       <Footer />
     </>
