@@ -230,9 +230,11 @@ export default async function DestinationPage({
             <p className="mt-2 max-w-xl text-lg text-white/85">
               {destination.tagline}
             </p>
-            <p className="mt-1 text-sm font-semibold text-gold">
-              {destination.stays}
-            </p>
+            {destination.stays && (
+              <p className="mt-1 text-sm font-semibold text-gold">
+                {destination.stays}
+              </p>
+            )}
 
             {/* Quick service filters — set the browser's category via the URL */}
             <div className="mt-5 flex flex-wrap gap-2">

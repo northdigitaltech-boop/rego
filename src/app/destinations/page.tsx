@@ -95,9 +95,13 @@ export default async function DestinationsPage() {
                         <h3 className="mt-0.5 font-display text-xl font-bold">{d.name}</h3>
                         <p className="mt-0.5 line-clamp-1 text-sm text-white/85">{d.tagline}</p>
                         <div className="mt-3 flex items-center justify-between">
-                          <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
-                            {d.stays}
-                          </span>
+                          {d.stays ? (
+                            <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+                              {d.stays}
+                            </span>
+                          ) : (
+                            <span />
+                          )}
                           <span className="inline-flex items-center gap-1 text-sm font-semibold text-gold">
                             Explore <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                           </span>

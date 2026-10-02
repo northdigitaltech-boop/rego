@@ -214,7 +214,10 @@ export interface Destination {
   slug: string;
   name: string;
   location: string; // matches Listing.location for filtering
-  stays: string;
+  /** Admin-entered label such as "12 stays". Optional: shown only when set,
+      never generated — the static list below used to carry invented counts
+      ("120+ Stays", "98+ Stays"…) that no query had ever produced. */
+  stays?: string;
   tagline: string;
   image: string;
   /** Tourist spots shown on the destination page. Admin-managed. */
@@ -226,65 +229,57 @@ export const destinations: Destination[] = [
     slug: "skardu",
     name: "Skardu",
     location: "Skardu",
-    stays: "120+ Stays",
     tagline: "Gateway to the great Karakoram",
-    image: "https://loremflickr.com/1200/700/skardu,lake,mountains?lock=11",
+    image: "",
   },
   {
-    slug: "hunza",
+    slug: "hunza-valley", // the live slug; "/destinations/hunza" redirects here
     name: "Hunza Valley",
     location: "Hunza",
-    stays: "98+ Stays",
     tagline: "Land of cherry blossoms and towering peaks",
-    image: "https://loremflickr.com/1200/700/hunza,valley,mountains?lock=12",
+    image: "",
   },
   {
     slug: "naran",
     name: "Naran Valley",
     location: "Naran",
-    stays: "80+ Stays",
     tagline: "Alpine lakes and green meadows",
-    image: "https://loremflickr.com/1200/700/valley,river,mountains?lock=13",
+    image: "",
   },
   {
     slug: "deosai",
     name: "Deosai Plains",
     location: "Deosai",
-    stays: "45+ Stays",
     tagline: "The roof of the world",
-    image: "https://loremflickr.com/1200/700/meadow,plains,mountains?lock=14",
+    image: "",
   },
   {
     slug: "fairy-meadows",
     name: "Fairy Meadows",
     location: "Fairy Meadows",
-    stays: "35+ Stays",
     tagline: "Base camp of mighty Nanga Parbat",
-    image: "https://loremflickr.com/1200/700/nanga,parbat,mountain?lock=15",
+    image: "",
   },
   {
     slug: "gilgit",
     name: "Gilgit",
     location: "Gilgit",
-    stays: "60+ Stays",
     tagline: "The vibrant heart of Gilgit Baltistan",
-    image: "https://loremflickr.com/1200/700/gilgit,town,mountains?lock=16",
+    image: "",
   },
   {
     slug: "shigar",
     name: "Shigar",
     location: "Shigar",
-    stays: "40+ Stays",
     tagline: "Historic forts and cold deserts",
-    image: "https://loremflickr.com/1200/700/fort,desert,mountains?lock=17",
+    image: "",
   },
   {
     slug: "khaplu",
     name: "Khaplu",
     location: "Khaplu",
-    stays: "38+ Stays",
     tagline: "Palaces beside the Shyok river",
-    image: "https://loremflickr.com/1200/700/palace,river,mountains?lock=18",
+    image: "",
   },
 ];
 

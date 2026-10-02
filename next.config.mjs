@@ -17,6 +17,21 @@ const nextConfig = {
   // The service worker must never be cached by the browser or the CDN.
   // A stale /sw.js is what pins users to a dead build after a deploy — the
   // one PWA failure mode with no user-side fix.
+  /* /destinations/hunza was linked from the footer on every page and from the
+     homepage, but the live slug is hunza-valley — so it 404'd. Permanent, so
+     any equity those links earned moves across. Only a slug with a real
+     equivalent is redirected; deosai, fairy-meadows, naran, shigar and
+     khaplu have no destination page and are left to 404 honestly rather
+     than sent somewhere they are not. */
+  async redirects() {
+    return [
+      {
+        source: "/destinations/hunza",
+        destination: "/destinations/hunza-valley",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       /* ================================================================

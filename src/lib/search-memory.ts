@@ -118,10 +118,13 @@ export function clearSavedFilters() {
  * in Gilgit-Baltistan rather than alphabetically.
  */
 export const POPULAR_DESTINATIONS: { label: string; href: string }[] = [
-  { label: "Hunza", href: "/destinations/hunza" },
+  /* Every href checked against the live sitemap. The old list pointed at
+     /destinations/hunza, /fairy-meadows, /deosai, /khaplu and /shigar —
+     none of which exist, so five of six suggestions opened a 404. */
+  { label: "Hunza Valley", href: "/destinations/hunza-valley" },
   { label: "Skardu", href: "/destinations/skardu" },
-  { label: "Fairy Meadows", href: "/destinations/fairy-meadows" },
-  { label: "Deosai", href: "/destinations/deosai" },
-  { label: "Khaplu", href: "/destinations/khaplu" },
-  { label: "Shigar", href: "/destinations/shigar" },
+  { label: "Gilgit", href: "/destinations/gilgit" },
+  { label: "Nagar Valley", href: "/destinations/nagar-valley" },
+  { label: "Astore Valley", href: "/destinations/astore-valley" },
+  { label: "Ghizer Valley", href: "/destinations/ghizer-valley" },
 ];

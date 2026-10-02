@@ -35,10 +35,15 @@ const quickLinks = [
 
 const topDestinations = [
   { label: "Skardu", href: "/destinations/skardu" },
-  { label: "Hunza Valley", href: "/destinations/hunza" },
-  { label: "Deosai Plains", href: "/destinations/deosai" },
-  { label: "Fairy Meadows", href: "/destinations/fairy-meadows" },
+  { label: "Hunza Valley", href: "/destinations/hunza-valley" },
+  { label: "Gilgit", href: "/destinations/gilgit" },
+  { label: "Nagar Valley", href: "/destinations/nagar-valley" },
 ];
+/* Slugs checked against the live sitemap. This list is on every page, and it
+   linked /destinations/hunza, /deosai and /fairy-meadows — all three 404'd.
+   Deosai and Fairy Meadows have no destination page yet; add them back here
+   once an admin creates them. Kept static because several client components
+   render <Footer>, so it cannot fetch. */
 
 const socials = [Facebook, Instagram, Youtube, MessageCircle];
 

@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { Hero } from "@/components/home/hero";
 import { getHeroImage } from "@/lib/hero-image";
 import { Destinations } from "@/components/home/destinations";
+import { getDestinations } from "@/lib/destinations";
 import { Categories } from "@/components/home/categories";
 import { FeaturedGrid } from "@/components/home/featured-grid";
 import {
@@ -72,7 +73,10 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function Home() {
-  const hero = await getHeroImage();
+  const [hero, popularDestinations] = await Promise.all([
+    getHeroImage(),
+    getDestinations().catch(() => []),
+  ]);
   const [
     hotels,
     packages,
@@ -142,7 +146,7 @@ export default async function Home() {
         <Hero image={hero} />
 
         {/* Popular Destinations */}
-        <Destinations />
+        <Destinations initial={popularDestinations} />
 
         {/* Services Categories */}
         <Categories />

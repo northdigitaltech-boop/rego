@@ -1,22 +1,19 @@
-"use client";
-
-import * as React from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { destinations as staticDestinations } from "@/lib/data";
-import { getDestinations } from "@/lib/destinations";
+import type { Destination } from "@/lib/data";
 import { photo } from "@/lib/utils";
 import { Reveal } from "@/components/ui/reveal";
 
 
-export function Destinations() {
-  // Seed with the built-in list, then swap in admin-managed ones if available.
-  const [destinations, setDestinations] = React.useState(staticDestinations);
-
-  React.useEffect(() => {
-    getDestinations().then(setDestinations);
-  }, []);
+/* The list now arrives from the server (app/page.tsx calls getDestinations()).
+   It used to start from the built-in list and swap in the real one after
+   hydration — so the HTML a search engine read carried the built-in list:
+   links to /destinations/hunza, /naran, /deosai (all 404) and invented
+   "120+ Stays" counts. Now the first HTML is the real list. */
+export function Destinations({ initial }: { initial: Destination[] }) {
+  const destinations = initial;
+  if (destinations.length === 0) return null;
 
   return (
     <section id="destinations" className="bg-background py-12 sm:py-16">
@@ -60,9 +57,11 @@ export function Destinations() {
               <h3 className="line-clamp-2 font-display text-lg font-bold text-white">
               {d.name}
               </h3>
+              {d.stays && (
               <p className="mt-0.5 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
               {d.stays}
               </p>
+              )}
               </div>
               </Link>
             </Reveal>

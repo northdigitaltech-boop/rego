@@ -23,9 +23,12 @@ export function rowToDestination(r: DestinationRow): Destination {
     slug: r.slug,
     name: r.name,
     location: r.location,
-    stays: r.stays ?? "Stays available",
+    /* No default. "Stays available" was printed on destinations with none,
+       and the stock-photo fallback put a random loremflickr image under a
+       real place name. An empty image renders the honest no-photo tile. */
+    stays: r.stays?.trim() || undefined,
     tagline: r.tagline ?? "",
-    image: r.image ?? "https://loremflickr.com/1200/700/mountains,valley",
+    image: r.image ?? "",
     attractions: parseAttractions(r.attractions),
   };
 }

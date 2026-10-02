@@ -3,7 +3,8 @@
 import * as React from "react";
 import { MapPin, Building2, Clock, TrendingUp, X } from "lucide-react";
 
-import { destinations, listings } from "@/lib/data";
+import { listings, type Destination } from "@/lib/data";
+import { getDestinations } from "@/lib/destinations";
 import { getHotels } from "@/lib/hotels";
 import {
   getRecentSearches,
@@ -39,6 +40,9 @@ export function SiteSearch({
   service?: string;
 }) {
   const [dbHotels, setDbHotels] = React.useState<Item[]>([]);
+  /* Real destinations, not the built-in list — that list's slugs (hunza,
+     naran, deosai…) are not pages, so picking one opened a 404. */
+  const [destinations, setDestinations] = React.useState<Destination[]>([]);
   const [open, setOpen] = React.useState(false);
   const [recent, setRecent] = React.useState<RecentSearch[]>([]);
   const [cursor, setCursor] = React.useState(-1);
@@ -55,6 +59,7 @@ export function SiteSearch({
         }))
       )
     );
+    getDestinations().then(setDestinations).catch(() => {});
     setRecent(getRecentSearches());
   }, []);
 
@@ -70,7 +75,7 @@ export function SiteSearch({
   const base: Item[] = React.useMemo(() => {
     const dests: Item[] = destinations.map((d) => ({
       label: d.name,
-      sub: `Destination · ${d.stays}`,
+      sub: d.stays ? `Destination · ${d.stays}` : "Destination",
       href: `/destinations/${d.slug}`,
       kind: "destination",
     }));
@@ -85,7 +90,7 @@ export function SiteSearch({
     return all.filter((it) =>
       seen.has(it.href) ? false : (seen.add(it.href), true)
     );
-  }, [dbHotels]);
+  }, [dbHotels, destinations]);
 
   const q = value.trim().toLowerCase();
 
