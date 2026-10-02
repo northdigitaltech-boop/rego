@@ -173,7 +173,11 @@ export function listingDescription(i: ListingSeoInput): string {
 
 export interface IndexDecision {
   index: boolean;
-  /** Which requirements failed — useful for a provider-facing checklist. */
+  /**
+   * What the listing lacks — for a provider-facing checklist. Every entry
+   * blocks indexing EXCEPT "content", which is advisory: a short description
+   * is worth improving but does not make a listing page thin.
+   */
   missing: ("name" | "location" | "photo" | "content" | "approval")[];
 }
 
@@ -195,16 +199,39 @@ export function listingIndexability(i: ListingSeoInput): IndexDecision {
   if (clean(i.name).length < MIN_NAME) missing.push("name");
   if (!clean(i.location)) missing.push("location");
   if (!hasRealPhoto(i.image)) missing.push("photo");
-  if (clean(i.text).length < MIN_TEXT && realFacts(i.facts).length < MIN_FACTS) {
-    missing.push("content");
-  }
+
+  /* ------------------------------------------------------------------
+     CONTENT IS REPORTED, NOT ENFORCED — AND WHY THAT CHANGED
+
+     The first version also required 80+ characters of description or
+     three structured facts. Run against production before it shipped
+     (supabase/check-listing-indexability.sql), it marked most of the 57
+     approved listings noindex, including Aghosh Skardu, Luckey Palace,
+     The Heaven Hotel, Leopard Cave and Touraza Signature — real
+     businesses with real photos, shown on the homepage.
+
+     The rule was measuring the wrong thing. It read one text field, but
+     a hotel page also renders rooms, amenities, a gallery, a map and a
+     booking widget from other tables. A short description does not make
+     that page thin. Name, location and a real photo are what separate a
+     real listing from an empty shell, so those are what gate indexing.
+
+     "content" is still returned so a provider dashboard can suggest a
+     longer description — it just no longer decides the index.
+     ------------------------------------------------------------------ */
+  const shortOnContent =
+    clean(i.text).length < MIN_TEXT && realFacts(i.facts).length < MIN_FACTS;
   /* Defence in depth. RLS (phase30b) already hides unapproved rows from
      anonymous visitors, so Googlebot should never reach one — but an owner
      previewing their own pending listing does, and that page must never say
      index regardless of what the database policies turn out to be. */
   if (i.status && i.status !== "approved") missing.push("approval");
 
-  return { index: missing.length === 0, missing };
+  /* Decided BEFORE content is appended, so content cannot block. */
+  const index = missing.length === 0;
+  if (shortOnContent) missing.push("content");
+
+  return { index, missing };
 }
 
 /* ------------------------------------------------------------------ */

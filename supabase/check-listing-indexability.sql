@@ -15,8 +15,13 @@
 --   name       3+ characters
 --   location   not empty
 --   photo      a real upload — not empty, not stock filler
---   content    80+ characters of the provider's own text,
---              OR 3+ real details (duration, vehicle type, fuel…)
+--
+-- short_description is REPORTED but does not block. The first
+-- version required 80+ characters of description; run against
+-- production it marked most real listings noindex, because a
+-- hotel page also shows rooms, amenities, gallery and map from
+-- other tables. A short description is worth improving, not a
+-- reason to drop a real business out of Google.
 --
 -- Only approved listings are shown: anything else is never
 -- indexed, and anonymous visitors cannot reach it anyway.
@@ -101,10 +106,12 @@ judged as (
              or image ilike '%source.unsplash.com%'
              or image ilike '%placekitten.com%'
            then 'photo' end,
-      case when length(regexp_replace(coalesce(body, ''), '\s+', ' ', 'g')) < 80
-             and facts < 3
-           then 'content' end
-    ], null) as missing
+      null
+    ], null) as missing,
+    /* Advisory only — mirrors listingIndexability(), where "content" is
+       appended after the index decision is made. */
+    (length(regexp_replace(coalesce(body, ''), '\s+', ' ', 'g')) < 80
+       and facts < 3) as short_description
   from listings
 )
 select
@@ -112,6 +119,7 @@ select
   source,
   name,
   array_to_string(missing, ', ')  as what_is_missing,
+  case when short_description then 'yes' else '' end as short_description,
   id
 from judged
 order by verdict desc, source, name;
