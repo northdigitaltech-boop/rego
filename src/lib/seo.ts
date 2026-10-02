@@ -23,6 +23,39 @@ export interface BuildMetadataInput {
   modifiedTime?: string;
 }
 
+/* ============================================================
+ * ONE BRAND MENTION PER TITLE
+ *
+ * The root layout's template is "%s — Rego", so every plain
+ * string title gets the brand appended. That is right for a title
+ * like "Hotels in Skardu" and wrong for one that already names it.
+ *
+ * The live result of getting it wrong, from the Skardu hotels page:
+ *
+ *   Hotels in Skardu | Compare & Book Stays with REGO — Rego
+ *
+ * Search results truncate around 60 characters, so the second
+ * brand mention is not just ugly — it is the part of the title a
+ * searcher is most likely to see cut off, spent on a word they
+ * already read.
+ *
+ * Titles reach here from two places that cannot be audited by
+ * grepping the code: hardcoded strings, and seo_title values an
+ * admin types into the location SEO panel. So the rule is applied
+ * to the title itself, wherever it came from.
+ * ============================================================ */
+const BRAND_RE = /\brego\b/i;
+
+/**
+ * A title in the shape Next.js metadata expects. One that already names the
+ * brand is passed as `absolute` so the layout template does not add it again;
+ * any other is returned plain and gets " — Rego" from the template.
+ */
+export function brandedTitle(title: string): string | { absolute: string } {
+  const t = title.trim();
+  return BRAND_RE.test(t) ? { absolute: t } : t;
+}
+
 /**
  * One place that assembles a complete, consistent Metadata object: canonical,
  * Open Graph, Twitter card and robots — with environment-aware indexing so
@@ -49,10 +82,17 @@ export function buildMetadata(input: BuildMetadataInput = {}): Metadata {
   const index = IS_INDEXABLE && !noindex;
   const follow = !nofollow;
 
+  /* absolute in both branches: buildMetadata adds the suffix itself rather
+     than relying on the layout template, so it must also be the thing that
+     declines to add it when the title already carries the brand. */
   const resolvedTitle = absoluteTitle
     ? absoluteTitle
     : title
-      ? { absolute: `${title} — ${siteConfig.name}` }
+      ? {
+          absolute: BRAND_RE.test(title)
+            ? title.trim()
+            : `${title.trim()} — ${siteConfig.name}`,
+        }
       : undefined;
 
   return {

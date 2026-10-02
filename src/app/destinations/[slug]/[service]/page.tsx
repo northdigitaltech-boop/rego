@@ -21,6 +21,8 @@ import {
 } from "@/lib/location-seo";
 import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
 import { photo } from "@/lib/utils";
+import { brandedTitle } from "@/lib/seo";
+import { siteConfig, IS_INDEXABLE } from "@/lib/site";
 
 /* ============================================================
  * Location + service landing page — "Hotels in Skardu".
@@ -63,6 +65,11 @@ async function load(slug: string, service: string) {
   const svc = open.find((s) => s.slug === service);
   if (!svc) return null; // service not available here → the page does not exist
 
+  /* Kept, not discarded: the other services open in this area are the
+     related-services links at the foot of the page. Already fetched to find
+     svc, so reusing it costs no extra query. */
+  const siblings = open.filter((s) => s.slug !== service);
+
   const [destination, seo, listingCount] = await Promise.all([
     getDestinationBySlug(slug).catch(() => null),
     getLocationSeo(location.id, service).catch(() => null),
@@ -80,7 +87,7 @@ async function load(slug: string, service: string) {
     contentChars: contentLength(seo),
   });
 
-  return { location, svc, destination, seo, listingCount, decision };
+  return { location, svc, siblings, destination, seo, listingCount, decision };
 }
 
 export async function generateMetadata({
@@ -101,19 +108,41 @@ export async function generateMetadata({
   const canonical =
     d.seo?.canonical_url?.trim() || locationPath(slug, service);
 
+  /* The page's own hero, then the destination photo, then the brand card —
+     so a share never goes out without an image. og_image was the only
+     source before, and most locations have none set. */
+  const ogImage =
+    d.seo?.og_image || d.seo?.hero_image || d.destination?.image || siteConfig.ogImage;
+  const ogTitle = d.seo?.og_title?.trim() || title;
+  const ogDescription = d.seo?.og_description?.trim() || description;
+
   return {
-    title,
+    /* brandedTitle, not the raw string: seo_title is admin-typed and the
+       live Skardu one already ends "with REGO", which the layout template
+       then extended to "with REGO — Rego". */
+    title: brandedTitle(title),
     description,
     alternates: { canonical },
     /* The single most important line on this page. A thin page that says
-       noindex costs nothing; a thin page that says index costs the domain. */
-    robots: { index: d.decision.index, follow: true },
+       noindex costs nothing; a thin page that says index costs the domain.
+       IS_INDEXABLE as well, so a preview deployment can never say index
+       even when decideIndexable() would. */
+    robots: { index: IS_INDEXABLE && d.decision.index, follow: true },
     openGraph: {
-      title: d.seo?.og_title?.trim() || title,
-      description: d.seo?.og_description?.trim() || description,
+      title: ogTitle,
+      description: ogDescription,
       url: canonical,
       type: "website",
-      images: d.seo?.og_image ? [{ url: d.seo.og_image }] : undefined,
+      siteName: siteConfig.name,
+      images: [{ url: ogImage, alt: d.seo?.hero_image_alt || ogTitle }],
+    },
+    /* There was no twitter block at all, so X and every client that reads
+       twitter:* fell back to a bare link with no card. */
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: ogDescription,
+      images: [ogImage],
     },
   };
 }
@@ -127,7 +156,7 @@ export default async function LocationServicePage({
   const d = await load(slug, service);
   if (!d) notFound();
 
-  const { location, svc, destination, seo } = d;
+  const { location, svc, siblings, destination, seo } = d;
   const place = destination?.name ?? location.name;
   const heroImage = seo?.hero_image || destination?.image;
   const allListings = await cachedAllListings();
@@ -159,11 +188,17 @@ export default async function LocationServicePage({
           </div>
 
           <div className="container-px flex min-h-[260px] flex-col justify-end py-10">
-            {/* Visible breadcrumb, matching the JSON-LD above. */}
+            {/* Visible breadcrumb, matching the JSON-LD above. It was missing
+                "Home", which the JSON-LD has — Google expects the two to
+                describe the same trail. */}
             <nav
               aria-label="Breadcrumb"
               className="flex flex-wrap items-center gap-1 text-sm text-white/80"
             >
+              <Link href="/" className="hover:text-gold">
+                Home
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5" />
               <Link href="/destinations" className="hover:text-gold">
                 Destinations
               </Link>
@@ -231,14 +266,44 @@ export default async function LocationServicePage({
           </section>
         ) : null}
 
-        {/* Service-to-destination linking, the other half of the internal
-            link graph — from this service back up to the whole area. */}
+        {/* ------------------------------------------------------------
+            RELATED SERVICES IN THE SAME PLACE
+
+            Someone reading "Hotels in Skardu" usually needs a way to get
+            there and something to do once they arrive. These links were
+            the missing sideways half of the internal link graph — the
+            page could only point back up to the destination.
+
+            Built from getOpenServices(), the same list that decides
+            whether a location+service page may exist at all. So every
+            link here resolves to a real page; none can 404, and a
+            service that is closed in this area is never offered.
+            ------------------------------------------------------------ */}
         <section className="container-px pb-14">
+          {siblings.length > 0 && (
+            <>
+              <h2 className="font-display text-xl font-bold text-forest">
+                More in {place}
+              </h2>
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {siblings.map((s) => (
+                  <li key={s.slug}>
+                    <Link
+                      href={locationPath(slug, s.slug)}
+                      className="inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-forest hover:border-forest-600 hover:bg-forest-50"
+                    >
+                      {s.name} in {place}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <Link
             href={locationPath(slug)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest hover:border-forest-600 hover:bg-forest-50"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-forest hover:border-forest-600 hover:bg-forest-50"
           >
-            Everything else in {place}
+            {place} travel guide
             <ChevronRight className="h-4 w-4" />
           </Link>
         </section>

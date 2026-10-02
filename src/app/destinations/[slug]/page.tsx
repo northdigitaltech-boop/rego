@@ -23,6 +23,8 @@ import {
   TouristDestinationJsonLd,
 } from "@/components/seo/json-ld";
 import { getAnswers } from "@/lib/answers";
+import { brandedTitle } from "@/lib/seo";
+import { IS_INDEXABLE } from "@/lib/site";
 import { DirectAnswer, TravelFAQ } from "@/components/aeo/answer-blocks";
 
 /* Answer content is rolled out one destination at a time. With the flag off
@@ -94,11 +96,15 @@ export async function generateMetadata({
   const canonical = seo?.canonical_url?.trim() || `/destinations/${slug}`;
 
   return {
-    title,
+    /* brandedTitle: seo_title is typed by an admin and may already name
+       REGO, in which case the layout template must not add it again. */
+    title: brandedTitle(title),
     description,
     alternates: { canonical },
+    /* IS_INDEXABLE gates the admin's choice, so a preview deployment can
+       never say index just because robots_index is true in the database. */
     robots: seo
-      ? { index: seo.robots_index, follow: seo.robots_follow }
+      ? { index: IS_INDEXABLE && seo.robots_index, follow: seo.robots_follow }
       : undefined,
     openGraph: {
       title: seo?.og_title?.trim() || `${tidyName(destination.name)} — Rego`,
