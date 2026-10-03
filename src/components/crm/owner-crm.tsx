@@ -153,43 +153,56 @@ export function OwnerCrm({ user }: { user: User }) {
         />
       </div>
 
-      {/* Sub-nav */}
-      <div className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-premium">
-        {pages.map((p) => {
-          const Icon = p.icon;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setPage(p.id)}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
-                page === p.id ? "bg-gradient-forest text-white" : "text-forest hover:bg-muted"
-              )}
-            >
-              <Icon className="h-4 w-4" /> {p.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* ------------------------------------------------------------------
+          CRM NAVIGATION — a left sidebar on wide screens.
+          It was one horizontal strip that scrolled sideways, so "Customer
+          Actions" and "Notes" sat off-screen and were easy to miss. On a
+          wide screen it is now a vertical list beside the content, like
+          the main dashboard sidebar. On phones and narrow windows, where
+          a second column would squeeze the tables, it stays a strip. */}
+      <div className="grid gap-5 xl:grid-cols-[210px_minmax(0,1fr)]">
+        <nav aria-label="CRM sections" className="min-w-0">
+          <div className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-premium xl:sticky xl:top-24 xl:flex-col xl:overflow-visible">
+            {pages.map((p) => {
+              const Icon = p.icon;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPage(p.id)}
+                  aria-current={page === p.id ? "page" : undefined}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-colors xl:w-full xl:py-2.5",
+                    page === p.id ? "bg-gradient-forest text-white" : "text-forest hover:bg-muted"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" /> {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
-      {loading ? (
-        <div className="py-20 text-center text-muted-foreground">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-        </div>
-      ) : (
-        <>
-          {page === "overview" && (
-            <Overview leads={leads} followups={followups} summary={summary} onGo={setPage} />
+        <div className="min-w-0">
+          {loading ? (
+            <div className="py-20 text-center text-muted-foreground">
+              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {page === "overview" && (
+                <Overview leads={leads} followups={followups} summary={summary} onGo={setPage} />
+              )}
+              {page === "leads" && <LeadsPage owner={owner} leads={leads} onChange={refresh} />}
+              {page === "customers" && <CustomersPage owner={owner} leads={leads} notes={notes} onChange={refresh} />}
+              {page === "pipeline" && <PipelinePage leads={leads} onChange={refresh} />}
+              {page === "followups" && <FollowupsPage owner={owner} followups={followups} onChange={refresh} />}
+              {page === "insights" && <InsightsPage summary={summary} />}
+              {page === "actions" && <ActionsPage events={filteredEvents} summary={summary} />}
+              {page === "notes" && <NotesPage owner={owner} notes={notes} onChange={refresh} />}
+            </>
           )}
-          {page === "leads" && <LeadsPage owner={owner} leads={leads} onChange={refresh} />}
-          {page === "customers" && <CustomersPage owner={owner} leads={leads} notes={notes} onChange={refresh} />}
-          {page === "pipeline" && <PipelinePage leads={leads} onChange={refresh} />}
-          {page === "followups" && <FollowupsPage owner={owner} followups={followups} onChange={refresh} />}
-          {page === "insights" && <InsightsPage summary={summary} />}
-          {page === "actions" && <ActionsPage events={filteredEvents} summary={summary} />}
-          {page === "notes" && <NotesPage owner={owner} notes={notes} onChange={refresh} />}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -282,7 +295,7 @@ function Overview({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
         {kpis.map((k) => (
           <KpiCard key={k.label} label={k.label} value={k.value} icon={k.icon} accent={k.accent} />
         ))}
@@ -851,7 +864,7 @@ function InsightsPage({ summary }: { summary: ReturnType<typeof summarize> }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7 xl:grid-cols-4 2xl:grid-cols-7">
         {cards.map((c) => <KpiCard key={c.label} label={c.label} value={c.value} />)}
       </div>
 
