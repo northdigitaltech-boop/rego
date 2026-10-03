@@ -147,8 +147,12 @@ export function HotelProfile({
   /* The cover plus whatever the owner actually uploaded — no stock padding.
      See realGallery() for why a short gallery is better than a padded one. */
   const gallery = React.useMemo(
-    () => realGallery(listing.image, dbGallery),
-    [listing.image, dbGallery]
+    () =>
+      realGallery(listing.image, [
+        ...(dbGallery ?? []),
+        ...(dbRooms ?? []).flatMap((r) => r.images ?? []),
+      ]),
+    [listing.image, dbGallery, dbRooms]
   );
   // Database hotel (dbRooms is defined, possibly empty) → show only the owner's
   // real rooms; if none yet, a single room at the hotel's own price. Static

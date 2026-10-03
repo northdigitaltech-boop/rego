@@ -101,9 +101,17 @@ export function HomestayProfile({
 
   /* Real photos only. A host with none gets the empty state rather than a
      stock picture of somebody else's house — see realGallery(). */
+  /* The property's own photos first, then every room's photos, so the
+     gallery shows everything this partner uploaded. realGallery() drops
+     duplicates and stock filler, so a photo used as both a room photo and
+     a gallery photo appears once. */
   const gallery = React.useMemo(
-    () => realGallery(homestay.image, homestay.gallery),
-    [homestay.image, homestay.gallery]
+    () =>
+      realGallery(homestay.image, [
+        ...(homestay.gallery ?? []),
+        ...rooms.flatMap((r) => r.images ?? []),
+      ]),
+    [homestay.image, homestay.gallery, rooms]
   );
 
   const amenityList = homestay.amenities ?? [];

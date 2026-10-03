@@ -99,12 +99,18 @@ export function HostelProfile({
     else setCanReview(false);
   }, [user, hostel.id]);
 
+  /* The property's own photos first, then every room's photos, so the
+     gallery shows everything this partner uploaded. realGallery() drops
+     duplicates and stock filler, so a photo used as both a room photo and
+     a gallery photo appears once. */
   const gallery = React.useMemo(() => {
-    const imgs = [hostel.image, ...(hostel.gallery ?? [])].filter(
-      Boolean
-    ) as string[];
+    const imgs = [
+      hostel.image,
+      ...(hostel.gallery ?? []),
+      ...rooms.flatMap((r) => r.images ?? []),
+    ].filter(Boolean) as string[];
     return realGallery(imgs[0], imgs.slice(1));
-  }, [hostel]);
+  }, [hostel, rooms]);
 
   const amenityList = hostel.amenities ?? [];
   const hasAmenity = (re: RegExp) => amenityList.some((a) => re.test(a));
