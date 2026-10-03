@@ -181,6 +181,11 @@ export async function addRoom(input: RoomInput) {
   return supabase.from("rooms").insert(input);
 }
 
+/** Edit an existing room type. hotel_id is never changed. */
+export async function updateRoom(id: string, input: Partial<Omit<RoomInput, "hotel_id">>) {
+  return supabase.from("rooms").update(input).eq("id", id);
+}
+
 export async function deleteRoom(id: string) {
   return supabase.from("rooms").delete().eq("id", id);
 }

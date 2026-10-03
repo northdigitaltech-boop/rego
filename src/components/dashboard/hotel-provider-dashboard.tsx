@@ -54,6 +54,7 @@ import {
   deleteHotel,
   getRoomsByHotel,
   addRoom,
+  updateRoom,
   deleteRoom,
   setBookingRoomsStatus,
   getBookingRoomsForHotels,
@@ -70,7 +71,7 @@ import { useUnread } from "@/lib/use-unread";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { StayRegisterWizard } from "@/components/dashboard/stay-register";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatPrice, photo } from "@/lib/utils";
 import {
   ProviderPostJob,
   ProviderMyJobs,
@@ -1185,6 +1186,37 @@ function RoomsManager({
   const [images, setImages] = React.useState<string[]>([]);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
+  /* Set while a room is being edited: the same form below fills with its
+     values and saves over it instead of adding a new one. */
+  const [editingRoomId, setEditingRoomId] = React.useState<string | null>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
+
+  const resetRoomForm = () => {
+    setEditingRoomId(null);
+    setName("");
+    setRoomType("Standard");
+    setPrice("");
+    setGuests("2");
+    setUnits("1");
+    setBeds("1 Bed");
+    setFeatures("");
+    setImages([]);
+    setError("");
+  };
+
+  const startEditRoom = (r: RoomRow) => {
+    setEditingRoomId(r.id);
+    setName(r.name ?? "");
+    setRoomType(r.room_type || "Standard");
+    setPrice(String(r.price ?? ""));
+    setGuests(String(r.guests ?? 2));
+    setUnits(String(r.total_units ?? 1));
+    setBeds(r.beds || "1 Bed");
+    setFeatures((r.features ?? []).join(", "));
+    setImages(r.images ?? []);
+    setError("");
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -1205,8 +1237,7 @@ function RoomsManager({
       return;
     }
     setSaving(true);
-    const { error: dbError } = await addRoom({
-      hotel_id: hotel.id,
+    const fields = {
       name: name.trim(),
       room_type: roomType,
       price: priceNum,
@@ -1218,17 +1249,16 @@ function RoomsManager({
         .map((f) => f.trim())
         .filter(Boolean),
       images,
-    });
+    };
+    const { error: dbError } = editingRoomId
+      ? await updateRoom(editingRoomId, fields)
+      : await addRoom({ hotel_id: hotel.id, ...fields });
     setSaving(false);
     if (dbError) {
       setError(dbError.message);
       return;
     }
-    setName("");
-    setPrice("");
-    setFeatures("");
-    setImages([]);
-    setUnits("1");
+    resetRoomForm();
     await load();
   };
 
@@ -1262,9 +1292,21 @@ function RoomsManager({
           rooms.map((r) => (
             <div
               key={r.id}
-              className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-premium"
+              className={cn(
+                "flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-premium",
+                editingRoomId === r.id ? "border-gold" : "border-border"
+              )}
             >
-              <div>
+              <div className="flex min-w-0 items-center gap-3">
+                {r.images?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photo(r.images[0], 160)}
+                    alt={r.name}
+                    className="h-12 w-16 shrink-0 rounded-lg object-cover"
+                  />
+                ) : null}
+              <div className="min-w-0">
                 <p className="font-display font-semibold text-forest">
                   {r.name}
                   {r.room_type ? (
@@ -1285,6 +1327,7 @@ function RoomsManager({
                   </span>
                 </p>
               </div>
+              </div>
               <div className="flex items-center gap-3">
                 <span className="font-display font-bold text-forest">
                   {formatPrice(r.price)}
@@ -1294,8 +1337,18 @@ function RoomsManager({
                   </span>
                 </span>
                 <button
+                  type="button"
+                  onClick={() => startEditRoom(r)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-forest hover:border-forest-600 hover:bg-forest-50"
+                  aria-label={`Edit ${r.name}`}
+                >
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </button>
+                <button
                   onClick={async () => {
+                    if (!window.confirm(`Delete "${r.name}"?`)) return;
                     await deleteRoom(r.id);
+                    if (editingRoomId === r.id) resetRoomForm();
                     await load();
                   }}
                   className="text-red-600 hover:text-red-700"
@@ -1311,11 +1364,15 @@ function RoomsManager({
 
       {/* Add room form */}
       <form
+        ref={formRef}
         onSubmit={add}
-        className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-premium"
+        className={cn(
+          "mt-6 scroll-mt-28 space-y-4 rounded-2xl border bg-card p-6 shadow-premium",
+          editingRoomId ? "border-gold" : "border-border"
+        )}
       >
         <h3 className="font-display text-base font-bold text-forest">
-          Add a room
+          {editingRoomId ? "Edit room" : "Add a room"}
         </h3>
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
@@ -1405,12 +1462,19 @@ function RoomsManager({
         >
           {saving ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Adding…
+              <Loader2 className="h-4 w-4 animate-spin" /> Saving…
             </>
+          ) : editingRoomId ? (
+            "Save changes"
           ) : (
             "Add room"
           )}
         </Button>
+        {editingRoomId && (
+          <Button type="button" variant="outline" className="ml-2 rounded-lg" onClick={resetRoomForm}>
+            Cancel
+          </Button>
+        )}
       </form>
     </div>
   );
