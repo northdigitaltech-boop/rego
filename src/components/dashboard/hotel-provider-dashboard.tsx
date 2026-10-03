@@ -97,6 +97,7 @@ const AMENITY_OPTIONS = [
 type Tab =
   | "overview"
   | "hotels"
+  | "rooms"
   | "bookings"
   | "payments"
   | "restaurant"
@@ -112,6 +113,9 @@ type Tab =
 const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "hotels", label: "My Hotels", icon: Building2 },
+  /* Every room of every hotel in one place — add, edit, delete, photos.
+     It used to be reachable only through "Manage rooms" on a hotel card. */
+  { id: "rooms", label: "Rooms", icon: BedDouble },
   { id: "bookings", label: "Bookings", icon: CalendarCheck },
   { id: "payments", label: "Payments", icon: Wallet },
   { id: "restaurant", label: "Restaurant / Menu", icon: UtensilsCrossed },
@@ -486,6 +490,9 @@ export function HotelProviderDashboard({
                     key={n.id}
                     onClick={() => {
                       if (n.id === "add") resetForm();
+                      /* Leaving a hotel's room screen: without this the
+                         sidebar changed but the rooms screen stayed. */
+                      setManagingHotel(null);
                       setTab(n.id);
                     }}
                     className={cn(
@@ -530,6 +537,13 @@ export function HotelProviderDashboard({
             />
           ) : (
           <>
+          {tab === "rooms" && (
+            <RoomsTab
+              hotels={hotels}
+              loading={loading}
+              onAddHotel={() => { resetForm(); setTab("add"); }}
+            />
+          )}
           {tab === "post-job" && <ProviderPostJob user={user} />}
           {tab === "my-jobs" && <ProviderMyJobs user={user} />}
           {tab === "job-applications" && <ProviderJobApplications user={user} />}
@@ -1167,12 +1181,75 @@ function Profile({ user }: { user: User }) {
   );
 }
 
+/* ------------------------------------------------------------------
+   The "Rooms" tab: one place to manage every room of every hotel.
+   One hotel → its rooms straight away. Several → pick the hotel first.
+   ------------------------------------------------------------------ */
+function RoomsTab({
+  hotels,
+  loading,
+  onAddHotel,
+}: {
+  hotels: HotelRow[];
+  loading: boolean;
+  onAddHotel: () => void;
+}) {
+  const [hotelId, setHotelId] = React.useState<string>("");
+  const selected = hotels.find((h) => h.id === hotelId) ?? hotels[0] ?? null;
+
+  if (loading && hotels.length === 0) {
+    return (
+      <div className="grid place-items-center py-16 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+  if (!selected) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-muted/40 py-12 text-center">
+        <BedDouble className="mx-auto h-8 w-8 text-forest-600" />
+        <p className="mt-2 font-semibold text-forest">Add a hotel first</p>
+        <p className="mt-1 text-sm text-muted-foreground">Rooms belong to a hotel.</p>
+        <Button variant="gold" className="mt-4 rounded-lg" onClick={onAddHotel}>
+          Add hotel
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {hotels.length > 1 && (
+        <div className="mb-5 max-w-sm">
+          <Field label="Hotel">
+            <select
+              value={selected.id}
+              onChange={(e) => setHotelId(e.target.value)}
+              className="auth-input"
+            >
+              {hotels.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+      {/* key: switching hotel starts the room screen fresh, so a half-filled
+          edit form for one hotel can never be saved onto another. */}
+      <RoomsManager key={selected.id} hotel={selected} />
+    </div>
+  );
+}
+
 function RoomsManager({
   hotel,
   onBack,
 }: {
   hotel: HotelRow;
-  onBack: () => void;
+  /** Absent in the Rooms tab, where there is nothing to go back to. */
+  onBack?: () => void;
 }) {
   const [rooms, setRooms] = React.useState<RoomRow[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -1264,12 +1341,14 @@ function RoomsManager({
 
   return (
     <div>
-      <button
-        onClick={onBack}
-        className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-forest-600 hover:text-gold"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to my hotels
-      </button>
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-forest-600 hover:text-gold"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to my hotels
+        </button>
+      )}
 
       <h2 className="font-display text-xl font-bold text-forest">
         Rooms — {hotel.title}
