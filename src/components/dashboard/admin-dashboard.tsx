@@ -1890,14 +1890,14 @@ function Approvals({
             className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-premium"
           >
             <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo(a.image)}
                   alt={a.title}
-                  className="h-14 w-14 rounded-xl object-cover"
+                  className="h-14 w-14 shrink-0 rounded-xl object-cover"
                 />
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-display text-base font-semibold text-forest">
                     {a.title}
                   </h3>
@@ -1905,7 +1905,7 @@ function Approvals({
                     {a.category_label} · {a.location} · {formatPrice(a.price)}/
                     {a.unit}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="break-all text-xs text-muted-foreground">
                     by {a.owner_email ?? "unknown"}
                   </p>
                 </div>

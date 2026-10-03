@@ -119,7 +119,7 @@ export function ApprovalQueue({
                   )}
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-forest">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 break-all text-xs text-muted-foreground">
                       {item.kind}
                       {item.ownerEmail ? ` · ${item.ownerEmail}` : ""}
                     </p>

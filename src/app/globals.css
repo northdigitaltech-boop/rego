@@ -411,6 +411,33 @@ summary:focus-visible,
   .collapse-grid { transition: none; }
 }
 
+/* ---- Dashboard columns must be allowed to shrink ----
+   A grid item's minimum width is its content's width by default. One long
+   email address or a wide row of buttons therefore made the content column
+   wider than the phone, and because <body> uses overflow-x: clip, the extra
+   width was simply cut off — on the admin Approvals screen the Approve and
+   Reject buttons were off-screen with no way to reach them.
+   min-width: 0 lets every dashboard column fit the screen, so text truncates
+   or wraps and buttons move onto the next line. */
+.rego-dash > * {
+  min-width: 0;
+}
+@media (max-width: 1023px) {
+  /* Anything that is genuinely wider than a phone (a wide table, a long
+     unbroken value) now scrolls sideways inside the section instead of
+     being clipped. Desktop is left alone: a scroll container there would
+     break the sticky sub-navigation (CRM sidebar). */
+  .rego-dash > :not(aside):not(.rego-dash-back) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* <body> allows vertical panning only (touch-action: pan-y). This is a
+       scroll container of its own, so it opts back into the sideways swipe,
+       the same way .overflow-x-auto does above. */
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+  }
+}
+
 /* ---- Mobile dashboard drill-down (sidebar menu <-> section content) ---- */
 /* The "Menu" back button is hidden everywhere except mobile content view. */
 .rego-dash-back {
