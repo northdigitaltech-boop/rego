@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { ImageUpload } from "@/components/ui/image-upload";
+import { ImageUpload, MultiImageUpload } from "@/components/ui/image-upload";
 import { PlaceInput } from "@/components/ui/place-input";
 import { NameInput } from "@/components/ui/name-input";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
@@ -112,6 +112,8 @@ export function StayRegisterWizard({
   const [roomPrice, setRoomPrice] = React.useState("");
   const [roomGuests, setRoomGuests] = React.useState("");
   const [roomUnits, setRoomUnits] = React.useState("");
+  /* Optional. Shown on the public room card and in its photo viewer. */
+  const [roomImages, setRoomImages] = React.useState<string[]>([]);
 
   const ver = useVerificationStep({ noun: c.noun });
 
@@ -197,6 +199,7 @@ export function StayRegisterWizard({
           guests: Number(roomGuests) || 2,
           beds: "",
           features: [],
+          images: roomImages,
           total_units: units,
         });
         roomError = Boolean(e);
@@ -207,6 +210,7 @@ export function StayRegisterWizard({
             price,
             max_guests: Number(roomGuests) || 2,
             total_units: units,
+            images: roomImages,
           },
         ];
         if (kind === "homestay") await replaceHomestayRooms(createdId, rooms);
@@ -327,6 +331,12 @@ export function StayRegisterWizard({
                 placeholder="1"
               />
             </L>
+          </div>
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-forest">
+              Photos of this {c.roomWord} <span className="font-normal text-muted-foreground">(optional)</span>
+            </span>
+            <MultiImageUpload folder={`${kind}s`} value={roomImages} onChange={setRoomImages} min={0} />
           </div>
         </>
       ),

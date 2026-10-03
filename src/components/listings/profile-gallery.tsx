@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Images, X, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { photo } from "@/lib/utils";
+import { photo, isStockPhoto } from "@/lib/utils";
 import { useScrollLock } from "@/lib/use-scroll-lock";
 
 /**
@@ -189,6 +189,71 @@ export function GalleryGrid({
         })}
       </div>
         {open && <Lightbox images={imgs} index={idx} setIndex={setIdx} onClose={() => setOpen(false)} title={title} />}
+    </>
+  );
+}
+
+/**
+ * The photo on the left of a room card ("Standard Chalet"), and the room's
+ * own gallery when it is tapped.
+ *
+ * Owners could already upload photos per room in their dashboard (rooms,
+ * homestay_rooms and hostel_rooms all have `images`), but the public room
+ * card never showed them, so a traveller choosing between two room types
+ * saw two text boxes.
+ *
+ * Only the room's own uploads — never the property's photos and never stock
+ * filler. A room with no photo renders nothing, and the card looks exactly
+ * as it did before.
+ */
+export function RoomPhotos({
+  images,
+  title,
+}: {
+  images?: string[] | null;
+  title: string;
+}) {
+  const real = React.useMemo(
+    () =>
+      Array.from(
+        new Set((images || []).filter((u) => typeof u === "string" && u.trim() && !isStockPhoto(u)))
+      ),
+    [images]
+  );
+  const big = React.useMemo(() => real.map((u) => photo(u, 1200)), [real]);
+  const [open, setOpen] = React.useState(false);
+  const [idx, setIdx] = React.useState(0);
+
+  if (real.length === 0) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setIdx(0);
+          setOpen(true);
+        }}
+        aria-label={`View ${real.length} photo${real.length === 1 ? "" : "s"} of ${title}`}
+        className="group relative h-40 w-full shrink-0 overflow-hidden rounded-2xl bg-muted shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 focus-visible:ring-offset-2 sm:h-28 sm:w-36"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={photo(real[0], 400)}
+          alt={`${title} photo 1`}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        {real.length > 1 && (
+          <span className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
+            <Images className="h-3 w-3" /> {real.length}
+          </span>
+        )}
+      </button>
+      {open && (
+        <Lightbox images={big} index={idx} setIndex={setIdx} onClose={() => setOpen(false)} title={title} />
+      )}
     </>
   );
 }

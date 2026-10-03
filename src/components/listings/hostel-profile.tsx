@@ -25,6 +25,7 @@ import {
   ProfileGallery,
   GalleryGrid,
   HERO_PHOTO_COUNT,
+  RoomPhotos,
 } from "@/components/listings/profile-gallery";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
 import { PaymentPanel } from "@/components/payments/payment-panel";
@@ -453,6 +454,7 @@ export function HostelProfile({
                       (qty[i] || 0) > 0 ? "border-gold" : "border-border"
                     )}
                   >
+                    <RoomPhotos images={r.images} title={r.name} />
                     <div className="flex-1">
                       <h3 className="font-display text-lg font-semibold text-forest">
                         {r.name}
