@@ -63,5 +63,10 @@ export interface RoomRow {
   features: string[] | null;
   images: string[] | null;
   total_units: number | null;
+  /* phase139 — optional, owner-typed. Absent before that migration runs. */
+  room_size?: string | null;
+  view_type?: string | null;
+  classification?: string | null;
+  wifi_climate?: string | null;
   created_at: string;
 }

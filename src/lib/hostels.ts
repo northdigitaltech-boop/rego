@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isUuid } from "@/lib/hotels";
+import { NEW_ROOM_DETAIL_KEYS, withRoomDetailFallback, withoutKeys } from "@/lib/room-details";
 import { type Listing } from "@/lib/data";
 import { updateOrQueue } from "@/lib/pending-edits";
 
@@ -57,6 +58,10 @@ export interface HostelRoomRow {
   bedrooms: number | null;
   bathrooms: number | null;
   room_size: string | null;
+  /* phase139 — optional, owner-typed. */
+  view_type?: string | null;
+  classification?: string | null;
+  wifi_climate?: string | null;
   price: number;
   weekend_price: number | null;
   seasonal_price: number | null;
@@ -254,6 +259,9 @@ export interface HostelRoomInput {
   bedrooms?: number | null;
   bathrooms?: number | null;
   room_size?: string | null;
+  view_type?: string | null;
+  classification?: string | null;
+  wifi_climate?: string | null;
   price: number;
   weekend_price?: number | null;
   seasonal_price?: number | null;
@@ -298,9 +306,17 @@ export async function replaceHostelRooms(
   if (!isSupabaseConfigured || !isUuid(hostelId)) return;
   await deleteHostelRoomsFor(hostelId);
   if (rooms.length === 0) return;
-  await supabase
-    .from("hostel_rooms")
-    .insert(rooms.map((r) => ({ ...r, hostel_id: hostelId })));
+  /* Delete-then-insert: a refused insert would lose every room, so a
+     database without the phase139 columns gets the rooms without them
+     rather than no rooms at all. */
+  await withRoomDetailFallback((strip) =>
+    supabase.from("hostel_rooms").insert(
+      rooms.map((r) => ({
+        ...(strip ? withoutKeys(r as Record<string, unknown>, NEW_ROOM_DETAIL_KEYS) : r),
+        hostel_id: hostelId,
+      }))
+    )
+  );
 }
 
 /* ---------------- Inventory / availability ---------------- */

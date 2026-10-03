@@ -26,6 +26,7 @@ import {
   RoomPhotos,
 } from "@/components/listings/profile-gallery";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
+import { RoomDetails } from "@/components/listings/room-details";
 import { PaymentPanel } from "@/components/payments/payment-panel";
 import { paymentConfigFrom, type PaymentConfig } from "@/lib/payments";
 import { type Listing } from "@/lib/data";
@@ -113,6 +114,11 @@ type RoomItem = {
   total_units?: number;
   /** The room's own uploaded photos (rooms.images). */
   images?: string[] | null;
+  /* Optional owner-typed details (phase139). */
+  room_size?: string | null;
+  view_type?: string | null;
+  classification?: string | null;
+  wifi_climate?: string | null;
 };
 
 export function HotelProfile({
@@ -642,6 +648,7 @@ export function HotelProfile({
                         </span>
                       ))}
                     </div>
+                    <RoomDetails room={r} />
                   </div>
                   <div className="text-right sm:w-44">
                     <p className="font-display text-xl font-bold text-forest">

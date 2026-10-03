@@ -27,6 +27,7 @@ import {
   HERO_PHOTO_COUNT,
   RoomPhotos,
 } from "@/components/listings/profile-gallery";
+import { RoomDetails } from "@/components/listings/room-details";
 import { FeatureCards, type FeatureItem } from "@/components/listings/feature-cards";
 import { PaymentPanel } from "@/components/payments/payment-panel";
 import { paymentConfigFrom } from "@/lib/payments";
@@ -498,6 +499,7 @@ export function HomestayProfile({
                           ))}
                         </div>
                       )}
+                      <RoomDetails room={{ ...r, guests: r.max_guests }} />
                     </div>
                     <div className="text-right sm:w-44">
                       <p className="font-display text-xl font-bold text-forest">

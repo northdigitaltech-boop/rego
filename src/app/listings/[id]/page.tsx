@@ -286,6 +286,10 @@ export default async function ListingDetailPage({
         features: string[];
         total_units: number;
         images: string[];
+        room_size: string | null;
+        view_type: string | null;
+        classification: string | null;
+        wifi_climate: string | null;
       }[]
     | undefined;
   let dbAmenities: string[] | null | undefined;
@@ -357,6 +361,10 @@ export default async function ListingDetailPage({
         features: r.features ?? [],
         total_units: r.total_units ?? 1,
         images: r.images ?? [],
+        room_size: r.room_size ?? null,
+        view_type: r.view_type ?? null,
+        classification: r.classification ?? null,
+        wifi_climate: r.wifi_climate ?? null,
       }));
     } else {
       const hs = await getHomestayRowById(id);

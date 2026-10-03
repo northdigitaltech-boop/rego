@@ -72,6 +72,7 @@ import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { StayRegisterWizard } from "@/components/dashboard/stay-register";
 import { cn, formatPrice, photo } from "@/lib/utils";
+import { cleanDetail } from "@/lib/room-details";
 import {
   ProviderPostJob,
   ProviderMyJobs,
@@ -1261,6 +1262,11 @@ function RoomsManager({
   const [beds, setBeds] = React.useState("1 Bed");
   const [features, setFeatures] = React.useState("");
   const [images, setImages] = React.useState<string[]>([]);
+  /* Optional room details shown as cards on the public page (phase139). */
+  const [roomSize, setRoomSize] = React.useState("");
+  const [viewType, setViewType] = React.useState("");
+  const [classification, setClassification] = React.useState("");
+  const [wifiClimate, setWifiClimate] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
   /* Set while a room is being edited: the same form below fills with its
@@ -1278,6 +1284,10 @@ function RoomsManager({
     setBeds("1 Bed");
     setFeatures("");
     setImages([]);
+    setRoomSize("");
+    setViewType("");
+    setClassification("");
+    setWifiClimate("");
     setError("");
   };
 
@@ -1291,6 +1301,10 @@ function RoomsManager({
     setBeds(r.beds || "1 Bed");
     setFeatures((r.features ?? []).join(", "));
     setImages(r.images ?? []);
+    setRoomSize(r.room_size ?? "");
+    setViewType(r.view_type ?? "");
+    setClassification(r.classification ?? "");
+    setWifiClimate(r.wifi_climate ?? "");
     setError("");
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -1326,6 +1340,10 @@ function RoomsManager({
         .map((f) => f.trim())
         .filter(Boolean),
       images,
+      room_size: cleanDetail(roomSize),
+      view_type: cleanDetail(viewType),
+      classification: cleanDetail(classification),
+      wifi_climate: cleanDetail(wifiClimate),
     };
     const { error: dbError } = editingRoomId
       ? await updateRoom(editingRoomId, fields)
@@ -1519,6 +1537,42 @@ function RoomsManager({
             className="auth-input"
           />
         </Field>
+        {/* Optional room details — each filled one becomes a card on the
+            public room details. Empty ones are not shown at all. */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Room size">
+            <input
+              value={roomSize}
+              onChange={(e) => setRoomSize(e.target.value)}
+              placeholder="e.g. 28 sqm or 300 sq ft"
+              className="auth-input"
+            />
+          </Field>
+          <Field label="Scenic view">
+            <input
+              value={viewType}
+              onChange={(e) => setViewType(e.target.value)}
+              placeholder="e.g. Mountain view, Balcony"
+              className="auth-input"
+            />
+          </Field>
+          <Field label="Classification">
+            <input
+              value={classification}
+              onChange={(e) => setClassification(e.target.value)}
+              placeholder="e.g. Deluxe, 3 Star"
+              className="auth-input"
+            />
+          </Field>
+          <Field label="Wi-Fi & climate">
+            <input
+              value={wifiClimate}
+              onChange={(e) => setWifiClimate(e.target.value)}
+              placeholder="e.g. Free Wi-Fi, heater"
+              className="auth-input"
+            />
+          </Field>
+        </div>
         <Field label="Features (comma separated)">
           <input
             value={features}

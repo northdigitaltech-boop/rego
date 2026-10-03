@@ -66,6 +66,7 @@ import { setHostelBookingRoomsStatus } from "@/lib/hostels";
 import { sendEmail, bookingStatusEmail } from "@/lib/email";
 import { sendBookingStatusNotification } from "@/lib/messages";
 import { cn, formatPrice } from "@/lib/utils";
+import { cleanDetail } from "@/lib/room-details";
 import { StayRegisterWizard } from "@/components/dashboard/stay-register";
 import {
   ProviderPostJob,
@@ -131,6 +132,9 @@ type RoomDraft = {
   bedrooms: string;
   bathrooms: string;
   room_size: string;
+  view_type: string;
+  classification: string;
+  wifi_climate: string;
   price: string;
   weekend_price: string;
   seasonal_price: string;
@@ -149,6 +153,9 @@ const emptyRoom: RoomDraft = {
   bedrooms: "",
   bathrooms: "",
   room_size: "",
+  view_type: "",
+  classification: "",
+  wifi_climate: "",
   price: "",
   weekend_price: "",
   seasonal_price: "",
@@ -393,6 +400,9 @@ export function HostelProviderDashboard({
               bedrooms: r.bedrooms != null ? String(r.bedrooms) : "",
               bathrooms: r.bathrooms != null ? String(r.bathrooms) : "",
               room_size: r.room_size ?? "",
+              view_type: r.view_type ?? "",
+              classification: r.classification ?? "",
+              wifi_climate: r.wifi_climate ?? "",
               price: String(r.price ?? ""),
               weekend_price: r.weekend_price != null ? String(r.weekend_price) : "",
               seasonal_price: r.seasonal_price != null ? String(r.seasonal_price) : "",
@@ -441,6 +451,9 @@ export function HostelProviderDashboard({
         bedrooms: num(r.bedrooms),
         bathrooms: num(r.bathrooms),
         room_size: r.room_size.trim() || null,
+        view_type: cleanDetail(r.view_type),
+        classification: cleanDetail(r.classification),
+        wifi_climate: cleanDetail(r.wifi_climate),
         price: Number(r.price),
         weekend_price: num(r.weekend_price),
         seasonal_price: num(r.seasonal_price),
@@ -1273,6 +1286,34 @@ function HostelForm({
                   value={r.room_size}
                   onChange={(e) => updateRoom(i, { room_size: e.target.value })}
                   placeholder="e.g. 300 sq ft"
+                  className="auth-input"
+                />
+              </Field>
+            </div>
+
+            {/* Optional — each filled one becomes a card on the public room details. */}
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <Field label="Scenic view">
+                <input
+                  value={r.view_type}
+                  onChange={(e) => updateRoom(i, { view_type: e.target.value })}
+                  placeholder="e.g. Mountain view, Balcony"
+                  className="auth-input"
+                />
+              </Field>
+              <Field label="Classification">
+                <input
+                  value={r.classification}
+                  onChange={(e) => updateRoom(i, { classification: e.target.value })}
+                  placeholder="e.g. Deluxe, Standard"
+                  className="auth-input"
+                />
+              </Field>
+              <Field label="Wi-Fi & climate">
+                <input
+                  value={r.wifi_climate}
+                  onChange={(e) => updateRoom(i, { wifi_climate: e.target.value })}
+                  placeholder="e.g. Free Wi-Fi, heater"
                   className="auth-input"
                 />
               </Field>

@@ -5,6 +5,7 @@ import {
   type RoomRow,
 } from "@/lib/supabase";
 import { updateOrQueue } from "@/lib/pending-edits";
+import { NEW_ROOM_DETAIL_KEYS, withRoomDetailFallback, withoutKeys } from "@/lib/room-details";
 import { type Listing } from "@/lib/data";
 
 export function isUuid(id: string) {
@@ -161,6 +162,10 @@ export interface RoomInput {
   features: string[];
   images?: string[];
   total_units?: number;
+  room_size?: string | null;
+  view_type?: string | null;
+  classification?: string | null;
+  wifi_climate?: string | null;
 }
 
 export async function getRoomsByHotel(hotelId: string): Promise<RoomRow[]> {
@@ -177,13 +182,23 @@ export async function getRoomsByHotel(hotelId: string): Promise<RoomRow[]> {
   return (data as RoomRow[]) ?? [];
 }
 
+/* rooms.room_size is also new in phase139 (homestay/hostel rooms had it). */
+const HOTEL_ROOM_NEW_KEYS = ["room_size", ...NEW_ROOM_DETAIL_KEYS];
+
 export async function addRoom(input: RoomInput) {
-  return supabase.from("rooms").insert(input);
+  return withRoomDetailFallback((strip) =>
+    supabase.from("rooms").insert(strip ? withoutKeys(input as unknown as Record<string, unknown>, HOTEL_ROOM_NEW_KEYS) : input)
+  );
 }
 
 /** Edit an existing room type. hotel_id is never changed. */
 export async function updateRoom(id: string, input: Partial<Omit<RoomInput, "hotel_id">>) {
-  return supabase.from("rooms").update(input).eq("id", id);
+  return withRoomDetailFallback((strip) =>
+    supabase
+      .from("rooms")
+      .update(strip ? withoutKeys(input as Record<string, unknown>, HOTEL_ROOM_NEW_KEYS) : input)
+      .eq("id", id)
+  );
 }
 
 export async function deleteRoom(id: string) {
