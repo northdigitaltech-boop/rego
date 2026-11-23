@@ -193,3 +193,32 @@ export async function getAirlines(iataCodes: string[]): Promise<Map<string, Airl
 
 /** "Islamabad (ISB)" — the shape a search field should echo back. */
 export const airportLabel = (a: Airport): string => `${a.city} (${a.iataCode})`;
+
+
+/**
+ * The airport a typed or pasted word most likely means.
+ *
+ * Used when someone types "Islamabad" and presses Search without picking
+ * from the dropdown — the search used to refuse with "Choose both
+ * airports". Order: exact IATA code ("ISB"), exact city ("skardu"),
+ * a city that starts with the text, an airport name that contains it,
+ * then simply the first result the search returned.
+ */
+export function bestAirportMatch(list: Airport[], text: string): Airport | null {
+  const t = text.trim().toLowerCase();
+  if (!t || list.length === 0) return null;
+  const by = (f: (a: Airport) => boolean) => list.find(f) ?? null;
+  return (
+    by((a) => (a.iataCode ?? "").toLowerCase() === t) ??
+    by((a) => (a.city ?? "").toLowerCase() === t) ??
+    by((a) => (a.city ?? "").toLowerCase().startsWith(t)) ??
+    by((a) => (a.airportName ?? "").toLowerCase().includes(t)) ??
+    list[0]
+  );
+}
+
+/** Resolve free text to one airport, or null if nothing matches. */
+export async function resolveAirport(text: string): Promise<Airport | null> {
+  if (text.trim().length < 2) return null;
+  return bestAirportMatch(await searchAirports(text, 8), text);
+}

@@ -6,6 +6,7 @@ import { ArrowLeftRight, Minus, Plus, Plane, Search, Users, X } from "lucide-rea
 
 import { cn } from "@/lib/utils";
 import { AirportAutocomplete } from "@/components/flights/airport-autocomplete";
+import { resolveAirport } from "@/lib/flights/airports";
 import { CABIN_LABELS } from "@/lib/flights/provider";
 import type { Airport, CabinClass, TripType } from "@/lib/flights/types";
 
@@ -52,6 +53,10 @@ export function FlightSearchWidget({ compact = false }: { compact?: boolean }) {
   const [infants, setInfants] = React.useState(0);
   const [paxOpen, setPaxOpen] = React.useState(false);
   const [error, setError] = React.useState("");
+  /* Text typed into each airport box but not (yet) picked from the list,
+     keyed "0-from", "0-to"… Resolved on submit — see resolveAirport(). */
+  const typed = React.useRef<Record<string, string>>({});
+  const [resolving, setResolving] = React.useState(false);
 
   const paxRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -88,15 +93,35 @@ export function FlightSearchWidget({ compact = false }: { compact?: boolean }) {
     return `${bits.join(", ")} · ${CABIN_LABELS[cabin]}`;
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    const active = tripType === "multi_city" ? legs : [legs[0]];
+    const base = tripType === "multi_city" ? legs : [legs[0]];
+
+    /* Typed "Islamabad" → "Skardu" without touching the dropdown used to
+       fail with "Choose both airports". Any box that still holds text is
+       resolved to its best-matching airport here. */
+    setResolving(true);
+    const active = await Promise.all(
+      base.map(async (leg, i) => {
+        const from = leg.from ?? (await resolveAirport(typed.current[`${i}-from`] ?? ""));
+        const to = leg.to ?? (await resolveAirport(typed.current[`${i}-to`] ?? ""));
+        if (from !== leg.from || to !== leg.to) setLeg(i, { from, to });
+        return { ...leg, from, to };
+      })
+    );
+    setResolving(false);
 
     for (const [i, leg] of active.entries()) {
       if (!leg.from || !leg.to) {
-        setError(`Choose both airports for flight ${i + 1}.`);
+        const which = !leg.from && !leg.to ? "both airports" : !leg.from ? "the departure airport" : "the arrival airport";
+        const text = (!leg.from ? typed.current[`${i}-from`] : typed.current[`${i}-to`])?.trim();
+        setError(
+          text
+            ? `No airport found for "${text}". Try the city name or the 3-letter code (e.g. ISB, KDU).`
+            : `Type or choose ${which}${active.length > 1 ? ` for flight ${i + 1}` : ""}.`
+        );
         return;
       }
       if (leg.from.iataCode === leg.to.iataCode) {
@@ -186,6 +211,7 @@ export function FlightSearchWidget({ compact = false }: { compact?: boolean }) {
               label={showMulti ? `Flight ${i + 1} — From` : "From"}
               value={leg.from}
               onChange={(a) => setLeg(i, { from: a })}
+              onQueryChange={(q) => { typed.current[`${i}-from`] = q; }}
               excludeCode={leg.to?.iataCode ?? null}
             />
 
@@ -205,6 +231,7 @@ export function FlightSearchWidget({ compact = false }: { compact?: boolean }) {
               label="To"
               value={leg.to}
               onChange={(a) => setLeg(i, { to: a })}
+              onQueryChange={(q) => { typed.current[`${i}-to`] = q; }}
               excludeCode={leg.from?.iataCode ?? null}
             />
 
@@ -343,9 +370,10 @@ export function FlightSearchWidget({ compact = false }: { compact?: boolean }) {
         <div className="flex items-end">
           <button
             type="submit"
-            className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-forest px-8 text-sm font-bold text-white shadow-soft transition-transform hover:-translate-y-0.5 sm:w-auto"
+            disabled={resolving}
+            className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-forest px-8 text-sm font-bold text-white shadow-soft transition-transform hover:-translate-y-0.5 disabled:opacity-60 sm:w-auto"
           >
-            <Search className="h-4 w-4" /> Search flights
+            <Search className="h-4 w-4" /> {resolving ? "Finding airports…" : "Search flights"}
           </button>
         </div>
       </div>

@@ -4,7 +4,7 @@ import * as React from "react";
 import { Loader2, MapPin, Plane, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { searchAirports } from "@/lib/flights/airports";
+import { searchAirports, bestAirportMatch } from "@/lib/flights/airports";
 import type { Airport } from "@/lib/flights/types";
 
 /* ============================================================
@@ -29,6 +29,7 @@ export function AirportAutocomplete({
   placeholder = "City or airport",
   excludeCode,
   id,
+  onQueryChange,
 }: {
   label: string;
   value: Airport | null;
@@ -37,6 +38,8 @@ export function AirportAutocomplete({
   /** The other field's airport — you cannot fly somewhere from itself. */
   excludeCode?: string | null;
   id?: string;
+  /** The raw text typed so far, so a parent can resolve it on submit. */
+  onQueryChange?: (q: string) => void;
 }) {
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<Airport[]>([]);
@@ -87,10 +90,30 @@ export function AirportAutocomplete({
   const pick = (a: Airport) => {
     onChange(a);
     setQuery("");
+    onQueryChange?.("");
     setOpen(false);
   };
 
+  /* Typed or pasted text, no click on the list: leaving the field picks the
+     best match from what the search already returned. (The form also
+     resolves any text still unresolved when Search is pressed.) */
+  const resolveTyped = () => {
+    const q = query.trim();
+    if (q.length < 2 || results.length === 0) return;
+    const best = bestAirportMatch(results, q);
+    if (best) pick(best);
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (!open || results.length === 0)) {
+      /* Enter with the list closed or still loading: resolve the text
+         instead of submitting a form with an empty airport. */
+      if (query.trim().length >= 2) {
+        e.preventDefault();
+        resolveTyped();
+      }
+      return;
+    }
     if (!open || results.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -145,9 +168,14 @@ export function AirportAutocomplete({
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
+              onQueryChange?.(e.target.value);
               setOpen(true);
             }}
             onFocus={() => setOpen(true)}
+            onBlur={() => {
+              /* Delay so a click on a list item lands first. */
+              setTimeout(resolveTyped, 150);
+            }}
             onKeyDown={onKeyDown}
             placeholder={placeholder}
             autoComplete="off"
