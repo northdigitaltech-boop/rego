@@ -121,10 +121,9 @@ export function ListingCard({
               </span>
             </>
           ) : (
-            /* No real reviews yet — never show an invented score. */
-            <span className="rounded-full bg-forest-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-forest-600">
-              No reviews yet
-            </span>
+            /* No real reviews yet: show nothing — never an invented score, and
+               not a "No reviews yet" pill on every card either. */
+            null
           )}
         </div>
 

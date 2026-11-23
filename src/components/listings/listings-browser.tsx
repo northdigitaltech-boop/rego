@@ -15,7 +15,17 @@ import {
 } from "@/lib/data";
 import { cn, formatPrice } from "@/lib/utils";
 
-const PRICE_MAX = 60000;
+/* The slider's ceiling is the highest live price (rounded up), not a fixed
+   60,000 — that silently hid the PKR 75,000 and 149,997 tours at the
+   default setting. FLOOR keeps the slider usable when everything is cheap. */
+const PRICE_FLOOR = 10000;
+const priceCeiling = (items: { price: number }[]) => {
+  const top = Math.max(0, ...items.map((l) => Number(l.price) || 0));
+  return Math.max(PRICE_FLOOR, Math.ceil(top / 5000) * 5000);
+};
+/* Ratings UI (filter + "Top Rated" sort) appears only once the listings
+   shown carry at least this many real reviews between them. */
+const MIN_REVIEWS_FOR_RATINGS = 5;
 
 interface ListingsBrowserProps {
   /** Real, approved listings loaded on the server. */
@@ -48,7 +58,16 @@ export function ListingsBrowser({
   const [location, setLocation] = React.useState<string>(
     propLocation ?? queryLocation ?? "all"
   );
+  const PRICE_MAX = React.useMemo(() => priceCeiling(items), [items]);
   const [maxPrice, setMaxPrice] = React.useState(PRICE_MAX);
+  /* Keep the default at "no price limit" when the live data changes. */
+  React.useEffect(() => setMaxPrice(PRICE_MAX), [PRICE_MAX]);
+  const ratingsLive = React.useMemo(
+    () =>
+      items.reduce((n, l) => n + (Number(l.reviews) > 0 ? Number(l.reviews) : 0), 0) >=
+      MIN_REVIEWS_FOR_RATINGS,
+    [items]
+  );
   const [minRating, setMinRating] = React.useState(0);
   const [query, setQuery] = React.useState(queryText);
   const [sort, setSort] = React.useState<SortId>("featured");
@@ -82,6 +101,21 @@ export function ListingsBrowser({
       featured: l.featured,
     }));
   }, [items, category, location, maxPrice, minRating, query, sort]);
+
+  /* Items that match the category and place but are excluded by price,
+     rating or name search. */
+  const hiddenByFilters = React.useMemo(() => {
+    const scoped = items.filter((l) => {
+      if (category !== "all" && l.category !== category) return false;
+      if (location !== "all") {
+        const a = l.location.toLowerCase();
+        const b = location.toLowerCase();
+        if (!a.includes(b) && !b.includes(a)) return false;
+      }
+      return true;
+    });
+    return Math.max(0, scoped.length - results.length);
+  }, [items, category, location, results.length]);
 
   const resetFilters = () => {
     setCategory("all");
@@ -122,7 +156,7 @@ export function ListingsBrowser({
         </h3>
         <input
           type="range"
-          min={2000}
+          min={0}
           max={PRICE_MAX}
           step={1000}
           value={maxPrice}
@@ -134,6 +168,7 @@ export function ListingsBrowser({
         </p>
       </div>
 
+      {ratingsLive && (
       <div>
         <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-forest">
           Minimum rating
@@ -149,6 +184,7 @@ export function ListingsBrowser({
           ))}
         </div>
       </div>
+      )}
 
       <div>
         <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-forest">
@@ -229,7 +265,7 @@ export function ListingsBrowser({
                 className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
-            <SortBar value={sort} onChange={setSort} className="mt-4" />
+            <SortBar value={sort} onChange={setSort} className="mt-4" showRatingSorts={ratingsLive} />
           </div>
         </div>
       )}
@@ -249,6 +285,21 @@ export function ListingsBrowser({
               <p className="text-sm text-muted-foreground">
                 <span className="font-semibold text-forest">{results.length}</span>{" "}
                 {results.length === 1 ? "result" : "results"}
+                {/* Say when filters are hiding things, with a one-click way
+                    back — a filter should never hide listings silently. */}
+                {hiddenByFilters > 0 && (
+                  <>
+                    {" · "}
+                    <span>{hiddenByFilters} hidden by filters</span>{" "}
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="font-semibold text-forest-600 underline-offset-2 hover:underline"
+                    >
+                      Reset
+                    </button>
+                  </>
+                )}
               </p>
 
               <div className="flex items-center gap-2">

@@ -59,18 +59,10 @@ function Wrap({ index, children, className }: { index: number; children: React.R
 function Rating({ rating, reviews, light = false }: { rating: number; reviews?: number; light?: boolean }) {
   // No real reviews yet → show "New" instead of an invented score.
   const hasReviews = (reviews ?? 0) > 0 && rating > 0;
-  if (!hasReviews) {
-    return (
-      <span
-        className={cn(
-          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide",
-          light ? "bg-white/20 text-white" : "bg-forest-50 text-forest-600"
-        )}
-      >
-        No reviews yet
-      </span>
-    );
-  }
+  /* Nothing at all until there is a real review. "No reviews yet" on every
+     card (34 times on the homepage) only advertised that nobody had rated
+     anything. */
+  if (!hasReviews) return null;
   return (
     <span className={cn("flex items-center gap-1 text-xs font-semibold", light ? "text-white" : "text-forest")}>
       <Star className="h-3.5 w-3.5 fill-gold text-gold" />

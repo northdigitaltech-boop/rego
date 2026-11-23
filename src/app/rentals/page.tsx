@@ -284,9 +284,12 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
             <Chip href={href({ verified: verifiedOnly ? "" : "1", page: undefined })} active={verifiedOnly}>
               <Star className="h-3.5 w-3.5" /> Verified provider
             </Chip>
-            <Chip href={href({ rating: minRating === 4 ? "" : 4, page: undefined })} active={minRating === 4}>
-              4★ and up
-            </Chip>
+            {/* Rating filter only once something has been rated. */}
+            {rentals.some((x) => Number((x as { reviews?: number }).reviews) > 0) && (
+              <Chip href={href({ rating: minRating === 4 ? "" : 4, page: undefined })} active={minRating === 4}>
+                4★ and up
+              </Chip>
+            )}
 
             {isFiltered && (
               <Link

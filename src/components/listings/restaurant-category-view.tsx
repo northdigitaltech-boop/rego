@@ -118,7 +118,7 @@ export function RestaurantCategoryView({
             <Select label="Price range" value={price} onChange={setPrice} options={[["all", "Any price"], ...PRICE_RANGES.map((p) => [p, p] as [string, string])]} />
             <Select label="Location" value={location} onChange={setLocation} options={[["all", "Anywhere"], ...locations.map((l) => [l, l] as [string, string])]} />
             <Select label="Dining option" value={dining} onChange={setDining} options={[["all", "Any"], ...diningOpts.map((d) => [d, d] as [string, string])]} />
-            <Select label="Min rating" value={minRating} onChange={setMinRating} options={[["all", "Any"], ["3", "3★+"], ["4", "4★+"], ["4.5", "4.5★+"]]} />
+            {/* Hidden until there are real reviews to filter on. */ restaurants.some((x) => Number(x.reviews) > 0) && (<Select label="Min rating" value={minRating} onChange={setMinRating} options={[["all", "Any"], ["3", "3★+"], ["4", "4★+"], ["4.5", "4.5★+"]]} />)}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {([["all", "All"], ["independent", "Independent"], ["property", "Hotel / Resort"]] as const).map(([id, label]) => (

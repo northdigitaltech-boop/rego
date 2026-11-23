@@ -22,14 +22,21 @@ export function SortBar({
   value,
   onChange,
   className,
+  showRatingSorts = false,
 }: {
   value: SortId;
   onChange: (s: SortId) => void;
   className?: string;
+  /** "Top Rated" / "Most Reviewed" sort nothing until real reviews exist,
+      so they are hidden unless the caller says there are enough. */
+  showRatingSorts?: boolean;
 }) {
+  const options = showRatingSorts
+    ? SORT_OPTIONS
+    : SORT_OPTIONS.filter((o) => o.id !== "rating" && o.id !== "reviews");
   return (
     <div className={cn("no-scrollbar flex gap-2 overflow-x-auto pb-1", className)}>
-      {SORT_OPTIONS.map((s) => (
+      {options.map((s) => (
         <button
           key={s.id}
           onClick={() => onChange(s.id)}

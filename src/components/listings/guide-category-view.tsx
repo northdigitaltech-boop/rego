@@ -170,7 +170,7 @@ export function GuideCategoryView({
             <Select label="Language" value={language} onChange={setLanguage} options={[["all", "Any language"], ...languages.map((l) => [l, l] as [string, string])]} />
             <Select label="Location" value={location} onChange={setLocation} options={[["all", "Anywhere"], ...locations.map((l) => [l, l] as [string, string])]} />
             <Select label="Max price / day" value={maxPrice} onChange={setMaxPrice} options={[["all", "Any price"], ["5000", "Up to 5,000"], ["10000", "Up to 10,000"], ["20000", "Up to 20,000"], ["50000", "Up to 50,000"]]} />
-            <Select label="Min rating" value={minRating} onChange={setMinRating} options={[["all", "Any"], ["3", "3★+"], ["4", "4★+"], ["4.5", "4.5★+"]]} />
+            {/* Hidden until there are real reviews to filter on. */ guides.some((x) => Number(x.reviews) > 0) && (<Select label="Min rating" value={minRating} onChange={setMinRating} options={[["all", "Any"], ["3", "3★+"], ["4", "4★+"], ["4.5", "4.5★+"]]} />)}
             <Select label="Min experience" value={minExp} onChange={setMinExp} options={[["all", "Any"], ["1", "1+ yrs"], ["3", "3+ yrs"], ["5", "5+ yrs"], ["10", "10+ yrs"]]} />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">

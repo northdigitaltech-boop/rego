@@ -22,8 +22,9 @@ export function Rating({
   value,
   reviews,
   showCount = false,
-  /** Shown when nothing has been rated yet. Pass null to render nothing. */
-  emptyLabel = "No reviews yet",
+  /** Shown when nothing has been rated yet. Default: render nothing (cards
+      and headers stay clean until a real review exists). */
+  emptyLabel = null,
   className,
   starClass = "h-3.5 w-3.5",
 }: {
