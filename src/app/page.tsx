@@ -166,10 +166,13 @@ export default async function Home() {
           carousel
         />
 
-        {/* Trending Tour Packages */}
+        {/* Tour Packages — "Trending … loved by travellers" claimed popularity
+            nothing measures, and the row is not limited to Gilgit-Baltistan
+            (a Swat Valley tour appears in it), so the label now says only
+            what is true. */}
         <FeaturedGrid
-          title="Trending Tour Packages"
-          subtitle="Curated trips loved by travellers."
+          title="Tour Packages"
+          subtitle="Trips from local operators listed on Rego."
           items={packages}
           viewAllHref="/categories/tours"
           viewAllLabel="View All Packages"
@@ -194,7 +197,7 @@ export default async function Home() {
 
         {/* Best Travel Companies */}
         <FeaturedGrid
-          title="Best Travel Companies"
+          title="Travel Companies"
           subtitle="Full-service tour operators & DMCs."
           items={companies}
           viewAllHref="/categories/travel-companies"
