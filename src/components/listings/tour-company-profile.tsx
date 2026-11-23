@@ -1,6 +1,7 @@
 "use client";
 
 import { visibleRankingBadge } from "@/lib/ranking-badge";
+import { ProviderContact } from "@/components/listings/provider-contact";
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -122,6 +123,7 @@ export function TourCompanyProfile({
           )}
           {company.website && <InfoChip icon={Globe} label="Website" value={company.website} href={company.website} />}
         </section>
+        <ProviderContact phone={company.phone} whatsapp={company.whatsapp} name={company.name} className="-mt-6" />
 
         {/* About */}
         {company.description && (

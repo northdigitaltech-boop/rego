@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ProviderContact } from "@/components/listings/provider-contact";
 import { BookingTerms } from "@/components/bookings/booking-terms";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -375,6 +376,7 @@ export function MediaDetail({
               {formatPrice(provider.starting_price)}
               <span className="text-sm font-normal text-muted-foreground"> starting</span>
             </p>
+            <ProviderContact phone={provider.phone} whatsapp={provider.whatsapp} name={provider.name} className="mt-3" />
 
             <div className="mt-4 space-y-3">
               {services.length > 0 && (

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ProviderContact } from "@/components/listings/provider-contact";
 import { BookingTerms } from "@/components/bookings/booking-terms";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -365,6 +366,7 @@ export function RestaurantDetail({
           <div id="book" className="sticky top-32 scroll-mt-28 rounded-3xl border border-border/70 bg-card p-6 shadow-premium-lg">
             <h2 className="font-display text-lg font-bold text-forest">Book a table</h2>
             <p className="mt-1 text-sm text-muted-foreground">Reserve a table — the restaurant confirms your booking.</p>
+            <ProviderContact phone={r.phone} whatsapp={r.whatsapp} name={r.name} className="mt-3" />
             <div className="mt-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <label className="block rounded-lg border border-border px-3 py-2">
