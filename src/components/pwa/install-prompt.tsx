@@ -11,23 +11,12 @@ import {
 /* ============================================================
  * Install Rego — premium popup card.
  *
- * Shown once shortly after the first visit, on mobile and desktop,
- * with a platform-specific path:
+ * Opened ONLY on request (footer "Install App" button), never by itself.
+ * Platform-specific path:
  *
  *   Android / Chrome / Edge  → real one-tap Install button
  *   iPhone & iPad (Safari)   → Share → Add to Home Screen steps
  *   Everything else          → open on a phone browser instead
- *
- * IT KEEPS ASKING UNTIL THE APP IS INSTALLED.
- * Closing it used to mute the card for thirty days, which meant most
- * people were only ever asked once and the install never happened. It
- * now returns on the next visit. What it will not do is ask twice in
- * one sitting:
- *   • never when already installed — that is remembered forever
- *   • at most one appearance per session, however many pages are opened
- *   • never on auth pages or the private consoles
- *   • Escape and backdrop both close it
- * So the cost of saying no is one card per visit, not one per page.
  *
  * Rendered through a portal so no transformed ancestor can clip it.
  * ============================================================ */
@@ -36,32 +25,6 @@ import {
 export const OPEN_INSTALL_EVENT = "rego-open-install";
 
 const DISMISS_KEY = "rego-install-dismissed";
-const SEEN_KEY = "rego-install-seen";
-/**
- * A short pause after the visitor first does something, before the card
- * appears — long enough that it does not feel like a reaction to the tap.
- *
- * WHY IT WAITS FOR AN INTERACTION AND NOT A TIMER.
- * A timer was tried twice: 2.5s from mount, then the load event plus an idle
- * callback. Both put a full-screen card with a blurred backdrop on screen
- * while the page was still being measured, and because it is larger than
- * anything else on the page it became the largest contentful paint. On a
- * throttled phone that landed at the very end of the trace — LCP 11.6s for a
- * page whose hero was already visible at 1.4s. The card was not slowing the
- * page down; it was being mistaken for it.
- *
- * Waiting for a scroll, a tap or a key press fixes that completely: there is
- * no interaction during a page-load measurement, so the card cannot appear
- * inside one. It is also the better moment to ask. Someone who has started
- * reading has shown some interest; someone who has just arrived has not.
- */
-const SHOW_AFTER_MS = 1200;
-
-const HIDE_ON = [
-  "/signin", "/signup", "/reset-password", "/verify", "/auth",
-  "/admin", "/cyber", "/offline",
-];
-
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -88,17 +51,6 @@ function detectPlatform(): Platform {
   if (iOS) return /crios|fxios|edgios/i.test(ua) ? "other" : "ios";
   if (/android/i.test(ua)) return "android";
   return "other";
-}
-
-function suppressed(): boolean {
-  try {
-    if (sessionStorage.getItem(SEEN_KEY)) return true; // once per session
-    /* Installed is the only permanent answer. "Not now" lasts until the
-       next visit — the whole point is to keep offering until they have it. */
-    return localStorage.getItem(DISMISS_KEY) === "installed";
-  } catch {
-    return false; // private mode — just don't remember
-  }
 }
 
 export function InstallPrompt() {
@@ -159,52 +111,14 @@ export function InstallPrompt() {
     };
     window.addEventListener(OPEN_INSTALL_EVENT, onAsk);
 
-    /* The unprompted appearance is the part that has to stay polite. */
-    let auto = 0;
-    let idle = 0;
-    const muted =
-      HIDE_ON.some((p) => window.location.pathname.startsWith(p)) || suppressed();
-
-    /* Fires once, on whichever of these happens first. */
-    const INTERACTIONS = ["scroll", "pointerdown", "keydown"] as const;
-
-    const stopWatching = () => {
-      for (const evt of INTERACTIONS) {
-        window.removeEventListener(evt, onFirstInteraction);
-      }
-    };
-
-    function onFirstInteraction() {
-      stopWatching();
-      auto = window.setTimeout(() => {
-        /* Still yields to a quiet moment, so the card never lands on top of
-           work the browser is in the middle of. */
-        const show = () => {
-          setOpen(true);
-          try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
-        };
-        const ric = (window as unknown as {
-          requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
-        }).requestIdleCallback;
-        if (ric) idle = ric(show, { timeout: 2000 });
-        else show();
-      }, SHOW_AFTER_MS);
-    }
-
-    if (!muted) {
-      for (const evt of INTERACTIONS) {
-        /* passive: a scroll listener that cannot preventDefault lets the
-           browser keep scrolling on the compositor thread. */
-        window.addEventListener(evt, onFirstInteraction, { once: true, passive: true });
-      }
-    }
-
+    /* NO AUTOMATIC APPEARANCE.
+       The card used to open by itself after the first scroll or tap, on
+       every visit until the app was installed. A launch review found it
+       covering search and "Book now" on first load — the one moment a
+       visitor is deciding whether to stay. It now opens only when someone
+       asks for it (the "Install App" button in the footer or the header
+       menu), so it can never sit on top of the page's primary actions. */
     return () => {
-      if (auto) window.clearTimeout(auto);
-      if (idle) (window as unknown as {
-        cancelIdleCallback?: (h: number) => void;
-      }).cancelIdleCallback?.(idle);
-      stopWatching();
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("rego-installable", onCaptured);
       window.removeEventListener("appinstalled", onInstalled);
@@ -212,9 +126,6 @@ export function InstallPrompt() {
     };
   }, []);
 
-  /* Closing only ends this session's appearance — SEEN_KEY was already set
-     when the card opened. Nothing durable is written, so it comes back next
-     visit unless the app got installed. */
   const close = React.useCallback(() => setOpen(false), []);
 
   React.useEffect(() => {
@@ -490,8 +401,11 @@ function Step({
       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-forest-600 text-xs font-bold text-white">
         {n}
       </span>
-      <span className="flex items-center gap-1.5 pt-0.5 text-sm leading-relaxed text-foreground">
-        <span className="text-forest-600">{icon}</span>
+      {/* Plain inline text, not a flex row: as flex items, the words and the
+          <strong> pieces were laid out as separate boxes, which swallowed the
+          spaces between them ("Tap theShare button"). */}
+      <span className="pt-0.5 text-sm leading-relaxed text-foreground">
+        <span className="mr-1.5 inline-block align-[-3px] text-forest-600">{icon}</span>
         {children}
       </span>
     </li>

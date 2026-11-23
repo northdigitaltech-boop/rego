@@ -75,7 +75,9 @@ export function SiteSearch({
   const base: Item[] = React.useMemo(() => {
     const dests: Item[] = destinations.map((d) => ({
       label: d.name,
-      sub: d.stays ? `Destination · ${d.stays}` : "Destination",
+      /* No count here: this list is fetched without listings, and the
+         typed `stays` text is not a real number. */
+      sub: "Destination",
       href: `/destinations/${d.slug}`,
       kind: "destination",
     }));

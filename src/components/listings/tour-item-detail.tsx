@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { BookingTerms } from "@/components/bookings/booking-terms";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -133,6 +134,11 @@ export function TourItemDetail({
     kind === "package" ? unitPrice * guests : unitPrice * days;
 
   const handleBook = async () => {
+    /* A tour booking needs a start date — checked before the sign-in step. */
+    if (!startDate) {
+      setBookError("Please choose your start date.");
+      return;
+    }
     if (!user) {
       /* Hold everything they typed, then send them to create an account. It
          replays itself when they come back — see useResumeBooking below. */
@@ -361,6 +367,7 @@ export function TourItemDetail({
               <span>{formatPrice(total)}</span>
             </div>
 
+            <BookingTerms />
             <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || resuming}>
               {resuming ? "Completing your booking…" : booking ? "Sending…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>

@@ -6,6 +6,8 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { buildMetadata } from "@/lib/seo";
 import { getDestinations } from "@/lib/destinations";
+import { withLiveCounts } from "@/lib/destination-counts";
+import { cachedAllListings } from "@/lib/home-feed-cached";
 import { photo } from "@/lib/utils";
 
 /* ISR window. Marketplace content changes when a provider lists or an
@@ -22,12 +24,16 @@ export const revalidate = 600;
 export const metadata: Metadata = buildMetadata({
   title: "Destinations in Gilgit-Baltistan",
   description:
-    "Explore every destination in Gilgit-Baltistan — Skardu, Hunza, Naran, Deosai, Fairy Meadows and more. Find verified hotels, tours, transport and guides in each valley.",
+    "Explore every destination in Gilgit-Baltistan — Skardu, Hunza, Gilgit, Nagar, Astore and more. Find verified hotels, tours, transport and guides in each valley.",
   path: "/destinations",
 });
 
 export default async function DestinationsPage() {
-  const destinations = await getDestinations();
+  /* Live counts — see lib/destination-counts.ts. */
+  const destinations = withLiveCounts(
+    await getDestinations(),
+    await cachedAllListings().catch(() => null)
+  );
 
   return (
     <>

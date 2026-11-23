@@ -7,6 +7,8 @@ import { Hero } from "@/components/home/hero";
 import { getHeroImage } from "@/lib/hero-image";
 import { Destinations } from "@/components/home/destinations";
 import { getDestinations } from "@/lib/destinations";
+import { withLiveCounts } from "@/lib/destination-counts";
+import { cachedAllListings } from "@/lib/home-feed-cached";
 import { Categories } from "@/components/home/categories";
 import { FeaturedGrid } from "@/components/home/featured-grid";
 import {
@@ -75,7 +77,11 @@ export const metadata: Metadata = buildMetadata({
 export default async function Home() {
   const [hero, popularDestinations] = await Promise.all([
     getHeroImage(),
-    getDestinations().catch(() => []),
+    /* Counts computed from live listings, never the admin-typed text. */
+    Promise.all([
+      getDestinations().catch(() => []),
+      cachedAllListings().catch(() => null),
+    ]).then(([d, l]) => withLiveCounts(d, l)),
   ]);
   const [
     hotels,

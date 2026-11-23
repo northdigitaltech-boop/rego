@@ -5,10 +5,12 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const perks = [
-  "Reach millions of travelers",
-  "Zero setup fees — pay only when you earn",
-  "Powerful host dashboard & analytics",
-  "Secure payments and instant payouts",
+  /* No audience figure and no fee or payout promise: those are the
+     owner's terms to state (see the Provider Agreement), not copy. */
+  "Get found by travellers planning Gilgit-Baltistan trips",
+  "Bookings, messages and payments in one dashboard",
+  "Approve once — edits and new listings go live right away",
+  "Clear terms before you sign up",
 ];
 
 export function PartnerCta() {

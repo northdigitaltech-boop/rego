@@ -27,9 +27,11 @@ import {
 } from "@/lib/search-memory";
 
 const trustBadges = [
-  "Best Price Guarantee",
-  "Trusted Local Partners",
-  "24/7 Support",
+  /* Only claims the site can back: there is no price-match policy and no
+     staffed 24/7 desk, so "Best Price Guarantee" and "24/7 Support" went. */
+  "Verified Local Partners",
+  "SECP-Registered Company",
+  "Local Helpline",
 ];
 
 // Maps each hero search tab to the category it should filter by.

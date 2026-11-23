@@ -28,19 +28,19 @@ const steps = [
     icon: GitCompare,
     title: "Compare",
     description:
-      "Browse verified options with transparent prices, real photos and genuine traveler reviews.",
+      "Browse verified options with the provider's own prices and photos.",
   },
   {
     icon: CalendarCheck,
     title: "Book",
     description:
-      "Reserve in a few clicks with no hidden charges. You'll get instant confirmation.",
+      "Choose your dates and guests, see the total before you submit, and get a booking reference by email.",
   },
   {
     icon: Plane,
     title: "Travel",
     description:
-      "Enjoy your trip with 24/7 support from our team and trusted local partners.",
+      "Enjoy your trip — our helpline and the provider are a call or a message away.",
   },
 ];
 

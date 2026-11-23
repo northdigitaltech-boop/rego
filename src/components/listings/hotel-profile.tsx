@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { BookingTerms } from "@/components/bookings/booking-terms";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -358,6 +359,17 @@ export function HotelProfile({
   };
 
   const handleBook = async () => {
+    /* Rooms and dates are required, and checked BEFORE the sign-in step:
+       "Book now" used to send a visitor straight to sign-up with no dates
+       or rooms chosen, and a booking could be created with no dates. */
+    if (selectedRooms.length === 0) {
+      setBookError("Please select at least one room.");
+      return;
+    }
+    if (!checkIn || !checkOut || nightsBetween(checkIn, checkOut) <= 0) {
+      setBookError("Please choose your check-in and check-out dates.");
+      return;
+    }
     if (!user) {
       /* Hold everything they typed, then send them to create an account. It
          replays itself when they come back — see useResumeBooking below.
@@ -366,10 +378,6 @@ export function HotelProfile({
         qty, checkIn, checkOut, guests, custName, custPhone, custCity, notes,
       });
       router.push(signupHref(`/listings/${listing.id}#book`));
-      return;
-    }
-    if (selectedRooms.length === 0) {
-      setBookError("Please select at least one room.");
       return;
     }
     if (checkIn && checkOut) {
@@ -1029,6 +1037,7 @@ export function HotelProfile({
               </div>
             </div>
 
+            <BookingTerms />
             <Button
               variant="gold"
               size="lg"
@@ -1041,7 +1050,7 @@ export function HotelProfile({
                 : booking
                   ? "Sending…"
                   : booked
-                    ? "Booking confirmed ✓"
+                    ? "Booking created ✓ — choose payment below"
                     : "Book now"}
             </Button>
             {bookError && (

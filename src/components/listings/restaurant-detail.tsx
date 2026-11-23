@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { BookingTerms } from "@/components/bookings/booking-terms";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -112,6 +113,9 @@ export function RestaurantDetail({
   };
 
   const handleBook = async () => {
+    /* Required details are checked BEFORE the sign-in step, so "Book now"
+       never sends someone to create an account with no date chosen. */
+    if (!date) { setBookError("Please select a date."); return; }
     if (!user) {
       /* Hold everything they typed, then send them to create an account. It
          replays itself when they come back — see useResumeBooking below.
@@ -124,7 +128,6 @@ export function RestaurantDetail({
       return;
     }
     setBookError("");
-    if (!date) { setBookError("Please select a date."); return; }
     setBooking(true);
     const fullName = custName.trim() || user.name;
     const { data, error } = await createRestaurantBooking({
@@ -391,6 +394,7 @@ export function RestaurantDetail({
               </label>
             </div>
 
+            <BookingTerms />
             <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked || resuming}>
               {resuming ? "Completing your booking…" : booking ? "Sending…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>

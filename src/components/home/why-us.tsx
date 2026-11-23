@@ -13,8 +13,8 @@ const benefits = [
   },
   {
     icon: BadgePercent,
-    title: "Best Price Guarantee",
-    description: "Competitive local prices with no hidden charges.",
+    title: "Prices From the Provider",
+    description: "The provider's own price, with the full total shown before you book.",
   },
   {
     icon: Users,
@@ -28,8 +28,8 @@ const benefits = [
   },
   {
     icon: Headset,
-    title: "24/7 Support",
-    description: "We're here to help you anytime, anywhere.",
+    title: "Local Helpline",
+    description: "Call or message our team in Gilgit-Baltistan if a booking needs help.",
   },
 ];
 

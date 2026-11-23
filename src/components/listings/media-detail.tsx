@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { BookingTerms } from "@/components/bookings/booking-terms";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -124,6 +125,12 @@ export function MediaDetail({
   };
 
   const handleBook = async () => {
+    /* Required details are checked BEFORE the sign-in step, so "Book now"
+       never sends someone to create an account with no date chosen. */
+    if (!startDate) {
+      setBookError("Please select a date.");
+      return;
+    }
     if (!user) {
       /* Hold everything they typed, then send them to create an account. It
          replays itself when they come back — see useResumeBooking below. */
@@ -135,10 +142,6 @@ export function MediaDetail({
       return;
     }
     setBookError("");
-    if (!startDate) {
-      setBookError("Please select a date.");
-      return;
-    }
     setBooking(true);
     const available = await isMediaRangeAvailable(provider.id, startDate, endDate || startDate);
     if (!available) {
@@ -438,6 +441,7 @@ export function MediaDetail({
               <span>{formatPrice(total)}</span>
             </div>
 
+            <BookingTerms />
             <Button variant="gold" size="lg" className="mt-4 w-full rounded-lg" onClick={handleBook} disabled={booking || booked || resuming}>
               {resuming ? "Completing your booking…" : booking ? "Checking availability…" : booked ? "Booking confirmed ✓" : "Book now"}
             </Button>
