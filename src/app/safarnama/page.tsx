@@ -28,8 +28,13 @@ export const metadata: Metadata = {
 
 export default async function SafarnamaPage() {
   const stories = await getApprovedStories();
-  const featured = stories.filter((s) => s.featured).slice(0, 3);
-  const mostViewed = [...stories].sort((a, b) => b.views - a.views).slice(0, 3);
+  /* The curated strips repeat stories already in "All stories". With only a
+     few stories published, that showed the same single story three times on
+     one page — so the strips appear only once there are more stories than a
+     strip holds. */
+  const showStrips = stories.length > 3;
+  const featured = showStrips ? stories.filter((s) => s.featured).slice(0, 3) : [];
+  const mostViewed = showStrips ? [...stories].sort((a, b) => b.views - a.views).slice(0, 3) : [];
 
   return (
     <>

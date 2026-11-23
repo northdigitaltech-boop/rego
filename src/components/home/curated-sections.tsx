@@ -126,8 +126,16 @@ const RENTAL_TILES: { type: RentalType; title: string; desc: string; icon: Lucid
   { type: "coworking_space", title: "Co-working Space", desc: "Desks, offices and meeting rooms", icon: Building2 },
 ];
 
+/* A homepage section is shown only once it has at least this many live
+   items (launch review: hide categories with 0–1 items). */
+export const MIN_LIVE_ITEMS = 2;
+
 export async function RentalsSection() {
   const counts = await getRentalCounts().catch(() => ({} as Record<string, number>));
+  /* Not shown at all while there is (almost) nothing to rent — every tile
+     led to an empty page. Shown again automatically from two live rentals. */
+  const total = Object.values(counts).reduce((a, b) => a + (Number(b) || 0), 0);
+  if (total < MIN_LIVE_ITEMS) return null;
 
   const ranked = [...RENTAL_TILES].sort(
     (a, b) => (counts[b.type] ?? 0) - (counts[a.type] ?? 0)

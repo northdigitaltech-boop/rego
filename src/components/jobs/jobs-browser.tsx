@@ -67,6 +67,13 @@ export function JobCard({ job, href }: { job: JobRow; href?: string }) {
           <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-semibold text-muted-foreground">
             {job.business_name}
             {job.business_verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-gold text-white" />}
+            {/* Jobs at Rego itself are labelled as such, so the board does not
+                read as third-party hiring activity it is not. */}
+            {job.business_category === "rego" && (
+              <span className="ml-1 shrink-0 rounded-full bg-forest-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-forest-600">
+                Job at Rego
+              </span>
+            )}
           </p>
         </div>
         {job.urgent && (

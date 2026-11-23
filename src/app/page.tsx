@@ -12,10 +12,9 @@ import { cachedAllListings } from "@/lib/home-feed-cached";
 import { Categories } from "@/components/home/categories";
 import { FeaturedGrid } from "@/components/home/featured-grid";
 import {
-  ActivitiesSection,
   RentalsSection,
   RoadsideSection,
-  EventsSection,
+  MIN_LIVE_ITEMS,
 } from "@/components/home/curated-sections";
 import { DeferredCreators } from "@/components/home/deferred-creators";
 import { RoadsideProviderGrid } from "@/components/home/roadside-grid";
@@ -232,7 +231,7 @@ export default async function Home() {
         <FeaturedGrid
           title="Restaurants & Local Food"
           subtitle="Taste authentic GB cuisine."
-          items={restaurants}
+          items={restaurants.length >= MIN_LIVE_ITEMS ? restaurants : []}
           viewAllHref="/categories/restaurants"
           viewAllLabel="View All Restaurants"
           variant="food"
@@ -243,7 +242,9 @@ export default async function Home() {
 
         {/* Activities (below drone creators) — real approved activities,
             falls back to the curated tiles until providers add some. */}
-        {activities.length > 0 ? <ActivitiesGrid items={activities} /> : <ActivitiesSection />}
+        {/* Real activities only, and only from two upward. The curated tiles
+            that used to fill an empty row linked to empty category pages. */}
+        {activities.length >= MIN_LIVE_ITEMS && <ActivitiesGrid items={activities} />}
 
         {/* Mountaineering & Expeditions — straight after Activities, because
             an expedition is the same impulse one step further. Companies and
@@ -263,7 +264,10 @@ export default async function Home() {
 
         {/* Events & Expo — real admin-published events (falls back to the
             curated tiles until events are added). */}
-        {events.length > 0 ? <EventsGrid items={events} /> : <EventsSection />}
+        {/* Upcoming events only (past ones are filtered in getPublishedEvents).
+            No curated festival tiles: they linked to /destinations, not to
+            any event. One real upcoming event is worth showing. */}
+        {events.length > 0 && <EventsGrid items={events} />}
 
         {/* Connect Solo Traveler — real traveller cards (falls back to a
             create-profile CTA until travellers register). */}

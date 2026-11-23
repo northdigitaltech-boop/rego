@@ -62,6 +62,14 @@ export async function getPublishedEvents(category?: string): Promise<EventRow[]>
     .select(PUBLIC_COLS)
     .eq("status", "published");
   if (category && isEventCategory(category)) q = q.eq("category", category);
+  /* Past events drop off the public lists automatically: an event is
+     shown while today is on or before its end date (or its start date
+     when it has no end). An event with no date at all stays, because it
+     cannot be judged past. The event page itself still opens by link. */
+  const today = new Date().toISOString().slice(0, 10);
+  q = q.or(
+    `end_date.gte.${today},and(end_date.is.null,start_date.gte.${today}),and(end_date.is.null,start_date.is.null)`
+  );
   const { data } = await q
     .order("featured", { ascending: false })
     .order("start_date", { ascending: true });
