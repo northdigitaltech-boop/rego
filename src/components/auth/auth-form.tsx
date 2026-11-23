@@ -36,6 +36,7 @@ import { type CategorySlug } from "@/lib/data";
 import { checkSignupEmail } from "@/lib/email-validation";
 import { sendEmail, verificationCodeEmail } from "@/lib/email";
 import { CategoryPicker } from "@/components/auth/category-picker";
+import { PartnerTermsBox } from "@/components/auth/partner-terms-box";
 import { partnerCategory, STASHED_CATEGORY_KEY } from "@/lib/partner-categories";
 import { cn } from "@/lib/utils";
 import { friendlyAuthError } from "@/lib/auth-errors";
@@ -855,6 +856,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </span>
               </button>
             )}
+            {/* Fees, payouts and cancellation responsibility, before the
+                account exists — see PartnerTermsBox. */}
+            {isSignup && role === "partner" && step === 2 && <PartnerTermsBox />}
 
             {isSignup && !partnerPicking && (
               <div>

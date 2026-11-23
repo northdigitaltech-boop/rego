@@ -207,3 +207,23 @@ export const verification = {
   bing: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || undefined,
   yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || undefined,
 };
+
+
+/**
+ * Partner commercial terms shown BEFORE a business signs up.
+ * [NEEDS OWNER INPUT] — fill in the real figures. While a value is null the
+ * sign-up page says it will be confirmed in writing before the listing goes
+ * live; it never shows a made-up number.
+ */
+export const partnerTerms: {
+  /** e.g. "10% of each confirmed booking" */
+  commission: string | null;
+  /** e.g. "Free to list" or "PKR 2,000 / month" */
+  listingFee: string | null;
+  /** e.g. "Within 7 days of the guest's check-out" */
+  payoutTiming: string | null;
+} = {
+  commission: null,
+  listingFee: null,
+  payoutTiming: null,
+};

@@ -1,3 +1,4 @@
+import { companyRegistration, siteConfig } from "@/lib/site";
 // Rego legal & customer-protection policy pack.
 // Source: REGO_Legal_Policy_Pack.docx (effective 13 July 2026).
 // Email/domain placeholders are filled with rego.services defaults; the
@@ -54,7 +55,7 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: "1. About Rego",
         body: [
-          "Rego is operated by [LEGAL ENTITY NAME], registration number [COMPANY REGISTRATION NUMBER], with its registered office at [REGISTERED OFFICE ADDRESS] (“Rego”, “we”, “us” or “our”).",
+          `Rego is operated by ${companyRegistration.legalName}, registered with the ${companyRegistration.regulatorFull} under CUIN ${companyRegistration.cuin}, with its office in ${siteConfig.address} (“Rego”, “we”, “us” or “our”).`,
           "Rego provides a digital tourism marketplace through which travelers may discover, compare, request, reserve or book travel-related services offered by independent hotels, guest houses, tour operators, guides, transport providers, restaurants, activity companies, photographers, rental businesses and other service providers (“Providers”).",
           "Unless a service is expressly identified as being supplied directly by Rego, the Provider—not Rego—is responsible for delivering that travel service. Rego facilitates discovery, communication, booking and, where stated, payment.",
         ],
@@ -193,15 +194,15 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: "19. Complaints and disputes",
         body: [
-          "Contact support@rego.services or [PHONE / WHATSAPP] with the booking reference and supporting information. Rego will try to resolve complaints fairly with the traveler and Provider.",
-          "If a dispute is not resolved through support, the parties should attempt good-faith settlement before court proceedings. These Terms are governed by the laws applicable in Pakistan and disputes are subject to [COURTS / JURISDICTION], unless mandatory law requires another forum.",
+          `Contact support@rego.services or our helpline ${siteConfig.contactPhoneDisplay} with the booking reference and supporting information. Rego will try to resolve complaints fairly with the traveler and Provider.`,
+          "If a dispute is not resolved through support, the parties should attempt good-faith settlement before court proceedings. These Terms are governed by the laws applicable in Pakistan and disputes are subject to the competent courts of Pakistan, unless mandatory law requires another forum.",
         ],
       },
       {
         heading: "20. Changes and contact",
         body: [
           "Rego may update these Terms to reflect legal, operational or product changes. Material changes will be communicated through the Platform or by email where appropriate. The effective date will be updated.",
-          "Legal notices may be sent to legal@rego.services or [REGISTERED OFFICE ADDRESS].",
+          `Legal notices may be sent to legal@rego.services or by post to our office in ${siteConfig.address}.`,
         ],
       },
     ],
@@ -217,7 +218,7 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: "1. Who is responsible for your information",
         body: [
-          "The primary operator and data controller is [LEGAL ENTITY NAME], located at [REGISTERED OFFICE ADDRESS]. Privacy questions may be sent to privacy@rego.services.",
+          `The primary operator and data controller is ${companyRegistration.legalName}, located in ${siteConfig.address}. Privacy questions may be sent to privacy@rego.services.`,
           "For a Provider's independent service, that Provider may separately control information needed to deliver the booking. Its own privacy notice may also apply.",
         ],
       },
@@ -325,7 +326,7 @@ export const legalPolicies: LegalPolicy[] = [
         heading: "14. Changes and contact",
         body: [
           "Rego may update this Policy and will show the revised effective date. Material changes will be highlighted where appropriate.",
-          "Privacy contact: privacy@rego.services. Postal contact: [REGISTERED OFFICE ADDRESS].",
+          `Privacy contact: privacy@rego.services. Postal contact: our office in ${siteConfig.address}.`,
         ],
       },
     ],
@@ -583,7 +584,7 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: "10. Contact",
         body: [
-          "Refund support: support@rego.services, [PHONE / WHATSAPP]. Include the booking reference in all communication.",
+          `Refund support: support@rego.services, helpline ${siteConfig.contactPhoneDisplay}. Include the booking reference in all communication.`,
         ],
       },
     ],
@@ -640,7 +641,7 @@ export const legalPolicies: LegalPolicy[] = [
         heading: "6. Prices, taxes and fees",
         body: [
           "The Provider is responsible for setting lawful rates, disclosing mandatory fees and collecting or remitting taxes for which it is responsible.",
-          "Rego fees are described in [PROVIDER COMMISSION / FEE SCHEDULE]. Rego may deduct agreed commissions, payment fees, refunds, chargebacks, penalties or other authorized amounts from Provider payouts.",
+          "Rego fees are described in the Partner terms shown before sign-up and in the written fee schedule confirmed with the Provider before its listing goes live. Rego may deduct agreed commissions, payment fees, refunds, chargebacks, penalties or other authorized amounts from Provider payouts.",
           "Any change to fees will be notified according to the commercial agreement. Already confirmed bookings remain subject to the fee arrangement in effect when confirmed unless otherwise agreed.",
         ],
       },
@@ -708,7 +709,7 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: "15. Governing law and contact",
         body: [
-          "This Agreement is governed by applicable law in Pakistan and disputes are subject to [COURTS / JURISDICTION], unless the parties agree to another lawful process in writing.",
+          "This Agreement is governed by applicable law in Pakistan and disputes are subject to the competent courts of Pakistan, unless the parties agree to another lawful process in writing.",
           "Provider notices: legal@rego.services. Operational support: support@rego.services.",
         ],
       },
