@@ -1,6 +1,7 @@
 "use client";
 
 import { gateFor, PendingApproval } from "@/components/dashboard/provider-gate";
+import { confirmLowPrice } from "@/lib/price-sanity";
 import * as React from "react";
 import { friendlyAreaError } from "@/lib/area-rules";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
@@ -795,6 +796,7 @@ function ServiceForm({
       setError("Please enter a title and a price per day or per trip.");
       return;
     }
+    if (!confirmLowPrice([Number(f.price_per_day) || 0, Number(f.price_per_trip) || 0])) return;
     setSaving(true);
     const payload = {
       provider_id: provider.id,
@@ -1069,6 +1071,7 @@ function RentalForm({
       setError("Please enter a title and a valid price per day.");
       return;
     }
+    if (!confirmLowPrice([Number(f.price_per_day) || 0])) return;
     setSaving(true);
     const payload = {
       provider_id: provider.id,

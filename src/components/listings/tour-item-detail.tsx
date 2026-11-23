@@ -396,12 +396,23 @@ export function TourItemDetail({
 /* ---- kind-specific bodies ---- */
 
 function PackageBody({ pkg }: { pkg: TourPackageRow }) {
-  const chips: { label: string; on: boolean }[] = [
+  /* Only what the operator ticked is shown, as ✓. These four flags default
+     to false, so a false one means "not filled in" as often as "excluded" —
+     drawing it as a struck-out ✕ told travellers the flagship 10-day tour
+     had no accommodation, transport, guide or meals. Exclusions come only
+     from the operator's own "Not included" list below. */
+  const chips = [
     { label: "Accommodation", on: pkg.accommodation_included },
     { label: "Transport", on: pkg.transport_included },
     { label: "Guide", on: pkg.guide_included },
     { label: "Meals", on: pkg.meals_included },
-  ];
+  ].filter((c) => c.on);
+
+  const upcoming = (pkg.available_dates ?? [])
+    .filter((d) => d && d >= new Date().toISOString().slice(0, 10))
+    .sort()
+    .map(formatDatePk);
+
   return (
     <>
       <section>
@@ -409,21 +420,50 @@ function PackageBody({ pkg }: { pkg: TourPackageRow }) {
         <div className="mt-3 flex flex-wrap gap-3 text-sm">
           {pkg.duration && <Info icon={Clock} text={pkg.duration} />}
           {(pkg.min_persons || pkg.max_persons) && (
-            <Info icon={Users} text={`${pkg.min_persons ?? 1}–${pkg.max_persons ?? "∞"} persons`} />
+            <Info icon={Users} text={`Group: ${pkg.min_persons ?? 1}–${pkg.max_persons ?? "any"} persons`} />
           )}
           {pkg.difficulty_level && <Info icon={Star} text={pkg.difficulty_level} />}
+          {pkg.start_location && <Info icon={MapPin} text={`Pickup: ${pkg.start_location}`} />}
+          {pkg.end_location && <Info icon={MapPin} text={`Drop-off: ${pkg.end_location}`} />}
         </div>
-        {pkg.itinerary && (
-          <p className="mt-4 whitespace-pre-line leading-relaxed text-muted-foreground">{pkg.itinerary}</p>
+        {chips.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {chips.map((c) => (
+              <span key={c.label} className="flex items-center gap-1 rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-600">
+                <Check className="h-3.5 w-3.5" /> {c.label} included
+              </span>
+            ))}
+          </div>
         )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {chips.map((c) => (
-            <span key={c.label} className={cn("flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium", c.on ? "bg-forest-50 text-forest-600" : "bg-muted text-muted-foreground line-through")}>
-              {c.on ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />} {c.label}
-            </span>
-          ))}
-        </div>
       </section>
+
+      <section>
+        <h2 className="font-display text-xl font-bold text-forest">Itinerary</h2>
+        {pkg.itinerary?.trim() ? (
+          <p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">{pkg.itinerary}</p>
+        ) : (
+          /* Honest empty state instead of a blank page — and the operator is
+             now required to fill this in before saving a package. */
+          <p className="mt-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            The operator hasn&apos;t published the day-by-day plan yet. Send them a
+            message or ask our helpline before booking.
+          </p>
+        )}
+      </section>
+
+      {upcoming.length > 0 && (
+        <section>
+          <h2 className="font-display text-xl font-bold text-forest">Departure dates</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {upcoming.map((d) => (
+              <span key={d} className="rounded-full border border-border bg-card px-3 py-1 text-sm font-medium text-forest">
+                {d}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       {(pkg.included?.length || pkg.excluded?.length) ? (
         <section className="grid gap-4 sm:grid-cols-2">
           {pkg.included && pkg.included.length > 0 && (
@@ -434,8 +474,30 @@ function PackageBody({ pkg }: { pkg: TourPackageRow }) {
           )}
         </section>
       ) : null}
+
+      {(pkg.cancellation_policy?.trim() || pkg.terms?.trim()) && (
+        <section>
+          <h2 className="font-display text-xl font-bold text-forest">Policies</h2>
+          {pkg.cancellation_policy?.trim() && (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              <strong className="text-forest">Cancellation:</strong> {pkg.cancellation_policy}
+            </p>
+          )}
+          {pkg.terms?.trim() && (
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+              <strong className="text-forest">Terms:</strong> {pkg.terms}
+            </p>
+          )}
+        </section>
+      )}
     </>
   );
+}
+
+/** 2026-12-05 → 05/12/2026 (Pakistan day-first order). */
+function formatDatePk(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return y && m && d ? `${d}/${m}/${y}` : iso;
 }
 
 function TransportBody({ t }: { t: TransportRow }) {

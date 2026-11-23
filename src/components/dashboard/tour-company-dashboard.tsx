@@ -1,6 +1,7 @@
 "use client";
 
 import { gateFor, PendingApproval } from "@/components/dashboard/provider-gate";
+import { confirmLowPrice } from "@/lib/price-sanity";
 import * as React from "react";
 import { friendlyAreaError } from "@/lib/area-rules";
 import { useAreaSelection } from "@/components/dashboard/use-area-selection";
@@ -816,6 +817,14 @@ function PackageForm({
       setError("Please enter a title and a valid price per person.");
       return;
     }
+    if (!confirmLowPrice([Number(f.price_per_person) || 0])) return;
+    /* A package goes live as soon as an approved company saves it, so the
+       page cannot be allowed to publish empty: a launch review found the
+       flagship 10-day tour with no itinerary at all. */
+    if (f.itinerary.trim().length < 40) {
+      setError("Please add the day-by-day itinerary (at least a short line per day) before saving.");
+      return;
+    }
     setSaving(true);
     const payload = {
       company_id: company.id,
@@ -1018,6 +1027,7 @@ function TransportForm({
       setError("Please enter a vehicle name and a valid price per day.");
       return;
     }
+    if (!confirmLowPrice([Number(f.price_per_day) || 0])) return;
     setSaving(true);
     const payload = {
       company_id: company.id,
@@ -1205,6 +1215,7 @@ function GuideForm({
       setError("Please enter the guide's name and a valid price per day.");
       return;
     }
+    if (!confirmLowPrice([Number(f.price_per_day) || 0])) return;
     setSaving(true);
     const payload = {
       company_id: company.id,
