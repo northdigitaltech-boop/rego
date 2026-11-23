@@ -7,8 +7,6 @@ import {
   Instagram,
   Youtube,
   MessageCircle,
-  Play,
-  Apple,
   ShieldCheck,
 } from "lucide-react";
 
@@ -16,7 +14,7 @@ import { BrandLogo } from "@/components/layout/logo";
 import { HelplineLink } from "@/components/layout/helpline-link";
 import { legalPolicies } from "@/lib/legal";
 import { CookieSettingsLink } from "@/components/consent/cookie-settings-link";
-import { siteConfig, contactLinks, companyRegistration, builtBy } from "@/lib/site";
+import { siteConfig, contactLinks, companyRegistration, builtBy, socialLinks } from "@/lib/site";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 const quickLinks = [
@@ -45,7 +43,15 @@ const topDestinations = [
    once an admin creates them. Kept static because several client components
    render <Footer>, so it cannot fetch. */
 
-const socials = [Facebook, Instagram, Youtube, MessageCircle];
+/* Only profiles that exist — see socialLinks in lib/site.ts. */
+const socials = (
+  [
+    { url: socialLinks.facebook, label: "Rego on Facebook", Icon: Facebook },
+    { url: socialLinks.instagram, label: "Rego on Instagram", Icon: Instagram },
+    { url: socialLinks.youtube, label: "Rego on YouTube", Icon: Youtube },
+    { url: socialLinks.whatsapp, label: "Message Rego on WhatsApp", Icon: MessageCircle },
+  ] as const
+).filter((s) => /^https?:\/\//.test(s.url.trim()));
 
 export function Footer() {
   return (
@@ -181,21 +187,27 @@ export function Footer() {
               </li>
             </ul>
 
-            <h2 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
-              Follow Us
-            </h2>
-            <div className="flex items-center gap-3">
-              {socials.map((Icon, i) => (
-                <Link
-                  key={i}
-                  href="#"
-                  aria-label="social link"
-                  className="grid h-9 w-9 place-items-center rounded-full bg-white/10 transition-colors hover:bg-gold hover:text-forest-900"
-                >
-                  <Icon className="h-4 w-4" />
-                </Link>
-              ))}
-            </div>
+            {socials.length > 0 && (
+              <>
+                <h2 className="mb-3 mt-6 font-display text-sm font-semibold text-white">
+                  Follow Us
+                </h2>
+                <div className="flex items-center gap-3">
+                  {socials.map(({ url, label, Icon }) => (
+                    <a
+                      key={label}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={label}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-white/10 transition-colors hover:bg-gold hover:text-forest-900"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* The web app is the app, and it can be installed today — so it
                 leads, above the stores that are still "coming soon". This is
@@ -208,33 +220,9 @@ export function Footer() {
               <InstallAppButton />
             </div>
 
-            <h2 className="mb-3 font-display text-sm font-semibold text-white">
-              Coming Soon
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg bg-black px-3 py-2 transition-opacity hover:opacity-90"
-              >
-                <Play className="h-5 w-5 fill-white text-white" />
-                <span className="flex flex-col leading-tight">
-                  <span className="text-[8px] text-white/70">GET IT ON</span>
-                  <span className="text-xs font-semibold text-white">
-                    Google Play
-                  </span>
-                </span>
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-2 rounded-lg bg-black px-3 py-2 transition-opacity hover:opacity-90"
-              >
-                <Apple className="h-5 w-5 fill-white text-white" />
-                <span className="flex flex-col leading-tight">
-                  <span className="text-[8px] text-white/70">Download on the</span>
-                  <span className="text-xs font-semibold text-white">App Store</span>
-                </span>
-              </Link>
-            </div>
+            {/* The Google Play / App Store badges linked to "#" — there are no
+                store apps yet. Removed until real store links exist; the
+                installable web app above is the app today. */}
           </div>
         </div>
 

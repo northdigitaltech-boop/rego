@@ -60,6 +60,23 @@ function canonicalOrigin(raw: string): string {
 
 const rawUrl = canonicalOrigin(process.env.NEXT_PUBLIC_SITE_URL || PROD_URL);
 
+/**
+ * Official social profiles. [NEEDS OWNER INPUT]
+ *
+ * The footer used to draw four social icons that all linked to "#". An icon
+ * is now shown only when its URL is filled in here; with none filled in,
+ * the whole "Follow Us" block is hidden. Paste the full profile URL
+ * (https://…) — never a guess. Filled-in profiles should also be added to
+ * the Organization `sameAs` list in components/seo/json-ld.tsx.
+ */
+export const socialLinks: { facebook: string; instagram: string; youtube: string; whatsapp: string } = {
+  facebook: "",
+  instagram: "",
+  youtube: "",
+  /** A wa.me link, e.g. https://wa.me/923001234567 — only if that number is on WhatsApp. */
+  whatsapp: "",
+};
+
 export const siteConfig = {
   name: "Rego",
   shortName: "Rego",
