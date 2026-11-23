@@ -138,7 +138,7 @@ export default function CyberAlertsPage() {
                 <p className="font-semibold text-slate-100">{f.headline}</p>
                 <p className="mt-0.5 text-xs text-slate-500">
                   {f.ruleTitle} · {f.observed}/{f.threshold} in {f.windowMinutes} min ·
-                  {" "}last {new Date(f.lastSeen).toLocaleString()}
+                  {" "}last {new Date(f.lastSeen).toLocaleString("en-GB")}
                 </p>
               </div>
             </div>

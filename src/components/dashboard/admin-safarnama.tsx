@@ -220,7 +220,7 @@ function CommentsTable({ comments, onChange }: { comments: StoryCommentRow[]; on
                     {c.hidden && <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">Hidden</span>}
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">{c.text}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString("en-GB")}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <button title={c.hidden ? "Unhide" : "Hide"} disabled={busy} onClick={() => act(c.id, () => setCommentHidden(c.id, !c.hidden))} className="rounded-md border border-border p-1.5 text-forest hover:bg-muted">

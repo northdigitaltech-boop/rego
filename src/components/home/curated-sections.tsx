@@ -215,7 +215,7 @@ export async function PlatformStats() {
           {stats.map((s) => (
             <div key={s.label} className="text-center">
               <p className="font-display text-3xl font-bold text-gold sm:text-4xl">
-                {s.value.toLocaleString()}
+                {s.value.toLocaleString("en-GB")}
               </p>
               <p className="mt-1 text-sm font-medium text-white/80">{s.label}</p>
             </div>

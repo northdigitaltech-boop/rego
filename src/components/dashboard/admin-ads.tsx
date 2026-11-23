@@ -223,8 +223,8 @@ export function AdminAds() {
                 {s.subtitle && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.subtitle}</p>}
                 {(s.starts_at || s.ends_at) && (
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {s.starts_at ? new Date(s.starts_at).toLocaleDateString() : "always"} –{" "}
-                    {s.ends_at ? new Date(s.ends_at).toLocaleDateString() : "no end"}
+                    {s.starts_at ? new Date(s.starts_at).toLocaleDateString("en-GB") : "always"} –{" "}
+                    {s.ends_at ? new Date(s.ends_at).toLocaleDateString("en-GB") : "no end"}
                   </p>
                 )}
               </div>

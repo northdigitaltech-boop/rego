@@ -460,7 +460,7 @@ export function ProviderMyJobs({ user }: { user: DashUser }) {
                     </p>
                     {j.deadline && (
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Deadline {new Date(j.deadline).toLocaleDateString()}
+                        Deadline {new Date(j.deadline).toLocaleDateString("en-GB")}
                       </p>
                     )}
                     {j.admin_note && (
@@ -614,7 +614,7 @@ export function ProviderJobApplications({ user }: { user: DashUser }) {
                       <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", meta?.tone)}>{meta?.label ?? a.status}</span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {a.job_title} · {a.location || "—"} · {new Date(a.created_at).toLocaleDateString()}
+                      {a.job_title} · {a.location || "—"} · {new Date(a.created_at).toLocaleDateString("en-GB")}
                     </p>
                   </div>
                   <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />

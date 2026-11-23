@@ -246,7 +246,7 @@ function BookingsTable({
                   <td className="p-3 text-muted-foreground">{planName(b.plan_type || "")}</td>
                   <td className="p-3 text-muted-foreground">{b.start_date || "—"}</td>
                   <td className="p-3 capitalize text-muted-foreground">{b.status}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString("en-GB")}</td>
                 </tr>
               ))
             )}

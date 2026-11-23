@@ -337,7 +337,7 @@ function UpdatesView({ updates, onChange }: { updates: RoadUpdateRow[]; onChange
                       <td className="p-3 capitalize text-muted-foreground">{statusLabel(u.status)}</td>
                       <td className="p-3 text-muted-foreground">{u.location || "—"}</td>
                       <td className="p-3 capitalize text-muted-foreground">{u.alert_level}</td>
-                      <td className="p-3 text-xs text-muted-foreground">{new Date(u.updated_at).toLocaleString()}</td>
+                      <td className="p-3 text-xs text-muted-foreground">{new Date(u.updated_at).toLocaleString("en-GB")}</td>
                       <td className="p-3">
                         <div className="flex items-center justify-end gap-1">
                           {u.status !== "open" && (
@@ -535,7 +535,7 @@ function ReportsView({ reports, onChange }: { reports: RoadReportRow[]; onChange
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {r.location || "—"} · {r.reason || "—"} · {r.reporter_name || r.reporter_email} ·{" "}
-                      {new Date(r.created_at).toLocaleString()}
+                      {new Date(r.created_at).toLocaleString("en-GB")}
                     </p>
                     {r.description && <p className="mt-1 text-sm text-muted-foreground">{r.description}</p>}
                     {(r.media?.length ?? 0) > 0 && (

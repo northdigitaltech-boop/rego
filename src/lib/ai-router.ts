@@ -550,7 +550,7 @@ export async function answerFromDatabase(d: RouteDecision): Promise<DbAnswer | n
 
   const label = INTENT_LABEL[d.intent];
   const where = location ? ` in ${location}` : " across Gilgit-Baltistan";
-  const under = maxPrice ? ` under PKR ${maxPrice.toLocaleString()}` : "";
+  const under = maxPrice ? ` under PKR ${maxPrice.toLocaleString("en-GB")}` : "";
 
   if (out.length === 0) {
     return {

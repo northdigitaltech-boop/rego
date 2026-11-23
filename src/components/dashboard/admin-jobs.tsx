@@ -192,7 +192,7 @@ function JobsReview({ jobs, onChange }: { jobs: JobRow[]; onChange: () => void }
                     <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{j.business_name}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {j.category ?? "—"} · {jobLocation(j)} · {j.employment_type} · {salaryLabel(j)}
-                      {j.deadline && ` · closes ${new Date(j.deadline).toLocaleDateString()}`}
+                      {j.deadline && ` · closes ${new Date(j.deadline).toLocaleDateString("en-GB")}`}
                     </p>
                   </div>
 
@@ -355,7 +355,7 @@ function AllApplications({ rows }: { rows: JobApplicantRow[] }) {
                       <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", meta?.tone)}>{meta?.label ?? a.status}</span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {a.job_title} · {a.owner_email} · {new Date(a.created_at).toLocaleDateString()}
+                      {a.job_title} · {a.owner_email} · {new Date(a.created_at).toLocaleDateString("en-GB")}
                     </p>
                   </div>
                   <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />

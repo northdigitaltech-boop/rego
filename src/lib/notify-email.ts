@@ -27,7 +27,7 @@ export function itemsHtml(items: RecItem[], base: string): string {
         : "";
       const price =
         it.price && it.price > 0
-          ? `<div style="font-weight:700;color:#0F4C3A">PKR ${Number(it.price).toLocaleString()}${
+          ? `<div style="font-weight:700;color:#0F4C3A">PKR ${Number(it.price).toLocaleString("en-GB")}${
               it.unit ? `<span style="font-weight:400;color:#6b7c75">/${esc(it.unit)}</span>` : ""
             }</div>`
           : "";

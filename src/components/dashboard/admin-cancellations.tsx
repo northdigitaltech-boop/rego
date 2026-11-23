@@ -131,7 +131,7 @@ export function AdminCancellations() {
               {rows.map((r) => (
                 <tr key={r.id} className="align-top">
                   <Td>
-                    {new Date(r.created_at).toLocaleString(undefined, {
+                    {new Date(r.created_at).toLocaleString("en-GB", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}

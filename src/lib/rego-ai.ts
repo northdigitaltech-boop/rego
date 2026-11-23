@@ -321,9 +321,9 @@ export function answerQuery(raw: string): AiAnswer {
     reply = `Here's a starting point for a ${days}-day trip to ${loc}. I've also picked a few ${cat ? cat.label : "stays & options"} to get you going — tap any to see details.`;
     bullets = itinerary(loc, days);
   } else if (cat && loc) {
-    reply = `Great choice! Here are top ${cat.label} in ${loc}${budget ? ` under PKR ${budget.toLocaleString()}` : ""}. Tap one to view details or book.`;
+    reply = `Great choice! Here are top ${cat.label} in ${loc}${budget ? ` under PKR ${budget.toLocaleString("en-GB")}` : ""}. Tap one to view details or book.`;
   } else if (cat) {
-    reply = `Here are some of the best ${cat.label} across Gilgit-Baltistan${budget ? ` under PKR ${budget.toLocaleString()}` : ""}.`;
+    reply = `Here are some of the best ${cat.label} across Gilgit-Baltistan${budget ? ` under PKR ${budget.toLocaleString("en-GB")}` : ""}.`;
   } else if (loc) {
     reply = `Popular picks in ${loc} for your trip — stays, tours and more.`;
   } else {
@@ -491,7 +491,7 @@ export function contextFromAnswer(a: AiAnswer): string {
     .map(
       (l) =>
         `- ${l.title} | ${l.categoryLabel} | ${l.location} | ${
-          l.price > 0 ? `PKR ${l.price.toLocaleString()}/${l.unit}` : "enquire"
+          l.price > 0 ? `PKR ${l.price.toLocaleString("en-GB")}/${l.unit}` : "enquire"
         } | rating ${l.rating}`
     )
     .join("\n");

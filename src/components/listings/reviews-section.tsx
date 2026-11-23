@@ -239,7 +239,7 @@ export function ReviewCard({
         <div>
           <p className="text-sm font-semibold text-forest">{r.customer_name ?? "Guest"}</p>
           <p className="text-xs text-muted-foreground">
-            {new Date(r.created_at).toLocaleDateString()}
+            {new Date(r.created_at).toLocaleDateString("en-GB")}
           </p>
         </div>
       </figcaption>

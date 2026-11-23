@@ -887,7 +887,7 @@ function AuditHistory({ locationId }: { locationId: string }) {
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="font-semibold text-forest">{r.action}</span>
             <span className="text-xs text-muted-foreground">
-              {new Date(r.created_at).toLocaleString()}
+              {new Date(r.created_at).toLocaleString("en-GB")}
             </span>
             {r.actor_email && (
               <span className="text-xs text-muted-foreground">· {r.actor_email}</span>

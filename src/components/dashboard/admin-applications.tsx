@@ -128,7 +128,7 @@ export function AdminApplications() {
         r.city ?? "",
         r.job_title,
         r.status,
-        new Date(r.created_at).toLocaleDateString(),
+        new Date(r.created_at).toLocaleDateString("en-GB"),
         (r.skills ?? []).join("; "),
         r.ran_paid_ads ?? "",
         r.tourism_exp ?? "",
@@ -225,7 +225,7 @@ export function AdminApplications() {
                       </span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {r.job_title} · {r.city || "—"} · {new Date(r.created_at).toLocaleDateString()}
+                      {r.job_title} · {r.city || "—"} · {new Date(r.created_at).toLocaleDateString("en-GB")}
                     </p>
                   </div>
                   <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />

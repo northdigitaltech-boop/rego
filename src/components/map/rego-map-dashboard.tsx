@@ -544,7 +544,7 @@ function AlertDetail({ alert: a }: { alert: RoadAlertRow }) {
         <p><b className="text-forest">Status:</b> <span className="capitalize">{a.status}</span> · <b className="text-forest">Level:</b> <span className="capitalize">{a.alert_level}</span></p>
         {a.expected_opening_time && <p><b className="text-forest">Expected opening:</b> {a.expected_opening_time}</p>}
         {a.source_name && <p><b className="text-forest">Source:</b> {a.source_name}</p>}
-        <p><b className="text-forest">Updated:</b> {new Date(a.updated_at).toLocaleString()}</p>
+        <p><b className="text-forest">Updated:</b> {new Date(a.updated_at).toLocaleString("en-GB")}</p>
       </div>
     </div>
   );
@@ -561,7 +561,7 @@ function DistanceCalc({ userLoc }: { userLoc: [number, number] | null }) {
       {km != null ? (
         <div className="space-y-2 rounded-2xl border border-border bg-forest-50/40 p-4">
           <Kv label="Distance" value={`~${km} km`} big /><Kv label="Estimated time" value={driveTime(km)} /><Kv label="Difficulty" value={difficultyFor()} />
-          {fuel && <Kv label="Fuel estimate" value={`~${fuel.litres} L (≈ PKR ${fuel.cost.toLocaleString()})`} />}
+          {fuel && <Kv label="Fuel estimate" value={`~${fuel.litres} L (≈ PKR ${fuel.cost.toLocaleString("en-GB")})`} />}
           {km > 100 && <p className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700"><TriangleAlert className="h-4 w-4" /> Long route — avoid night travel on mountain roads.</p>}
         </div>
       ) : <p className="text-sm text-muted-foreground">Pick two locations.</p>}

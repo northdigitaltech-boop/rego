@@ -354,7 +354,7 @@ function RequestsTable({
                   <td className="p-3 capitalize text-muted-foreground">{r.urgency}</td>
                   <td className="p-3"><ReqStatusBadge status={r.status} /></td>
                   <td className="p-3 text-xs text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString()}
+                    {new Date(r.created_at).toLocaleDateString("en-GB")}
                   </td>
                   <td className="p-3 text-right">
                     <button onClick={() => onView(r)} className="rounded-md border border-border p-1.5 text-forest hover:bg-muted">
@@ -499,7 +499,7 @@ function RequestDetailModal({
           <KV k="Urgency" v={r.urgency} />
           <KV k="Preferred contact" v={r.preferred_contact_method || "—"} />
           <KV k="Location" v={r.location_address || "—"} />
-          <KV k="Created" v={new Date(r.created_at).toLocaleString()} />
+          <KV k="Created" v={new Date(r.created_at).toLocaleString("en-GB")} />
         </dl>
         {r.problem_description && (
           <p className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">

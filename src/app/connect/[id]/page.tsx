@@ -79,13 +79,13 @@ function fmtDate(d: string | null): string {
   if (!d) return "Flexible";
   const dt = new Date(d + "T00:00:00");
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 function fmtMonthYear(d: string | null): string {
   if (!d) return "—";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return "—";
-  return dt.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return dt.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }
 function lastActiveLabel(d: string | null): string {
   if (!d) return "—";

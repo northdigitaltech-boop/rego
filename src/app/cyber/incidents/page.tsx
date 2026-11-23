@@ -147,7 +147,7 @@ export default function CyberIncidentsPage() {
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold text-slate-100">{i.title}</span>
                       <span className="mt-0.5 block text-xs text-slate-500">
-                        {i.status} · opened {new Date(i.detected_at).toLocaleString()}
+                        {i.status} · opened {new Date(i.detected_at).toLocaleString("en-GB")}
                         {i.opened_by ? ` by ${i.opened_by}` : ""}
                         {i.detected_by_rule ? ` · rule ${i.detected_by_rule}` : ""}
                       </span>
@@ -304,7 +304,7 @@ function Timeline({ id, onChanged }: { id: string; onChanged: () => void }) {
           {notes.map((n) => (
             <li key={n.id} className="border-l-2 border-slate-800 pl-3">
               <p className="text-xs text-slate-500">
-                {new Date(n.created_at).toLocaleString()} · {n.author_email}
+                {new Date(n.created_at).toLocaleString("en-GB")} · {n.author_email}
                 {n.status_to && (
                   <span className="ml-1 font-semibold text-slate-400">
                     {n.status_from ? `${n.status_from} → ${n.status_to}` : n.status_to}

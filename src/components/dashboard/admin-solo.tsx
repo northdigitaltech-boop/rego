@@ -232,7 +232,7 @@ function ConnectionsTable({ connections }: { connections: SoloConnectionRow[] })
                   <td className="p-3 capitalize text-muted-foreground">{c.kind.replace("-", " ")}</td>
                   <td className="p-3 text-muted-foreground">{c.seats}</td>
                   <td className="p-3 capitalize text-muted-foreground">{c.status}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString("en-GB")}</td>
                 </tr>
               ))
             )}

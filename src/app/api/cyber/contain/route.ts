@@ -211,7 +211,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       message: blocking
-        ? `Blocked until ${expiresAt.toLocaleString()}. Takes up to 60 seconds to apply everywhere.`
+        ? `Blocked until ${expiresAt.toLocaleString("en-GB")}. Takes up to 60 seconds to apply everywhere.`
         : "Block lifted. Takes up to 60 seconds to apply everywhere.",
     });
   }

@@ -490,7 +490,7 @@ function ReportsTab({ reports, onChange }: { reports: MapReportRow[]; onChange: 
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {r.location_name || (r.latitude ? `${r.latitude.toFixed(3)}, ${r.longitude?.toFixed(3)}` : "—")}
-                  {r.road_name ? ` · ${r.road_name}` : ""} · {r.user_name || r.user_email} · {new Date(r.created_at).toLocaleString()}
+                  {r.road_name ? ` · ${r.road_name}` : ""} · {r.user_name || r.user_email} · {new Date(r.created_at).toLocaleString("en-GB")}
                 </p>
                 {r.description && <p className="mt-1 text-sm text-muted-foreground">{r.description}</p>}
                 {r.photo && (

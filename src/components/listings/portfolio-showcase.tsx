@@ -70,7 +70,7 @@ function fmtDate(d: string | null): string {
   if (!d) return "";
   const t = new Date(d);
   if (isNaN(t.getTime())) return d;
-  return t.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return t.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }
 
 /* ------------------------------------------------------------------ */

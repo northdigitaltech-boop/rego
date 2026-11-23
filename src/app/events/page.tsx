@@ -36,7 +36,7 @@ function fmtDate(d: string | null): string {
   if (!d) return "";
   const dt = new Date(d + "T00:00:00");
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function dateRange(e: EventRow): string {

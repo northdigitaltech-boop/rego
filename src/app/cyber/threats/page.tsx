@@ -199,7 +199,7 @@ export default function CyberThreatsPage() {
                         <span className="block font-semibold text-slate-100">{f.headline}</span>
                         <span className="mt-0.5 block text-xs text-slate-500">
                           {f.ruleTitle} · {f.observed}/{f.threshold} in {f.windowMinutes} min ·
-                          {" "}last {new Date(f.lastSeen).toLocaleString()}
+                          {" "}last {new Date(f.lastSeen).toLocaleString("en-GB")}
                         </span>
                       </span>
                       <ChevronDown className={cn(

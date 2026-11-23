@@ -1193,7 +1193,7 @@ function PendingEditsAdmin({
                 <p className="mt-1 font-display text-base font-semibold text-forest">{e.title}</p>
                 {e.pending_at && (
                   <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" /> Submitted {new Date(e.pending_at).toLocaleString()}
+                    <Clock className="h-3.5 w-3.5" /> Submitted {new Date(e.pending_at).toLocaleString("en-GB")}
                   </p>
                 )}
               </div>

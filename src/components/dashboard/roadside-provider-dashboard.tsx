@@ -700,7 +700,7 @@ function RequestsPanel({
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              {new Date(r.created_at).toLocaleString()}
+              {new Date(r.created_at).toLocaleString("en-GB")}
             </p>
           </div>
 

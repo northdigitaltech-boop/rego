@@ -1775,7 +1775,7 @@ function PendingEditsAdmin({
                 <p className="mt-1 font-display text-base font-semibold text-forest">{e.title}</p>
                 {e.pending_at && (
                   <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" /> Submitted {new Date(e.pending_at).toLocaleString()}
+                    <Clock className="h-3.5 w-3.5" /> Submitted {new Date(e.pending_at).toLocaleString("en-GB")}
                   </p>
                 )}
               </div>
@@ -2912,7 +2912,7 @@ function UsersTable() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{u.phone || "—"}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(u.created_at).toLocaleDateString()}
+                      {new Date(u.created_at).toLocaleDateString("en-GB")}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end">

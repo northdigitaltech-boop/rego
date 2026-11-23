@@ -446,7 +446,7 @@ function AlertCard({ alert: a }: { alert: RoadAlertRow }) {
         <p><b className="text-forest">Status:</b> <span className="capitalize">{a.status}</span> · <b className="text-forest">Level:</b> <span className="capitalize">{a.alert_level}</span></p>
         {a.expected_opening_time && <p><b className="text-forest">Expected opening:</b> {a.expected_opening_time}</p>}
         {a.source_name && <p><b className="text-forest">Source:</b> {a.source_name}</p>}
-        <p><b className="text-forest">Updated:</b> {new Date(a.updated_at).toLocaleString()}</p>
+        <p><b className="text-forest">Updated:</b> {new Date(a.updated_at).toLocaleString("en-GB")}</p>
       </div>
       <p className="rounded-lg bg-forest-50/70 px-3 py-2 text-xs text-forest">Drive carefully and check the latest updates before travelling.</p>
     </div>
@@ -488,7 +488,7 @@ function DistanceCalc({ userLoc }: { userLoc: [number, number] | null }) {
           <Row label="Distance" value={`~${km} km`} big />
           <Row label="Estimated time" value={time} />
           <Row label="Difficulty" value={difficultyFor()} />
-          {fuel && <Row label="Fuel estimate" value={`~${fuel.litres} L (≈ PKR ${fuel.cost.toLocaleString()})`} />}
+          {fuel && <Row label="Fuel estimate" value={`~${fuel.litres} L (≈ PKR ${fuel.cost.toLocaleString("en-GB")})`} />}
           <Row label="Recommended travel" value="Daytime, May–Oct" />
           {night && <p className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700"><TriangleAlert className="h-4 w-4" /> Long route — avoid night travel on mountain roads.</p>}
         </div>

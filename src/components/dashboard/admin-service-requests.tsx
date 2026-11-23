@@ -93,7 +93,7 @@ export function AdminServiceRequests() {
                     <p className="mt-0.5 text-sm text-muted-foreground">{r.note}</p>
                   )}
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Requested {new Date(r.created_at).toLocaleString()}
+                    Requested {new Date(r.created_at).toLocaleString("en-GB")}
                   </p>
                 </div>
 

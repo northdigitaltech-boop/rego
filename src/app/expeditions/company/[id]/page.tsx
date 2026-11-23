@@ -132,7 +132,7 @@ export default async function CompanyDetail({ params }: { params: Promise<{ id: 
                                   {p.group_tiers.map((t, i) => (
                                     <tr key={i} className="border-b border-border/50">
                                       <td className="py-1.5 pr-3 text-forest">{t.min}{t.max ? `–${t.max}` : "+"} people</td>
-                                      <td className="py-1.5 font-semibold text-forest">{p.currency} {Number(t.price_per_person).toLocaleString()}</td>
+                                      <td className="py-1.5 font-semibold text-forest">{p.currency} {Number(t.price_per_person).toLocaleString("en-GB")}</td>
                                     </tr>
                                   ))}
                                 </tbody>

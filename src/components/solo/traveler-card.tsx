@@ -18,7 +18,7 @@ function fmtDate(d: string | null): string {
   if (!d) return "Flexible";
   const dt = new Date(d + "T00:00:00");
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 /** Premium traveller card for the /connect browse grid and home section. */

@@ -186,7 +186,7 @@ export default async function JobDetailPage({
                   <Fact
                     icon={CalendarDays}
                     label="Apply before"
-                    value={new Date(job.deadline).toLocaleDateString()}
+                    value={new Date(job.deadline).toLocaleDateString("en-GB")}
                   />
                 )}
               </div>
@@ -249,7 +249,7 @@ export default async function JobDetailPage({
               </div>
               {job.deadline && (
                 <p className="mt-3 text-center text-xs text-muted-foreground">
-                  Applications close {new Date(job.deadline).toLocaleDateString()}
+                  Applications close {new Date(job.deadline).toLocaleDateString("en-GB")}
                 </p>
               )}
             </div>

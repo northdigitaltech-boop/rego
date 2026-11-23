@@ -33,7 +33,7 @@ function fmtDate(d: string | null): string {
   if (!d) return "";
   const dt = new Date(d + "T00:00:00");
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, {
+  return dt.toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "long",

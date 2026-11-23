@@ -200,7 +200,7 @@ export function makeSlug(title: string, city?: string | null): string {
 export function salaryLabel(j: JobRow): string {
   if (!j.salary_disclosed) return "Salary not disclosed";
   const per = j.salary_period ? `/${j.salary_period}` : "";
-  const fmt = (n: number) => `PKR ${Number(n).toLocaleString()}`;
+  const fmt = (n: number) => `PKR ${Number(n).toLocaleString("en-GB")}`;
   if (j.salary_min && j.salary_max) return `${fmt(j.salary_min)} – ${fmt(j.salary_max)}${per}`;
   if (j.salary_min) return `From ${fmt(j.salary_min)}${per}`;
   if (j.salary_max) return `Up to ${fmt(j.salary_max)}${per}`;

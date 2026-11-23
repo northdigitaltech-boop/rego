@@ -68,7 +68,7 @@ function Line({ k, v }: { k: string; v: string }) {
 function when(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   });

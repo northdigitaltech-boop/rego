@@ -140,7 +140,7 @@ export default function CyberEmergencyPage() {
                 {blocks.map((b) => (
                   <li key={b.ip} className="text-xs text-slate-400">
                     <span className="font-mono text-slate-200">{b.ip}</span>
-                    {" — until "}{new Date(b.blocked_until).toLocaleString()}
+                    {" — until "}{new Date(b.blocked_until).toLocaleString("en-GB")}
                     {b.blocked_reason && <span className="text-slate-600"> · {b.blocked_reason}</span>}
                   </li>
                 ))}
@@ -183,7 +183,7 @@ export default function CyberEmergencyPage() {
                       {a.duration_h ? <span className="text-slate-500"> · {a.duration_h}h</span> : null}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {new Date(a.created_at).toLocaleString()} · {a.actor_email}
+                      {new Date(a.created_at).toLocaleString("en-GB")} · {a.actor_email}
                     </p>
                     <p className="mt-1 text-xs italic text-slate-400">{a.reason}</p>
                   </li>

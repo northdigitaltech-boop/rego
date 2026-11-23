@@ -96,7 +96,7 @@ export function RoadsideMyRequests() {
                   <MapPin className="h-3.5 w-3.5" /> {r.location_address || "—"}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" /> {new Date(r.created_at).toLocaleDateString()}
+                  <Clock className="h-3.5 w-3.5" /> {new Date(r.created_at).toLocaleDateString("en-GB")}
                 </span>
               </p>
             </div>

@@ -507,7 +507,7 @@ export async function deletePackage(id: string) {
 /** "PKR 250,000 / person" or "Quote on request" display helper. */
 export function packagePriceLabel(p: ExpeditionPackageRow): string {
   if (p.price_per_person == null) return "Quote on request";
-  return `${p.currency} ${Number(p.price_per_person).toLocaleString()} / person`;
+  return `${p.currency} ${Number(p.price_per_person).toLocaleString("en-GB")} / person`;
 }
 
 /* ==================================================================

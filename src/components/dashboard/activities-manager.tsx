@@ -154,7 +154,7 @@ export function ActivitiesManager({
                   </div>
                   <p className="text-xs font-semibold tracking-wider text-forest-600">{activityBookingRef(b.id)}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleString("en-GB")}</p>
               </div>
               <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                 <span>Customer: <b className="text-forest">{b.customer_name || "—"}</b></span>

@@ -140,7 +140,7 @@ export function ExpeditionRequests({ ownerEmail }: { ownerEmail: string }) {
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {expeditionBookingRef(r.id)} ·{" "}
-                    {new Date(r.created_at).toLocaleDateString()}
+                    {new Date(r.created_at).toLocaleDateString("en-GB")}
                   </p>
                 </div>
                 <StatusPill status={r.status} />

@@ -650,7 +650,7 @@ function BookingItem({
         {b.cancelled_at && (
           <p className="mt-1 text-xs text-muted-foreground">
             {cancelledByLabel(b.cancelled_by)} ·{" "}
-            {new Date(b.cancelled_at).toLocaleString(undefined, {
+            {new Date(b.cancelled_at).toLocaleString("en-GB", {
               dateStyle: "medium",
               timeStyle: "short",
             })}

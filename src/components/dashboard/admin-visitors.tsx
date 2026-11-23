@@ -206,7 +206,7 @@ function Stat({
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-forest text-gold">
           <Icon className="h-4 w-4" />
         </span>
-        <p className="font-display text-2xl font-bold text-forest">{value.toLocaleString()}</p>
+        <p className="font-display text-2xl font-bold text-forest">{value.toLocaleString("en-GB")}</p>
       </div>
       <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-forest">{label}</p>
       <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>

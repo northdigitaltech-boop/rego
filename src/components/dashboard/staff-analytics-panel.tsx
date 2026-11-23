@@ -217,7 +217,7 @@ function TaskRow({ task }: { task: StaffTaskRow }) {
               )}
             >
               {overdue ? "overdue " : "due "}
-              {new Date(task.dueAt).toLocaleDateString()}
+              {new Date(task.dueAt).toLocaleDateString("en-GB")}
             </span>
           )}
           <StatusPill status={task.status} />

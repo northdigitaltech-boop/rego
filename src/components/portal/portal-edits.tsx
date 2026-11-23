@@ -153,7 +153,7 @@ export function PortalEdits({ profile }: { profile: StaffProfile }) {
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {item.label}
                       {item.pending_at
-                        ? ` · queued ${new Date(item.pending_at).toLocaleDateString()}`
+                        ? ` · queued ${new Date(item.pending_at).toLocaleDateString("en-GB")}`
                         : ""}
                     </p>
                   </div>

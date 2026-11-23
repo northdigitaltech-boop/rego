@@ -127,7 +127,7 @@ function BillingToggle({ cycle, onChange }: { cycle: "monthly" | "yearly"; onCha
 function PlanCard({ plan, cycle, isPreview }: { plan: SubscriptionPlan; cycle: "monthly" | "yearly"; isPreview: boolean }) {
   const price = resolvedPrice(plan, cycle);
   const cur = plan.currency;
-  const fmt = (n: number) => n.toLocaleString();
+  const fmt = (n: number) => n.toLocaleString("en-GB");
   const yMonthly = effectiveMonthly(plan.yearly_discounted_price ?? plan.yearly_original_price);
   const extra = additionalYearlySaving(plan.monthly_discounted_price ?? plan.monthly_original_price, plan.yearly_discounted_price ?? plan.yearly_original_price);
 

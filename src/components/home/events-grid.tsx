@@ -9,7 +9,7 @@ function fmtDate(d: string | null): string {
   if (!d) return "Date TBA";
   const dt = new Date(d + "T00:00:00");
   if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 /** Homepage Events & Expo section — real admin-published events. */

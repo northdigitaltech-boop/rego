@@ -451,7 +451,7 @@ function LeadsPage({ owner, leads, onChange }: { owner: string; leads: LeadRow[]
                   <td className="p-3 text-muted-foreground">{l.budget ? formatPrice(Number(l.budget)) : "—"}</td>
                   <td className="p-3 capitalize text-muted-foreground">{l.lead_source || "—"}</td>
                   <td className="p-3"><LeadStatusBadge status={l.lead_status} /></td>
-                  <td className="p-3 text-xs text-muted-foreground">{l.follow_up_datetime ? new Date(l.follow_up_datetime).toLocaleString() : "—"}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{l.follow_up_datetime ? new Date(l.follow_up_datetime).toLocaleString("en-GB") : "—"}</td>
                   <td className="p-3">
                     <div className="flex items-center justify-end gap-1">
                       {l.phone && <a href={`tel:${l.phone}`} title="Call" className="rounded-md border border-border p-1.5 text-forest hover:bg-muted"><Phone className="h-3.5 w-3.5" /></a>}
@@ -670,7 +670,7 @@ function CustomerModal({ owner, customer, notes, onClose, onChange }: { owner: s
                 <span className="font-semibold text-forest">{l.interested_service || "Inquiry"}</span>
                 <LeadStatusBadge status={l.lead_status} />
               </div>
-              <span className="text-muted-foreground">{new Date(l.created_at).toLocaleDateString()}{l.budget ? ` · ${formatPrice(Number(l.budget))}` : ""}</span>
+              <span className="text-muted-foreground">{new Date(l.created_at).toLocaleDateString("en-GB")}{l.budget ? ` · ${formatPrice(Number(l.budget))}` : ""}</span>
             </div>
           ))}
         </div>
@@ -1005,7 +1005,7 @@ function ActionsPage({ events, summary }: { events: AnalyticsEventRow[]; summary
                   <td className="p-3 capitalize text-muted-foreground">{e.device_type || "—"}</td>
                   <td className="p-3 text-muted-foreground">{[e.city, e.country].filter(Boolean).join(", ") || "—"}</td>
                   <td className="p-3 max-w-[160px] truncate text-muted-foreground">{e.referrer || "Direct"}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString()}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString("en-GB")}</td>
                 </tr>
               ))}
             </tbody>
@@ -1058,7 +1058,7 @@ function NotesPage({ owner, notes, onChange }: { owner: string; notes: NoteRow[]
                 <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase text-gold-700">{n.entity_type}</span>
                 {n.entity_label && <span className="ml-2 text-xs font-semibold text-forest">{n.entity_label}</span>}
                 <p className="mt-1 text-sm text-forest/85">{n.note}</p>
-                <p className="text-[11px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
+                <p className="text-[11px] text-muted-foreground">{new Date(n.created_at).toLocaleString("en-GB")}</p>
               </div>
               <button onClick={() => deleteNote(n.id).then(onChange)} className="text-muted-foreground hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
             </div>

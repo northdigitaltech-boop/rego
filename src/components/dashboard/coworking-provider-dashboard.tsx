@@ -499,7 +499,7 @@ function Inquiries({
               </div>
               <p className="mt-0.5 text-xs font-semibold tracking-wider text-forest-600">{coworkingBookingRef(b.id)}</p>
             </div>
-            <p className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleString("en-GB")}</p>
           </div>
           <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
             <Detail icon={UserRound} label="Customer" value={b.customer_name || "—"} />
