@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat, Dancing_Script } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -20,20 +20,31 @@ import { IosSplash } from "@/components/pwa/ios-splash";
 // Montserrat is the single brand font for the entire site (headings, body,
 // buttons, inputs, navbar, footer — everything). Bound to --font-sans, which
 // every Tailwind font family (sans/display/script/mono) resolves to.
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+/* SELF-HOSTED FONTS (src/fonts, SIL Open Font License).
+   next/font/google downloads the fonts from Google at BUILD time. A Vercel
+   build failed inside that download ("An error occurred in next/font …
+   reading '1'"), which blocked a deploy for reasons unrelated to the code.
+   The same fonts are now committed as variable woff2 files, so the build
+   never depends on Google being reachable. Same families, same weights
+   (variable 100–900), same CSS variables. */
+const montserrat = localFont({
+  src: "../fonts/montserrat-latin-variable.woff2",
+  weight: "100 900",
+  style: "normal",
   variable: "--font-sans",
   display: "swap",
+  fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
 });
 
 // Script font used ONLY for the founder's signature (About page). Everything
 // else stays Montserrat.
-const dancingScript = Dancing_Script({
-  subsets: ["latin"],
-  weight: ["600", "700"],
+const dancingScript = localFont({
+  src: "../fonts/dancing-script-latin-variable.woff2",
+  weight: "400 700",
+  style: "normal",
   variable: "--font-signature",
   display: "swap",
+  fallback: ["cursive"],
 });
 
 // The layout is kept stable on mobile by `touch-action: pan-x pan-y` in
