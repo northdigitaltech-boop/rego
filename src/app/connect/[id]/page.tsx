@@ -72,6 +72,9 @@ export async function generateMetadata({
       t.intro ?? `${t.full_name} is looking for travel companions in Gilgit-Baltistan.`
     ).slice(0, 160),
     alternates: { canonical: `/connect/${id}` },
+    /* A private traveller's profile, reached from an invite link — not a
+       search result (GSC 24 Nov). follow stays on for the links out. */
+    robots: { index: false, follow: true },
   };
 }
 

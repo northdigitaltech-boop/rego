@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { matchesDestination } from "@/lib/destination-counts";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X, Search } from "lucide-react";
 
@@ -83,11 +84,7 @@ export function ListingsBrowser({
   const results = React.useMemo(() => {
     const list = items.filter((l) => {
       if (category !== "all" && l.category !== category) return false;
-      if (location !== "all") {
-        const a = l.location.toLowerCase();
-        const b = location.toLowerCase();
-        if (!a.includes(b) && !b.includes(a)) return false;
-      }
+      if (location !== "all" && !matchesDestination(l.location, location)) return false;
       if (l.price > maxPrice) return false;
       if (l.rating < minRating) return false;
       if (query && !l.title.toLowerCase().includes(query.toLowerCase()))
@@ -107,11 +104,7 @@ export function ListingsBrowser({
   const hiddenByFilters = React.useMemo(() => {
     const scoped = items.filter((l) => {
       if (category !== "all" && l.category !== category) return false;
-      if (location !== "all") {
-        const a = l.location.toLowerCase();
-        const b = location.toLowerCase();
-        if (!a.includes(b) && !b.includes(a)) return false;
-      }
+      if (location !== "all" && !matchesDestination(l.location, location)) return false;
       return true;
     });
     return Math.max(0, scoped.length - results.length);

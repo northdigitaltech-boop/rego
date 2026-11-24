@@ -127,6 +127,10 @@ const STOCK_IMAGE_HOSTS = [
   "via.placeholder.com",
   "placekitten.com",
   "source.unsplash.com", // the random-photo endpoint, not images.unsplash.com
+  /* Random avatar service. A listing had an i.pravatar.cc picture in its
+     gallery and it went into the image sitemap as a "photo" of the listing. */
+  "i.pravatar.cc",
+  "pravatar.cc",
 ];
 
 /** True when `url` is decorative filler rather than a real photograph. */

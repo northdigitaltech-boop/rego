@@ -19,7 +19,6 @@ import { getApprovedStories } from "@/lib/safarnama";
 import { legalPolicies } from "@/lib/legal";
 import { getApprovedCompanies as getExpeditionCompanies, getApprovedPros as getExpeditionPros } from "@/lib/expeditions";
 import { categoryHasOwnPage, categoryIsEmpty } from "@/lib/category-routing";
-import { RENTAL_TYPE_DEFS, getRentalCounts } from "@/lib/rentals";
 import { cachedAllListings } from "@/lib/home-feed-cached";
 import { getDestinations } from "@/lib/destinations";
 import { isStockPhoto } from "@/lib/utils";
@@ -132,25 +131,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const p of ["/listings", "/destinations", "/safarnama", "/events", "/activities", "/roadside", "/coworking", "/connect", "/expeditions", "/rentals", "/about", "/how-it-works", "/contact", "/partner", "/careers", "/jobs", "/editorial-policy", "/blog-news"]) {
     add(p, { changeFrequency: "weekly", priority: 0.7 });
   }
-  /* One indexable URL per rental type. These are what "jeep rental skardu"
-     style queries land on, and each is a genuinely different list — unlike
-     the price and rating filters, which are excluded on purpose because
-     they only reorder the same rows. */
-  /* An empty type page is noindex (rentals/page.tsx) — offer only the ones
-     with something to rent. {} means the count failed: keep them all
-     rather than drop real pages on a database blip. */
-  const rentalCounts = await getRentalCounts().catch(() => ({}) as Record<string, number>);
-  const countsKnown = Object.keys(rentalCounts).length > 0;
-  for (const d of RENTAL_TYPE_DEFS) {
-    if (d.type === "other") continue;
-    if (countsKnown && !(rentalCounts[d.type] > 0)) continue;
-    add(`/rentals?type=${d.slug}`, { changeFrequency: "daily", priority: 0.7 });
-  }
+  /* No /rentals?type= URLs: they are filters of /rentals, canonical to it
+     and noindex (GSC 24 Nov flagged all 8 as duplicates). */
   /* Twenty of the category slugs redirect straight into /roadside,
      /events or /activities. Listing them here asked Google to crawl
      twenty URLs that immediately bounce — so only real pages go in. */
   for (const c of allCategories) {
     if (!categoryHasOwnPage(c.slug)) continue;
+    /* "More" is a catch-all with no topic of its own; never offered. */
+    if (c.slug === "more") continue;
     /* The same test the category page uses to mark itself noindex. Listing
        a noindex page here asks Google to crawl something it is then told
        to drop. Only three catch-all slugs can be empty; for the rest this

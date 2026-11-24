@@ -6,12 +6,23 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { RegoAiChat } from "@/components/home/rego-ai-chat";
 
-export const metadata: Metadata = {
-  title: "Rego AI — Plan your Gilgit-Baltistan trip",
-  description:
-    "Tell Rego AI what you need — hotels, jeeps, tours, guides or a full day-by-day plan — and get instant recommendations across Gilgit-Baltistan.",
-  alternates: { canonical: "/rego-ai" },
-};
+/* A question in the URL (?q=…) is one visitor's search, not a page:
+   noindex, canonical to /rego-ai. GSC (24 Nov) had crawled one. */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [k: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const asked = Object.keys(sp).length > 0;
+  return {
+    title: "Rego AI — Plan your Gilgit-Baltistan trip",
+    description:
+      "Tell Rego AI what you need — hotels, jeeps, tours, guides or a full day-by-day plan — and get recommendations across Gilgit-Baltistan.",
+    alternates: { canonical: "/rego-ai" },
+    robots: asked ? { index: false, follow: true } : undefined,
+  };
+}
 
 export default function RegoAiPage() {
   return (

@@ -31,7 +31,7 @@ import { DirectAnswer, TravelFAQ } from "@/components/aeo/answer-blocks";
    this page behaves exactly as it did before Phase 2. */
 const AEO_ENABLED = process.env.NEXT_PUBLIC_AEO_ENABLED === "1";
 import { cachedAllListings } from "@/lib/home-feed-cached";
-import { countForDestination, listingCountLabel } from "@/lib/destination-counts";
+import { countForDestination, destinationFilterTerm, listingCountLabel } from "@/lib/destination-counts";
 import { photo, cn } from "@/lib/utils";
 import { destinationDescription, destinationTitle, tidyName } from "@/lib/seo-copy";
 
@@ -68,10 +68,15 @@ export const revalidate = 600;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [k: string]: string | string[] | undefined }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  /* ?category= views: canonical to the base page (below) AND noindex, so
+     Google stops reporting them as separate pages (GSC 24 Nov). */
+  const filtered = Boolean((await searchParams).category);
   const destination = await getDestinationBySlug(slug);
   if (!destination) return { title: "Destination not found" };
 
@@ -104,9 +109,11 @@ export async function generateMetadata({
     alternates: { canonical },
     /* IS_INDEXABLE gates the admin's choice, so a preview deployment can
        never say index just because robots_index is true in the database. */
-    robots: seo
-      ? { index: IS_INDEXABLE && seo.robots_index, follow: seo.robots_follow }
-      : undefined,
+    robots: filtered
+      ? { index: false, follow: true }
+      : seo
+        ? { index: IS_INDEXABLE && seo.robots_index, follow: seo.robots_follow }
+        : undefined,
     openGraph: {
       title: seo?.og_title?.trim() || `${tidyName(destination.name)} — Rego`,
       description: seo?.og_description?.trim() || description,
@@ -162,7 +169,8 @@ export default async function DestinationPage({
   const allListings = await cachedAllListings();
   /* The hero's count is computed from live listings with the browser's own
      location rule, not the admin-typed "120+ Stays" text. */
-  const liveCount = listingCountLabel(countForDestination(destination.location, allListings));
+  const filterTerm = destinationFilterTerm(destination);
+  const liveCount = listingCountLabel(countForDestination(filterTerm, allListings));
 
   /* Market data is optional. Every one of these returns empty rather than
      throwing when the tables do not exist, so this page renders exactly as
@@ -345,7 +353,7 @@ export default async function DestinationPage({
             </div>
           }
         >
-          <ListingsBrowser items={allListings} initialLocation={destination.location} hideHeader />
+          <ListingsBrowser items={allListings} initialLocation={filterTerm} hideHeader />
         </Suspense>
 
         {/* ---- Featured answers ----

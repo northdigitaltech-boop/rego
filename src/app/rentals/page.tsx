@@ -84,15 +84,17 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     /* A type with nothing listed is a dead end — keep it out of the index
        until somebody lists one (the sitemap applies the same rule). {}
        means the count failed, which is not the same as empty. */
-    const counts = await getRentalCounts().catch(() => ({}) as Record<string, number>);
-    const empty = Object.keys(counts).length > 0 && !(counts[def.type] > 0);
+    /* GSC (24 Nov): the /rentals?type= pages were reported as duplicates of
+       /rentals and not indexed. They are filters of one list, so they now
+       point at /rentals and are not indexed on their own; they stay fully
+       usable and crawlable (follow) for visitors. */
     return buildMetadata({
-      noindex: empty,
+      noindex: true,
       title: place
         ? `${def.label} in ${place} | REGO`
         : `${def.label} in Gilgit-Baltistan | REGO`,
       description: `${def.blurb} available to hire across Gilgit-Baltistan through REGO. Compare prices, providers and locations.`,
-      path: `/rentals?type=${def.slug}`,
+      path: "/rentals",
     });
   }
 

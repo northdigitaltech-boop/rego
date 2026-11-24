@@ -104,7 +104,8 @@ export async function generateMetadata({
   return {
     title: categoryTitle(category.name),
     description,
-    robots: empty ? { index: false, follow: true } : undefined,
+    /* "More" is a catch-all with no topic of its own: never indexed. */
+    robots: empty || slug === "more" ? { index: false, follow: true } : undefined,
     alternates: { canonical: `/categories/${slug}` },
     openGraph: {
       title: `${categoryTitle(category.name)} — Rego`,
