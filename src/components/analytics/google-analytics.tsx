@@ -51,6 +51,9 @@ import { useVisitTracker } from "@/lib/use-visit-tracker";
    so those still send nothing. */
 const REGO_GA4_ID = "G-DT6LKTLVMS";
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || (IS_INDEXABLE ? REGO_GA4_ID : undefined);
+/* The site-wide Google tag (container GT-PH3F8V6Z) Google asked to be on
+   every page. Configured alongside GA4 on the same gtag.js load. */
+const GOOGLE_TAG_ID = IS_INDEXABLE ? "GT-PH3F8V6Z" : undefined;
 
 declare global {
   interface Window {
@@ -104,37 +107,64 @@ export function GoogleAnalytics() {
      to the change rather than reading the cookie once.
      ------------------------------------------------------------------ */
   const consent = useConsent();
-  if (consent !== "granted") return null;
 
-  /* No ID configured — render nothing at all. This is what keeps development
-     and preview deployments out of the reporting. */
-  if (!GA_ID) return null;
+  /* ------------------------------------------------------------------
+     GOOGLE CONSENT MODE v2 — the tag is on every page, cookies are not.
+
+     Google's setup page could not detect the tag, because it only loaded
+     after a visitor pressed Accept. Now gtag.js loads on every page, but
+     BEFORE it loads, consent is set to "denied" for analytics and ads
+     storage. With "denied", Google writes no cookies and stores nothing
+     on the device; it only receives cookieless pings. When the visitor
+     presses Accept, consent is updated to "granted" (effect below) and
+     normal measurement starts. Pressing Decline keeps it denied.
+     ------------------------------------------------------------------ */
+  React.useEffect(() => {
+    if (!consent) return;
+    const v = consent === "granted" ? "granted" : "denied";
+    push("consent", "update", {
+      analytics_storage: v,
+      ad_storage: v,
+      ad_user_data: v,
+      ad_personalization: v,
+    });
+  }, [consent]);
+
+  /* Nothing configured (localhost, previews) — render nothing at all. */
+  const primary = GOOGLE_TAG_ID || GA_ID;
+  if (!primary) return null;
 
   return (
     <>
-      {/* lazyOnload, not afterInteractive. gtag.js is ~326 KB of third-party
-          JavaScript; on a throttled mobile connection it competes with the
-          hero image for bandwidth, and the hero image is the LCP element.
-          Loading it with afterInteractive cost about 28 Lighthouse points.
-          Waiting for the load event costs the handful of visitors who leave
-          within a second or two — a trade worth making.
-
-          Nothing is lost from the delay: gtag() only ever pushes to
-          dataLayer, so the page views recorded below queue up and replay in
-          order the moment the script arrives. */}
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        strategy="lazyOnload"
-      />
-      <Script id="ga-init" strategy="lazyOnload">
+      {/* Consent defaults run FIRST and synchronously, before gtag.js. */}
+      <Script id="gtag-consent-default" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
+          /* A returning visitor who already pressed Accept starts granted;
+             everyone else starts denied. Read from the same cookie the
+             banner writes, so the order of scripts cannot flip it. */
+          var regoOk = /(?:^|;\\s*)rego_consent=granted(?:;|$)/.test(document.cookie);
+          var regoV = regoOk ? 'granted' : 'denied';
+          gtag('consent', 'default', {
+            analytics_storage: regoV,
+            ad_storage: regoV,
+            ad_user_data: regoV,
+            ad_personalization: regoV,
+            wait_for_update: 500
+          });
           gtag('js', new Date());
-          gtag('config', '${GA_ID}', { send_page_view: false });
+          ${GOOGLE_TAG_ID ? `gtag('config', '${GOOGLE_TAG_ID}', { send_page_view: false });` : ""}
+          ${GA_ID ? `gtag('config', '${GA_ID}', { send_page_view: false });` : ""}
         `}
       </Script>
+      {/* lazyOnload: gtag.js is large third-party JS and must not compete
+          with the hero image (LCP). Calls queue in dataLayer meanwhile. */}
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${primary}`}
+        strategy="lazyOnload"
+      />
       <RouteChangeTracker />
     </>
   );
