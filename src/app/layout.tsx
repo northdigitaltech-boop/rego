@@ -8,6 +8,7 @@ import { InstallCapture } from "@/components/pwa/install-capture";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { siteConfig, IS_INDEXABLE, verification } from "@/lib/site";
+import { GOOGLE_TAG_ID, GA4_ID } from "@/lib/google-tag";
 import { JsonLd, organizationSchema, websiteSchema } from "@/components/seo/json-ld";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReferralCapture } from "@/components/referral-capture";
@@ -172,6 +173,29 @@ export default function RootLayout({
         {/* iPhone and iPad launch screens. Android builds its own from the
             manifest; iOS needs an exact per-device match or it shows white. */}
         <IosSplash />
+        {/* ------------------------------------------------------------
+            GOOGLE TAG — in the server-rendered <head>, as Google asks.
+            Google's "tag detected?" check reads the page HTML. The tag was
+            only added by client-side JavaScript after load, so the check
+            never saw it. It is now plain HTML in <head>.
+
+            Consent Mode v2: BEFORE gtag.js runs, all storage is set to
+            "denied" (no cookies), unless this visitor already pressed
+            Accept (rego_consent=granted). The cookie banner flips it to
+            "granted" via components/analytics/google-analytics.tsx.
+            Production domain only — never on localhost or previews.
+            ------------------------------------------------------------ */}
+        {IS_INDEXABLE && (
+          <>
+            <script
+              id="google-tag-consent"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;var regoV=/(?:^|;\\s*)rego_consent=granted(?:;|$)/.test(document.cookie)?'granted':'denied';gtag('consent','default',{analytics_storage:regoV,ad_storage:regoV,ad_user_data:regoV,ad_personalization:regoV,wait_for_update:500});gtag('js',new Date());gtag('config','${GOOGLE_TAG_ID}',{send_page_view:false});gtag('config','${GA4_ID}',{send_page_view:false});`,
+              }}
+            />
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`} />
+          </>
+        )}
       </head>
       {/* Captures beforeinstallprompt before hydration — Chrome fires it
           earlier than React mounts, and a missed event means no button. */}

@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Script from "next/script";
 import { usePathname } from "next/navigation";
 
 import { useConsent } from "@/lib/consent";
 import { IS_INDEXABLE } from "@/lib/site";
+import { GA4_ID } from "@/lib/google-tag";
 import { useVisitTracker } from "@/lib/use-visit-tracker";
 
 /* ============================================================
@@ -49,11 +49,11 @@ import { useVisitTracker } from "@/lib/use-visit-tracker";
    site when NEXT_PUBLIC_GA_ID is not set in Vercel; an env value, if set,
    still wins. IS_INDEXABLE is false on localhost and preview deployments,
    so those still send nothing. */
-const REGO_GA4_ID = "G-DT6LKTLVMS";
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID || (IS_INDEXABLE ? REGO_GA4_ID : undefined);
-/* The site-wide Google tag (container GT-PH3F8V6Z) Google asked to be on
-   every page. Configured alongside GA4 on the same gtag.js load. */
-const GOOGLE_TAG_ID = IS_INDEXABLE ? "GT-PH3F8V6Z" : undefined;
+/* The tag itself (gtag.js + Consent Mode defaults) is in the
+   server-rendered <head> — see app/layout.tsx. This component only sends
+   page views on client-side navigation and passes the visitor's cookie
+   choice on to Google. Production domain only. */
+const GA_ID = IS_INDEXABLE ? GA4_ID : undefined;
 
 declare global {
   interface Window {
@@ -69,6 +69,12 @@ declare global {
  */
 function push(...args: unknown[]) {
   if (typeof window === "undefined") return;
+  /* The real gtag() from the <head> snippet pushes an `arguments` object,
+     which is the only shape gtag.js treats as a command. Use it. */
+  if (typeof window.gtag === "function") {
+    window.gtag(...args);
+    return;
+  }
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push(args);
 }
@@ -130,41 +136,10 @@ export function GoogleAnalytics() {
     });
   }, [consent]);
 
-  /* Nothing configured (localhost, previews) — render nothing at all. */
-  const primary = GOOGLE_TAG_ID || GA_ID;
-  if (!primary) return null;
+  if (!GA_ID) return null;
 
   return (
     <>
-      {/* Consent defaults run FIRST and synchronously, before gtag.js. */}
-      <Script id="gtag-consent-default" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          window.gtag = gtag;
-          /* A returning visitor who already pressed Accept starts granted;
-             everyone else starts denied. Read from the same cookie the
-             banner writes, so the order of scripts cannot flip it. */
-          var regoOk = /(?:^|;\\s*)rego_consent=granted(?:;|$)/.test(document.cookie);
-          var regoV = regoOk ? 'granted' : 'denied';
-          gtag('consent', 'default', {
-            analytics_storage: regoV,
-            ad_storage: regoV,
-            ad_user_data: regoV,
-            ad_personalization: regoV,
-            wait_for_update: 500
-          });
-          gtag('js', new Date());
-          ${GOOGLE_TAG_ID ? `gtag('config', '${GOOGLE_TAG_ID}', { send_page_view: false });` : ""}
-          ${GA_ID ? `gtag('config', '${GA_ID}', { send_page_view: false });` : ""}
-        `}
-      </Script>
-      {/* lazyOnload: gtag.js is large third-party JS and must not compete
-          with the hero image (LCP). Calls queue in dataLayer meanwhile. */}
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${primary}`}
-        strategy="lazyOnload"
-      />
       <RouteChangeTracker />
     </>
   );
