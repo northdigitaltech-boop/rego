@@ -5,6 +5,7 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 
 import { useConsent } from "@/lib/consent";
+import { IS_INDEXABLE } from "@/lib/site";
 import { useVisitTracker } from "@/lib/use-visit-tracker";
 
 /* ============================================================
@@ -44,7 +45,12 @@ import { useVisitTracker } from "@/lib/use-visit-tracker";
  * clean.
  * ============================================================ */
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+/* Rego's GA4 property (Google tag G-DT6LKTLVMS). Used on the production
+   site when NEXT_PUBLIC_GA_ID is not set in Vercel; an env value, if set,
+   still wins. IS_INDEXABLE is false on localhost and preview deployments,
+   so those still send nothing. */
+const REGO_GA4_ID = "G-DT6LKTLVMS";
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || (IS_INDEXABLE ? REGO_GA4_ID : undefined);
 
 declare global {
   interface Window {
