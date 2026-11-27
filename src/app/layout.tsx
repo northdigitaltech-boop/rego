@@ -194,6 +194,13 @@ export default function RootLayout({
               }}
             />
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`} />
+            {/* Ahrefs Web Analytics — cookieless (no consent needed),
+                async so it never blocks rendering. Production only. */}
+            <script
+              src="https://analytics.ahrefs.com/analytics.js"
+              data-key="FvJwS1Rni2dxb6KwvFH/jw"
+              async
+            />
           </>
         )}
       </head>

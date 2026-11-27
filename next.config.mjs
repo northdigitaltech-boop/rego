@@ -104,11 +104,11 @@ const nextConfig = {
               /* 'unsafe-inline' and 'unsafe-eval' are required by Next's
                  runtime and by the inline GA bootstrap. Removing them
                  needs nonces, which is a later, larger change. */
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://challenges.cloudflare.com https://va.vercel-scripts.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://www.googletagmanager.com https://challenges.cloudflare.com https://va.vercel-scripts.com https://analytics.ahrefs.com",
               "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
               "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://picsum.photos https://loremflickr.com https://i.pravatar.cc https://server.arcgisonline.com https://*.basemaps.cartocdn.com https://*.tile.opentopomap.org https://api.maptiler.com https://api.mapbox.com https://www.google-analytics.com https://unpkg.com https://cdnjs.cloudflare.com",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://api.open-meteo.com https://api.maptiler.com https://api.mapbox.com https://www.google-analytics.com https://challenges.cloudflare.com https://vitals.vercel-insights.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://api.open-meteo.com https://api.maptiler.com https://api.mapbox.com https://www.google-analytics.com https://challenges.cloudflare.com https://vitals.vercel-insights.com https://analytics.ahrefs.com",
               "frame-src https://challenges.cloudflare.com https://www.google.com https://www.youtube.com",
               "object-src 'none'",
               "base-uri 'self'",
